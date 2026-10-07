@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "baseBranch": "main",
+  "protectedBranches": [
+    "main",
+    "dev",
+    "staging"
+  ],
+  "statePaths": [
+    ".kiro/state/**",
+    "CONTINUITY.md",
+    "public/state.json"
+  ],
+  "sharedPaths": [
+    "README.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    ".gitignore",
+    ".dockerignore",
+    ".env.example",
+    "package.json",
+    "package-lock.json",
+    ".github/workflows/continuity-gate.yml",
+    ".github/workflows/continuity-sync.yml",
+    "eslint.config.js"
+  ],
+  "kernelPaths": [
+    "wasm/**",
+    "src/lib/formulas/**",
+    "src/wasm/**"
+  ],
+  "scopeAllowLabel": "scope:allow",
+  "gateName": "continuity-gate",
+  "maxStateAgeCommits": 200,
+  "scopes": {
+    "10-concurrent-user-capacity": [
+      "src/lib/formulas/concurrency.ts",
+      "src/components/calculator/ConcurrentUserSlider.tsx",
+      "src/components/calculator/SLOConfig.tsx"
+    ],
+    "11-wasm-kernel": [
+      "wasm/kernel.ts",
+      "src/wasm/kernel.ts",
+      "src/wasm/kernel.test.ts",
+      "src/wasm/use-kernel.ts",
+      "scripts/build-wasm.mjs",
+      "scripts/verify-wasm.mjs",
+      "public/wasm/**",
+      "src/pages/Runtime.tsx",
+      "src/pages/Runtime.test.tsx",
+      "src/App.tsx",
+      "src/components/layout/TopBar.tsx",
+      "src/store/calculator-store.ts"
+    ],
+    "12-wasi-runtime": [
+      "wasm/service.ts",
+      "scripts/wasi-run.mjs",
+      "scripts/wasi-server.mjs",
+      "scripts/lib/wasi-host.mjs",
+      "src/wasm/wasi-client.ts",
+      "wasi/dist/**"
+    ],
+    "13-deploy-github-pages": [
+      ".github/workflows/deploy-pages.yml",
+      ".github/workflows/ci.yml",
+      "scripts/build-pages-artifact.mjs",
+      "scripts/serve-static.mjs",
+      "src/lib/env.ts",
+      "scripts/verify-pages-artifact.sh"
+    ],
+    "14-deploy-docker": [
+      "Dockerfile",
+      "docker/**",
+      "docker-compose.yaml",
+      "nginx.conf",
+      "scripts/docker-build.mjs",
+      ".github/workflows/docker.yml"
+    ],
+    "15-deploy-local": [
+      "scripts/dev-stack.mjs",
+      "vite.config.ts",
+      ".env.example",
+      "src/vite-env.d.ts"
+    ],
+    "16-branch-environments-bootstrap": [
+      ".github/workflows/bootstrap-repo.yml"
+    ],
+    "17-continuity-gate": [
+      ".kiro/state/**",
+      "scripts/continuity.ts",
+      "scripts/lib/continuity-core.ts",
+      "scripts/continuity.test.ts",
+      ".github/workflows/continuity-gate.yml",
+      ".github/workflows/continuity-sync.yml",
+      "CONTINUITY.md",
+      "scripts/validate-workflows.py",
+      ".github/workflows/ci.yml",
+      "package.json"
+    ]
+  },
+  "resume": {
+    "commands": [
+      "npm ci",
+      "npm run continuity:resume",
+      "npm run build:wasm && npm run wasm:verify",
+      "npm test",
+      "npm run stack            # página :5173 + runtime WASI :8787"
+    ],
+    "guardrails": [
+      "wasm (wasm/kernel.ts) e TypeScript (src/lib/formulas) precisam continuar numericamente idênticos — npm run wasm:verify + npm test provam isso.",
+      "Nada de segredo em arquivo versionado; configuração entra por VITE_* / secrets do GitHub.",
+      "O browser nunca chama localhost: o runtime WASI é acessado por /api/* via proxy (vite em dev, nginx no container).",
+      "Build ignore artefatos: public/wasm, wasi/dist e _site são gerados por script.",
+      "Um PR = um escopo: declare as tarefas no handoff da branch antes de abrir o PR."
+    ]
+  }
+}

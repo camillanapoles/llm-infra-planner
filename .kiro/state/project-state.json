@@ -1,0 +1,194 @@
+{
+  "schema": 1,
+  "project": "LLMcalc — LLM Infrastructure Calculator",
+  "generatedAt": "2026-10-07T18:06:13.155Z",
+  "branch": "arena/fe62ce6d-llm-infra-planner",
+  "headSha": "44cdf0aaf1fb476580d8780387ce80a615644be2",
+  "baseBranch": "main",
+  "currentPhase": "P3",
+  "currentPhaseName": "WebAssembly e entrega multi-ambiente",
+  "phaseProgress": [
+    {
+      "id": "P1",
+      "name": "Kernel de cálculo e base de dados",
+      "status": "done",
+      "done": 4,
+      "total": 4,
+      "percent": 100,
+      "open": []
+    },
+    {
+      "id": "P2",
+      "name": "Experiência da página",
+      "status": "done",
+      "done": 4,
+      "total": 4,
+      "percent": 100,
+      "open": []
+    },
+    {
+      "id": "P3",
+      "name": "WebAssembly e entrega multi-ambiente",
+      "status": "in_progress",
+      "done": 7,
+      "total": 8,
+      "percent": 88,
+      "open": [
+        "T-308"
+      ]
+    },
+    {
+      "id": "P4",
+      "name": "Qualidade contínua",
+      "status": "todo",
+      "done": 0,
+      "total": 5,
+      "percent": 0,
+      "open": [
+        "T-401",
+        "T-402",
+        "T-403",
+        "T-404",
+        "T-405"
+      ]
+    },
+    {
+      "id": "P5",
+      "name": "Dados vivos",
+      "status": "todo",
+      "done": 0,
+      "total": 3,
+      "percent": 0,
+      "open": [
+        "T-501",
+        "T-502",
+        "T-503"
+      ]
+    },
+    {
+      "id": "P6",
+      "name": "Runtime WASM avançado",
+      "status": "todo",
+      "done": 0,
+      "total": 3,
+      "percent": 0,
+      "open": [
+        "T-601",
+        "T-602",
+        "T-603"
+      ]
+    },
+    {
+      "id": "P7",
+      "name": "Publicação e comunidade",
+      "status": "todo",
+      "done": 0,
+      "total": 2,
+      "percent": 0,
+      "open": [
+        "T-701",
+        "T-702"
+      ]
+    }
+  ],
+  "overall": {
+    "done": 15,
+    "total": 29,
+    "percent": 52
+  },
+  "nextTasks": [
+    {
+      "id": "T-308",
+      "title": "Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
+      "phase": "P3",
+      "phaseName": "WebAssembly e entrega multi-ambiente",
+      "spec": "13-deploy-github-pages",
+      "verify": "gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml",
+      "blockedBy": [],
+      "notes": "Depende do merge do PR #1 na main (os workflows precisam existir na branch default)."
+    },
+    {
+      "id": "T-401",
+      "title": "Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
+      "phase": "P4",
+      "phaseName": "Qualidade contínua",
+      "verify": "npm run test:e2e",
+      "blockedBy": [],
+      "notes": "@playwright/test já está instalado e o script test:e2e existe, mas não há testes."
+    },
+    {
+      "id": "T-402",
+      "title": "Zerar o lint legado (20 erros / 5 avisos herdados)",
+      "phase": "P4",
+      "phaseName": "Qualidade contínua",
+      "verify": "npm run lint",
+      "blockedBy": [],
+      "notes": "20 erros / 5 avisos herdados (medidos por continuity:sync); nenhum em arquivo novo. Inclui a validação de workflows (duplicate keys) que já roda no CI."
+    },
+    {
+      "id": "T-403",
+      "title": "Code-splitting do bundle (chunk principal ~700 kB)",
+      "phase": "P4",
+      "phaseName": "Qualidade contínua",
+      "verify": "npm run build",
+      "blockedBy": [],
+      "notes": "Chunk index-*.js com 700 kB (139 kB gzip); dividir rotas com lazy + manualChunks."
+    },
+    {
+      "id": "T-404",
+      "title": "Cobertura de testes do store e das rotas",
+      "phase": "P4",
+      "phaseName": "Qualidade contínua",
+      "verify": "npm test",
+      "blockedBy": [],
+      "notes": "Store (recompute/URL/share) e páginas sem testes; Runtime.tsx já tem cobertura de render."
+    }
+  ],
+  "invariants": {
+    "generatedAt": "2026-10-07T18:06:12.822Z",
+    "stale": true,
+    "wasmKernelBytes": 2057,
+    "wasiBytes": 5728,
+    "wasmChecks": 16,
+    "dockerChecks": 16,
+    "commit": "44cdf0aaf1fb476580d8780387ce80a615644be2"
+  },
+  "gates": [
+    {
+      "id": "wasm-verify",
+      "ok": true,
+      "detail": "16 verificações ok",
+      "ranAt": "2026-10-07T18:06:12.822Z"
+    },
+    {
+      "id": "docker-static",
+      "ok": true,
+      "detail": "16 validações estáticas",
+      "ranAt": "2026-10-07T18:06:12.822Z"
+    }
+  ],
+  "resume": {
+    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (52% do roadmap concluído)",
+    "next": [
+      "T-308 Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
+      "T-401 Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
+      "T-402 Zerar o lint legado (20 erros / 5 avisos herdados)",
+      "T-403 Code-splitting do bundle (chunk principal ~700 kB)",
+      "T-404 Cobertura de testes do store e das rotas"
+    ],
+    "commands": [
+      "npm ci",
+      "npm run continuity:resume",
+      "npm run build:wasm && npm run wasm:verify",
+      "npm test",
+      "npm run stack            # página :5173 + runtime WASI :8787"
+    ],
+    "guardrails": [
+      "wasm (wasm/kernel.ts) e TypeScript (src/lib/formulas) precisam continuar numericamente idênticos — npm run wasm:verify + npm test provam isso.",
+      "Nada de segredo em arquivo versionado; configuração entra por VITE_* / secrets do GitHub.",
+      "O browser nunca chama localhost: o runtime WASI é acessado por /api/* via proxy (vite em dev, nginx no container).",
+      "Build ignore artefatos: public/wasm, wasi/dist e _site são gerados por script.",
+      "Um PR = um escopo: declare as tarefas no handoff da branch antes de abrir o PR."
+    ]
+  }
+}

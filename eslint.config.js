@@ -5,7 +5,17 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  {
+    ignores: [
+      'dist',
+      '_site',
+      // AssemblyScript sources are compiled by `asc`, not by tsc/eslint
+      'wasm/**',
+      // built wasm artifacts
+      'public/wasm/**',
+      'wasi/dist/**',
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

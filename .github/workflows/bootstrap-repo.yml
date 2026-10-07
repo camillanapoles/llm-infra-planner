@@ -1,0 +1,266 @@
+name: Bootstrap repository
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ONE-TIME SETUP WORKFLOW — run it once after merging this file into `main`.
+#
+# It performs every repository-side action needed by the deploy pipelines, using
+# only the workflow's own GITHUB_TOKEN (no local git push, no PAT, no manual
+# clicking):
+#
+#   1. creates the `dev` and `staging` branches (pointing at a source ref you
+#      choose — default: the commit that triggered this run)
+#   2. creates/updates the `dev`, `staging` and `production` GitHub Environments
+#      (used by the container workflow and for approval gates)
+#   3. enables GitHub Pages with "GitHub Actions" as the source, when possible
+#   4. dispatches `deploy-pages.yml` so the three environments go live
+#   5. optionally dispatches `docker.yml` (GHCR images)
+#   6. optionally (protect_main=true) makes the CI + continuity-gate checks
+#      mandatory on `main`, so the state gate cannot be bypassed
+#
+# Because it runs on `main`, the workflow files are already on the default
+# branch — which is what makes `workflow_dispatch` work for any ref afterwards,
+# including feature branches:
+#
+#   gh workflow run deploy-pages.yml -f ref=arena/fe62ce6d-llm-infra-planner -f environments=dev
+#
+# Spec: .kiro/specs/16-branch-environments-bootstrap.md
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bootstrap-repo.yml'
+      - '.github/workflows/deploy-pages.yml'
+      - '.github/workflows/docker.yml'
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Branch/ref to create dev + staging from (empty = current commit)'
+        required: false
+        default: ''
+      branch_source:
+        description: 'Where the other workflows should build from (empty = the new branches)'
+        required: false
+        default: ''
+      create_branches:
+        description: 'Create dev/staging branches if missing'
+        type: boolean
+        default: true
+      enable_pages:
+        description: 'Try to enable GitHub Pages (Actions source)'
+        type: boolean
+        default: true
+      deploy:
+        description: 'Dispatch the Pages deploy afterwards'
+        type: boolean
+        default: true
+      deploy_environments:
+        description: 'Which environments to deploy'
+        type: choice
+        default: all
+        options: [all, production, staging, dev]
+      docker:
+        description: 'Also dispatch the container/registry workflow'
+        type: boolean
+        default: false
+      protect_main:
+        description: 'Require the CI + continuity gate checks on main (adds to existing rules)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write     # create branches / update refs
+  pages: write        # enable Pages
+  id-token: write
+  actions: write      # dispatch other workflows
+
+concurrency:
+  group: bootstrap-repo
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    name: Provision branches, environments and Pages
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Summary header
+        run: |
+          {
+            echo "## Bootstrap — $REPO"
+            echo ""
+            echo "| item | value |"
+            echo "|---|---|"
+            echo "| trigger | \`${{ github.event_name }}\` |"
+            echo "| default branch | \`$DEFAULT_BRANCH\` |"
+            echo "| source ref input | \`${{ inputs.source_ref || '—' }}\` |"
+            echo "| deploy | \`${{ inputs.deploy || 'true (default)' }}\` |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 1. Resolve the source commit ────────────────────────────────────────
+      - name: Resolve source ref
+        id: src
+        env:
+          INPUT_REF: ${{ inputs.source_ref }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_REF:-}" ]; then
+            if git ls-remote --exit-code --heads origin "$INPUT_REF" >/dev/null 2>&1; then
+              SHA=$(git ls-remote --heads origin "$INPUT_REF" | cut -f1)
+            else
+              echo "::error::ref '$INPUT_REF' not found on origin"; exit 1
+            fi
+            REF="$INPUT_REF"
+          else
+            SHA="${{ github.sha }}"
+            REF="$DEFAULT_BRANCH@${{ github.sha }}"
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF"  >> "$GITHUB_OUTPUT"
+          git fetch --no-tags origin "$SHA" --depth=1 || true
+          echo "source: $REF ($SHA)"
+
+      # ── 2. Create / fast-forward dev + staging ──────────────────────────────
+      - name: Create dev and staging branches
+        if: ${{ inputs.create_branches != false }}
+        env:
+          SHA: ${{ steps.src.outputs.sha }}
+        run: |
+          set -uo pipefail
+          create_or_update() {
+            local branch="$1"
+            if gh api "repos/$REPO/git/ref/heads/$branch" >/dev/null 2>&1; then
+              if gh api --method PATCH "repos/$REPO/git/refs/heads/$branch" \
+                   -f sha="$SHA" -F force=true >/dev/null; then
+                echo "✓ $branch fast-forwarded to $SHA"
+              else
+                echo "::warning::could not update $branch (protection rules?)"
+              fi
+            else
+              if gh api --method POST "repos/$REPO/git/refs" \
+                   -f ref="refs/heads/$branch" -f sha="$SHA" >/dev/null; then
+                echo "✓ $branch created at $SHA"
+              else
+                echo "::warning::could not create $branch"
+              fi
+            fi
+          }
+          create_or_update dev
+          create_or_update staging
+          {
+            echo "### Branches"
+            echo ""
+            gh api "repos/$REPO/branches" --jq '.[] | "- `\(.name)` → `\(.commit.sha[0:7])`"' 2>/dev/null || echo "- (listing unavailable)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 3. Environments ────────────────────────────────────────────────────
+      - name: Create environments (dev, staging, production)
+        run: |
+          set -uo pipefail
+          for env in dev staging production; do
+            if gh api --method PUT "repos/$REPO/environments/$env" \
+                 -f 'wait_timer=0' >/dev/null 2>&1; then
+              echo "✓ environment '$env' ready"
+            else
+              echo "::notice::environment '$env' not created via API (insufficient permission) — GitHub creates it automatically on first deploy"
+            fi
+          done
+
+      # ── 4. GitHub Pages ────────────────────────────────────────────────────
+      - name: Enable GitHub Pages (Actions source)
+        if: ${{ inputs.enable_pages != false }}
+        run: |
+          set -uo pipefail
+          if gh api "repos/$REPO/pages" >/dev/null 2>&1; then
+            echo "✓ Pages already enabled: $(gh api "repos/$REPO/pages" --jq '.html_url')"
+          else
+            if gh api --method POST "repos/$REPO/pages" -f build_type=workflow >/dev/null 2>&1; then
+              echo "✓ Pages enabled with the GitHub Actions source"
+            else
+              echo "::warning::could not enable Pages automatically — enable it once at Settings → Pages → Source: GitHub Actions. The deploy workflow will then publish dev/, staging/ and the root."
+            fi
+          fi
+          PORTAL="${{ github.server_url }}/$REPO/settings/pages"
+          echo "[Pages settings]($PORTAL)" >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 4b. Optional: make the gates mandatory on main ─────────────────────
+      - name: Require CI + continuity gate on main
+        if: ${{ inputs.protect_main == true }}
+        run: |
+          set -uo pipefail
+          # Only ADDS required status checks; existing protection is preserved via PATCH.
+          CURRENT=$(gh api "repos/$REPO/branches/$DEFAULT_BRANCH/protection" 2>/dev/null || echo '{}')
+          if [ "$CURRENT" = "{}" ]; then
+            echo "::notice::nenhuma proteção existente em $DEFAULT_BRANCH — criando uma mínima (sem review obrigatório)"
+            PAYLOAD='{"required_status_checks":{"strict":false,"contexts":["Build & test","State & scope"]},"enforce_admins":false,"required_pull_request_reviews":null,"restrictions":null}'
+            METHOD=PUT
+          else
+            echo "proteção existente detectada — adicionando os checks obrigatórios"
+            PAYLOAD='{"required_status_checks":{"strict":false,"contexts":["Build & test","State & scope"]}}'
+            METHOD=PATCH
+          fi
+          if gh api --method "$METHOD" "repos/$REPO/branches/$DEFAULT_BRANCH/protection" --input - <<< "$PAYLOAD" >/dev/null 2>&1; then
+            echo "✓ main exige os checks: CI 'Build & test' e 'State & scope'"
+          else
+            echo "::warning::não foi possível ajustar a proteção (precisa de admin) — configure em Settings → Branches → Require status checks"
+          fi
+
+      # ── 5. Dispatch the deploys ────────────────────────────────────────────
+      - name: Dispatch Pages deploy
+        if: ${{ inputs.deploy != false }}
+        env:
+          BRANCH_SOURCE: ${{ inputs.branch_source }}
+          ENVIRONMENTS: ${{ inputs.environments || 'all' }}
+          SOURCE_REF: ${{ steps.src.outputs.ref }}
+        run: |
+          set -uo pipefail
+          # Prefer an explicit source for *building* (e.g. a feature branch), so a
+          # branch can be published to dev/staging without touching it.
+          REF="${BRANCH_SOURCE:-}"
+          ENVS="${{ inputs.deploy_environments || inputs.environments || 'all' }}"
+          if gh workflow run deploy-pages.yml -f ref="$REF" -f environments="$ENVS"; then
+            echo "✓ dispatched deploy-pages.yml (ref='${REF:-per-branch}', environments=$ENVS)"
+          else
+            echo "::warning::could not dispatch deploy-pages.yml — run it manually from the Actions tab"
+          fi
+
+      - name: Dispatch container workflow
+        if: ${{ inputs.docker == true }}
+        run: |
+          if gh workflow run docker.yml; then
+            echo "✓ dispatched docker.yml"
+          else
+            echo "::warning::could not dispatch docker.yml"
+          fi
+
+      # ── 6. Report ─────────────────────────────────────────────────────────
+      - name: Final summary
+        env:
+          SOURCE_REF: ${{ steps.src.outputs.ref }}
+        run: |
+          PAGES_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          {
+            echo "### Done"
+            echo ""
+            echo "- source: \`$SOURCE_REF\`"
+            echo "- branches: \`dev\`, \`staging\`, \`main\`"
+            echo "- environments: \`dev\`, \`staging\`, \`production\`"
+            echo "- production: $PAGES_URL"
+            echo "- staging: ${PAGES_URL}staging/"
+            echo "- dev: ${PAGES_URL}dev/"
+            echo ""
+            echo "Publish any branch to any environment without pushing:"
+            echo ""
+            echo '```bash'
+            echo "gh workflow run deploy-pages.yml -f ref=<branch> -f environments=dev"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,252 @@
+name: Deploy · GitHub Pages
+
+# Publishes the three environments of the single repository site:
+#
+#   https://<owner>.github.io/<repo>/           ← branch main     (production)
+#   https://<owner>.github.io/<repo>/staging/   ← branch staging  (staging)
+#   https://<owner>.github.io/<repo>/dev/       ← branch dev      (dev)
+#
+# GitHub Pages serves one site per repository, so the three environments are
+# sub-paths of one artifact. Every run rebuilds ALL environments (each from its
+# own branch) and deploys them together — that way a dev-only deploy can never
+# wipe production.
+#
+# `workflow_dispatch` accepts an arbitrary ref, so a feature branch can be
+# published to one environment **without pushing anywhere**:
+#
+#   gh workflow run deploy-pages.yml -f ref=arena/fe62ce6d-llm-infra-planner -f environments=dev
+#
+# (dev gets the arena branch, production/staging keep their branches.)
+#
+# Spec: .kiro/specs/13-deploy-github-pages.md
+
+on:
+  push:
+    branches: [main, staging, dev]
+    paths-ignore:
+      - '**.md'
+      - '.kiro/**'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to build the selected environment(s) from (empty = the environment branch)'
+        required: false
+        default: ''
+      environments:
+        description: 'Which environment(s) build from <ref>'
+        required: true
+        default: all
+        type: choice
+        options: [all, production, staging, dev]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  detect:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      ref: ${{ steps.plan.outputs.ref }}
+      scope: ${{ steps.plan.outputs.scope }}
+    steps:
+      - name: Build the environment matrix
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          BRANCH: ${{ github.ref_name }}
+          INPUT_ENVS: ${{ inputs.environments }}
+          INPUT_REF: ${{ inputs.ref }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "push" ]; then
+            case "$BRANCH" in
+              main)    SCOPE="production" ;;
+              staging) SCOPE="staging" ;;
+              dev)     SCOPE="dev" ;;
+              *)       SCOPE="all" ;;
+            esac
+            REF=""
+          else
+            SCOPE="${INPUT_ENVS:-all}"
+            REF="${INPUT_REF:-}"
+          fi
+
+          # Always build all three: the deployed site is replaced atomically, so a
+          # partial build would delete the other environments. `useRef` marks the
+          # environment that consumes an explicit dispatch ref.
+          jq -n \
+            --arg repo "$REPO_NAME" \
+            --arg scope "$SCOPE" \
+            '{include: [
+                {env: "production", branch: "main",    base: ("/" + $repo + "/"),          dir: "",        useRef: ($scope == "all" or $scope == "production")},
+                {env: "staging",    branch: "staging", base: ("/" + $repo + "/staging/"),  dir: "staging", useRef: ($scope == "all" or $scope == "staging")},
+                {env: "dev",        branch: "dev",     base: ("/" + $repo + "/dev/"),      dir: "dev",     useRef: ($scope == "all" or $scope == "dev")}
+             ]}' > matrix.json
+
+          echo "matrix=$(jq -c . matrix.json)" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "scope=$SCOPE" >> "$GITHUB_OUTPUT"
+          cat matrix.json
+          echo "explicit ref override: ${REF:-<none>} (applies to: $SCOPE)"
+
+  build:
+    name: Build ${{ matrix.env }}
+    needs: detect
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.detect.outputs.matrix) }}
+    steps:
+      - name: Resolve source ref
+        id: src
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OVERRIDE_REF: ${{ needs.detect.outputs.ref }}
+          TARGET_BRANCH: ${{ matrix.branch }}
+          USE_REF: ${{ matrix.useRef }}
+        run: |
+          set -euo pipefail
+          if [ "$USE_REF" = "true" ] && [ -n "${OVERRIDE_REF:-}" ]; then
+            CANDIDATE="$OVERRIDE_REF"
+          else
+            CANDIDATE="$TARGET_BRANCH"
+          fi
+          if gh api "repos/${{ github.repository }}/branches/$CANDIDATE" >/dev/null 2>&1 \
+             || gh api "repos/${{ github.repository }}/commits/$CANDIDATE" >/dev/null 2>&1; then
+            echo "ref=$CANDIDATE" >> "$GITHUB_OUTPUT"
+            echo "building ${{ matrix.env }} from $CANDIDATE"
+          else
+            echo "ref=" >> "$GITHUB_OUTPUT"
+            echo "::notice::'$CANDIDATE' does not exist — ${{ matrix.env }} will show a placeholder page"
+          fi
+
+      - name: Checkout
+        if: steps.src.outputs.ref != ''
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.src.outputs.ref }}
+
+      - name: Setup Node
+        if: steps.src.outputs.ref != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Build ${{ matrix.env }}
+        if: steps.src.outputs.ref != ''
+        env:
+          VITE_APP_ENV: ${{ matrix.env }}
+          VITE_BASE_PATH: ${{ matrix.base }}
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_COMMIT: ${{ github.sha }}
+          VITE_BUILT_AT: ${{ github.event.repository.updated_at }}
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run build:wasm
+          npx vite build --outDir "$RUNNER_TEMP/out/${{ matrix.dir }}" --emptyOutDir
+          cd "$RUNNER_TEMP/out/${{ matrix.dir }}"
+          cp index.html 404.html        # Pages has no SPA rewrite — deep links use 404.html
+          touch .nojekyll
+          echo "✓ ${{ matrix.env }} · base=${{ matrix.base }} · ref=${{ steps.src.outputs.ref }}"
+
+      - name: Placeholder for ${{ matrix.env }}
+        if: steps.src.outputs.ref == ''
+        run: |
+          mkdir -p "$RUNNER_TEMP/out/${{ matrix.dir }}"
+          cat > "$RUNNER_TEMP/out/${{ matrix.dir }}/index.html" <<HTML
+          <!doctype html><meta charset="utf-8"><title>LLMcalc · ${{ matrix.env }}</title>
+          <style>body{font:15px/1.6 ui-sans-serif,system-ui;background:#0b0f19;color:#e6edf7;display:grid;place-items:center;height:100vh;margin:0}
+          div{max-width:600px;text-align:center}code{background:#121a2b;border:1px solid #223050;padding:2px 6px;border-radius:6px}</style>
+          <div><h1>${{ matrix.env }} not deployed yet</h1>
+          <p>The <code>${{ matrix.branch }}</code> branch does not exist yet. Run
+          <code>Actions → Bootstrap repository → Run workflow</code> once — it creates the
+          branches and dispatches this deploy.</p></div>
+          HTML
+          touch "$RUNNER_TEMP/out/${{ matrix.dir }}/.nojekyll"
+
+      - name: Upload ${{ matrix.env }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-${{ matrix.env }}
+          path: ${{ runner.temp }}/out/${{ matrix.dir }}
+          retention-days: 1
+          include-hidden-files: true
+
+  assemble:
+    name: Assemble site
+    needs: [detect, build]
+    if: needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the three environments
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pages-*
+          path: _site
+          merge-multiple: true
+
+      - name: Verify layout (fails the deploy rather than publishing a broken site)
+        run: |
+          set -euo pipefail
+          for path in index.html staging/index.html dev/index.html; do
+            test -f "_site/$path" || { echo "missing _site/$path"; ls -R _site | head -50; exit 1; }
+          done
+          test -f _site/wasm/llmcalc-kernel.wasm || { echo "wasm kernel missing from artifact"; exit 1; }
+          du -sh _site
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true   # turns Pages on with the Actions source if needed
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Publish
+    needs: [detect, assemble]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Summary
+        env:
+          URL: ${{ steps.deployment.outputs.page_url }}
+          REF: ${{ needs.detect.outputs.ref }}
+          SCOPE: ${{ needs.detect.outputs.scope }}
+        run: |
+          {
+            echo "### LLMcalc deployed"
+            echo ""
+            echo "| environment | url | source |"
+            echo "|---|---|---|"
+            echo "| production | ${URL} | \`main\`$( [ "$SCOPE" = "all" ] && [ -n "$REF" ] && echo " (override: \`$REF\`)" ) |"
+            echo "| staging | ${URL}staging/ | \`staging\`$( [ "$SCOPE" = "all" ] && [ -n "$REF" ] && echo " (override: \`$REF\`)" ) |"
+            echo "| dev | ${URL}dev/ | \`dev\`$( [ -n "$REF" ] && { [ "$SCOPE" = "dev" ] || [ "$SCOPE" = "all" ]; } && echo " (override: \`$REF\`)" ) |"
+            echo ""
+            echo "Publish any branch to one environment without pushing:"
+            echo ""
+            echo '```bash'
+            echo "gh workflow run deploy-pages.yml -f ref=<branch> -f environments=dev"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

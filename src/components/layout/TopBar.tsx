@@ -1,6 +1,8 @@
 import * as React from 'react';
-import { Moon, Sun, Keyboard, Github, Menu, X } from 'lucide-react';
+import { Moon, Sun, Keyboard, Github, Menu, X, Cpu } from 'lucide-react';
 import { useTheme } from '@/lib/use-theme';
+import { useCalculatorStore } from '@/store/calculator-store';
+import { ENV } from '@/lib/env';
 import { cn } from '@/lib/utils';
 
 const NAV_LINKS = [
@@ -10,6 +12,7 @@ const NAV_LINKS = [
   { label: 'Models', href: '/models' },
   { label: 'Hardware', href: '/hardware' },
   { label: 'Guides', href: '/guides' },
+  { label: 'Runtime', href: '/runtime' },
 ];
 
 interface TopBarProps {
@@ -19,6 +22,7 @@ interface TopBarProps {
 
 export function TopBar({ currentPath = '/', onOpenShortcuts }: TopBarProps) {
   const { theme, toggleTheme } = useTheme();
+  const engine = useCalculatorStore(s => s.engine);
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   return (
@@ -38,6 +42,23 @@ export function TopBar({ currentPath = '/', onOpenShortcuts }: TopBarProps) {
             ))}
           </span>
           <span className="font-mono font-semibold text-sm tracking-tight text-fg-primary">LLMcalc</span>
+          {/* Compute engine indicator — links to the Runtime page */}
+          <a href="/runtime"
+            className={cn('hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-medium transition-colors',
+              engine.kind === 'wasm'
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                : 'border-border-subtle bg-bg-muted text-fg-muted hover:text-fg-default')}
+            title={engine.kind === 'wasm'
+              ? `WebAssembly kernel active · ${(engine.bytes / 1024).toFixed(2)} kB · ${engine.checks - engine.failures}/${engine.checks} parity checks`
+              : 'TypeScript fallback engine (wasm kernel not loaded)'}>
+            <Cpu size={10} aria-hidden="true" />
+            {engine.kind === 'wasm' ? 'WASM' : 'JS'}
+          </a>
+          {ENV.isDeployed && (
+            <span className={cn('hidden md:inline-flex px-1.5 py-0.5 rounded border border-border-subtle bg-bg-muted text-[10px] font-medium uppercase tracking-wide', ENV.accent)}>
+              {ENV.label}
+            </span>
+          )}
         </div>
 
         {/* Desktop nav */}

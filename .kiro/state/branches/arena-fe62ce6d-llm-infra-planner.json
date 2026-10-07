@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "branch": "arena/fe62ce6d-llm-infra-planner",
+  "base": "main",
+  "createdAt": "2026-10-07T17:44:39.281Z",
+  "updatedAt": "2026-10-07T17:44:48.073Z",
+  "status": "in_progress",
+  "scope": {
+    "specs": [
+      "11-wasm-kernel",
+      "12-wasi-runtime",
+      "13-deploy-github-pages",
+      "14-deploy-docker",
+      "15-deploy-local",
+      "16-branch-environments-bootstrap",
+      "17-continuity-gate"
+    ],
+    "tasks": [
+      "T-301",
+      "T-302",
+      "T-303",
+      "T-304",
+      "T-305",
+      "T-306",
+      "T-307",
+      "T-104"
+    ],
+    "paths": [
+      "wasm/kernel.ts",
+      "src/wasm/**",
+      "scripts/build-wasm.mjs",
+      "scripts/verify-wasm.mjs",
+      ".kiro/specs/11-wasm-kernel.md",
+      "wasm/service.ts",
+      "scripts/wasi-*.mjs",
+      "scripts/lib/wasi-host.mjs",
+      "src/wasm/wasi-client.ts",
+      ".kiro/specs/12-wasi-runtime.md",
+      ".github/workflows/deploy-pages.yml",
+      "scripts/build-pages-artifact.mjs",
+      "src/lib/env.ts",
+      ".kiro/specs/13-deploy-github-pages.md",
+      "Dockerfile",
+      "docker/**",
+      "docker-compose.yaml",
+      "nginx.conf",
+      ".github/workflows/docker.yml",
+      ".kiro/specs/14-deploy-docker.md",
+      "scripts/dev-stack.mjs",
+      "scripts/serve-static.mjs",
+      "vite.config.ts",
+      ".env.example",
+      ".kiro/specs/15-deploy-local.md",
+      ".github/workflows/bootstrap-repo.yml",
+      ".kiro/specs/16-branch-environments-bootstrap.md",
+      ".kiro/state/**",
+      "scripts/continuity.ts",
+      "scripts/lib/continuity-core.ts",
+      ".github/workflows/continuity-*.yml",
+      "CONTINUITY.md",
+      ".kiro/specs/17-continuity-gate.md",
+      "src/wasm/kernel.ts",
+      "src/wasm/kernel.test.ts",
+      "src/wasm/use-kernel.ts",
+      "public/wasm/**",
+      "src/pages/Runtime.tsx",
+      "src/pages/Runtime.test.tsx",
+      "src/App.tsx",
+      "src/components/layout/TopBar.tsx",
+      "src/store/calculator-store.ts",
+      "scripts/wasi-run.mjs",
+      "scripts/wasi-server.mjs",
+      "wasi/dist/**",
+      ".github/workflows/ci.yml",
+      "scripts/docker-build.mjs",
+      "src/vite-env.d.ts",
+      "scripts/continuity.test.ts",
+      ".github/workflows/continuity-gate.yml",
+      ".github/workflows/continuity-sync.yml",
+      "src/lib/url-serializer.ts",
+      "src/lib/url-serializer.test.ts"
+    ]
+  },
+  "resumePoint": {
+    "summary": "Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).",
+    "next": [
+      "T-307: rodar `npm run continuity:check` e `npm run continuity:sync` (gate verde)",
+      "Merge do PR #1 na main e então T-308: `gh workflow run bootstrap-repo.yml` para publicar dev/staging/produção",
+      "Após o merge, seguir as tarefas abertas da fase P4 (T-401 e2e, T-402 lint legado)"
+    ],
+    "blockedBy": [
+      "T-308 depende do merge do PR #1 (workflows precisam existir na branch default)"
+    ]
+  },
+  "history": [
+    {
+      "at": "2026-10-07T17:44:39.281Z",
+      "event": "created",
+      "note": "handoff criado manualmente"
+    },
+    {
+      "at": "2026-10-07T17:44:44.311Z",
+      "event": "scope-updated",
+      "note": "tasks=[] specs=[11-wasm-kernel,12-wasi-runtime,13-deploy-github-pages,14-deploy-docker,15-deploy-local,16-branch-environments-bootstrap,17-continuity-gate]"
+    },
+    {
+      "at": "2026-10-07T17:44:48.073Z",
+      "event": "scope-updated",
+      "note": "tasks=[T-104] specs=[]"
+    }
+  ]
+}
