@@ -79,6 +79,7 @@ measures objective invariants and writes the state that the next session resumes
 - `bootstrap-repo.yml` cria `dev`/`staging` a partir do commit que já contém o estado consolidado (o estado viaja com o código).
 - O gate roda em PRs contra `main`, `dev` e `staging`, com `protectedBranches` dispensando o requisito de handoff (branches de integração não são "trabalho novo").
 - `ci.yml` roda o check de continuidade de forma informativa em cada push, mantendo o bloqueio no workflow dedicado.
+- `ci.yml` valida os próprios arquivos de workflow (`npm run validate:workflows`) — chave YAML duplicada faz o GitHub rejeitar o arquivo inteiro com falha em 0s, sem log.
 
 ## Usage
 
@@ -103,7 +104,8 @@ npm run continuity:resume                       # briefing de retomada
 public/state.json                   estado publicado com a página
 scripts/lib/continuity-core.ts      lógica pura (validação, escopo, progresso, render)
 scripts/continuity.ts               CLI: status · check · start · sync · resume
-scripts/continuity.test.ts          25 testes do núcleo do gate
+scripts/continuity.test.ts          29 testes do núcleo do gate
+scripts/validate-workflows.py       detecta chave duplicada em workflow (falha silenciosa do GitHub)
 .github/workflows/continuity-gate.yml   gate bloqueante em PRs + comentário de retomada
 .github/workflows/continuity-sync.yml   consolidação do estado na main
 CONTINUITY.md                       porta de entrada para humanos

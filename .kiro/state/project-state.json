@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-07T17:48:21.472Z",
+  "generatedAt": "2026-10-07T17:50:34.469Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "7cccbf6dadbd8c28e5e318d4d257175bba4ea166",
+  "headSha": "b6a3128b8871b42438a38fd53c20e28bd86f1c65",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -123,7 +123,7 @@
       "phaseName": "Qualidade contínua",
       "verify": "npm run lint",
       "blockedBy": [],
-      "notes": "20 erros / 5 avisos herdados medidos por continuity:sync (lint legado, nenhum em arquivo novo)."
+      "notes": "20 erros / 5 avisos herdados (medidos por continuity:sync); nenhum em arquivo novo. Inclui a validação de workflows (duplicate keys) que já roda no CI."
     },
     {
       "id": "T-403",
@@ -145,7 +145,7 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-07T17:47:46.186Z",
+    "generatedAt": "2026-10-07T17:49:59.017Z",
     "stale": false,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
@@ -158,38 +158,38 @@
     "lintProblems": 25,
     "lintErrors": 20,
     "lintWarnings": 5,
-    "commit": "7cccbf6dadbd8c28e5e318d4d257175bba4ea166"
+    "commit": "b6a3128b8871b42438a38fd53c20e28bd86f1c65"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-07T17:47:46.186Z"
+      "ranAt": "2026-10-07T17:49:59.017Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-07T17:47:46.186Z"
+      "ranAt": "2026-10-07T17:49:59.017Z"
     },
     {
       "id": "tests",
       "ok": true,
       "detail": "288 testes / 22 arquivos",
-      "ranAt": "2026-10-07T17:47:46.186Z"
+      "ranAt": "2026-10-07T17:49:59.017Z"
     },
     {
       "id": "build",
       "ok": true,
       "detail": "bundle principal 701.7 kB",
-      "ranAt": "2026-10-07T17:47:46.186Z"
+      "ranAt": "2026-10-07T17:49:59.017Z"
     },
     {
       "id": "lint",
       "ok": false,
       "detail": "20 erros / 5 avisos",
-      "ranAt": "2026-10-07T17:47:46.186Z"
+      "ranAt": "2026-10-07T17:49:59.017Z"
     }
   ],
   "resume": {

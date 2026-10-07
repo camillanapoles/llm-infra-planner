@@ -261,7 +261,9 @@
             "scripts/lib/continuity-core.ts",
             ".github/workflows/continuity-*.yml",
             "CONTINUITY.md",
-            ".kiro/specs/17-continuity-gate.md"
+            ".kiro/specs/17-continuity-gate.md",
+            "scripts/validate-workflows.py",
+            ".github/workflows/ci.yml"
           ],
           "verify": "npm run continuity:check",
           "evidence": ".kiro/state/{roadmap,policy,project-state}.json + STATE.md/RESUME.md; scripts/continuity.ts + continuity-core.ts com 25 testes; workflows continuity-gate/continuity-sync; gate verde na branch"
@@ -323,7 +325,7 @@
             "eslint.config.js"
           ],
           "verify": "npm run lint",
-          "notes": "20 erros / 5 avisos herdados medidos por continuity:sync (lint legado, nenhum em arquivo novo)."
+          "notes": "20 erros / 5 avisos herdados (medidos por continuity:sync); nenhum em arquivo novo. Inclui a validação de workflows (duplicate keys) que já roda no CI."
         },
         {
           "id": "T-403",

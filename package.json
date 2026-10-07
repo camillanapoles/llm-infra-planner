@@ -29,7 +29,8 @@
     "continuity:sync": "tsx scripts/continuity.ts sync",
     "continuity:check": "tsx scripts/continuity.ts check",
     "continuity:start": "tsx scripts/continuity.ts start",
-    "continuity:resume": "tsx scripts/continuity.ts resume"
+    "continuity:resume": "tsx scripts/continuity.ts resume",
+    "validate:workflows": "python3 scripts/validate-workflows.py"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",

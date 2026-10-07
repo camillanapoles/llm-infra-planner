@@ -92,7 +92,10 @@
       "scripts/continuity.test.ts",
       ".github/workflows/continuity-gate.yml",
       ".github/workflows/continuity-sync.yml",
-      "CONTINUITY.md"
+      "CONTINUITY.md",
+      "scripts/validate-workflows.py",
+      ".github/workflows/ci.yml",
+      "package.json"
     ]
   },
   "resume": {

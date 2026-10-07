@@ -87,6 +87,7 @@ jobs:
       - name: Push directly or open a PR (protected main)
         id: publish
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHANGED: ${{ steps.commit.outputs.changed }}
         run: |
           set -uo pipefail
@@ -112,8 +113,6 @@ jobs:
           else
             echo "::warning::não foi possível abrir PR — estado atualizado apenas no artefato da run"
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
         run: |
