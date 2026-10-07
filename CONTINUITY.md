@@ -38,6 +38,7 @@ npm run continuity:start -- --task T-402
 npm run continuity:start -- --auto
 
 # 3. trabalhar… e então validar localmente com o MESMO gate do CI
+npm run lint:changed      # passo bloqueante do CI (só arquivos alterados)
 npm run continuity:check
 
 # 4. medir invariantes e atualizar o estado (tests/build/lint/wasm/docker)

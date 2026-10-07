@@ -34,7 +34,6 @@ import {
   renderResumeMd,
   renderStateMd,
   saveHandoff,
-  slugifyBranch,
   taskIndex,
   validateHandoff,
   validateRoadmap,

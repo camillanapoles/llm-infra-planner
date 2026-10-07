@@ -30,7 +30,8 @@
     "continuity:check": "tsx scripts/continuity.ts check",
     "continuity:start": "tsx scripts/continuity.ts start",
     "continuity:resume": "tsx scripts/continuity.ts resume",
-    "validate:workflows": "python3 scripts/validate-workflows.py"
+    "validate:workflows": "python3 scripts/validate-workflows.py",
+    "lint:changed": "git diff --name-only --diff-filter=ACMR origin/main...HEAD -- '*.ts' '*.tsx' | xargs -r npx eslint --no-warn-ignored"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
