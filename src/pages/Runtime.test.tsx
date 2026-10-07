@@ -66,6 +66,20 @@ describe('Runtime page', () => {
       if (url.includes('llmcalc-kernel.wasm')) {
         return new Response(wasmBytes(), { status: 200, headers: { 'content-type': 'application/wasm' } });
       }
+      if (url.includes('state.json')) {
+        return new Response(JSON.stringify({
+          generatedAt: '2026-10-07T17:45:26.396Z',
+          phase: 'P3',
+          phaseName: 'WebAssembly e entrega multi-ambiente',
+          percent: 48,
+          done: 14,
+          total: 29,
+          next: [
+            { id: 'T-307', title: 'Gate de continuidade', blockedBy: [] },
+            { id: 'T-308', title: 'Publicar os três ambientes', blockedBy: ['T-307'] },
+          ],
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
       if (url.includes('/api/health')) {
         return new Response(JSON.stringify({
           ok: true,
@@ -84,5 +98,13 @@ describe('Runtime page', () => {
       expect(screen.getByText('WASI host online')).toBeDefined();
     }, { timeout: 3000 });
     expect(screen.getByText('Run plan in WASI')).toBeDefined();
+
+    // continuity card: phase, progress and next tasks come from public/state.json
+    await waitFor(() => {
+      expect(screen.getByText('Estado do projeto (continuidade)')).toBeDefined();
+    });
+    expect(screen.getByText(/P3 · WebAssembly/)).toBeDefined();
+    expect(screen.getByText('T-307')).toBeDefined();
+    expect(screen.getByText('bloqueado: T-307')).toBeDefined();
   });
 });

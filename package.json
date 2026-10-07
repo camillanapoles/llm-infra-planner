@@ -23,7 +23,13 @@
     "clean": "rm -rf dist wasi/dist public/wasm",
     "serve": "node scripts/serve-static.mjs",
     "serve:pages": "node scripts/serve-static.mjs _site",
-    "build:pages": "node scripts/build-pages-artifact.mjs"
+    "build:pages": "node scripts/build-pages-artifact.mjs",
+    "continuity": "tsx scripts/continuity.ts",
+    "continuity:status": "tsx scripts/continuity.ts status",
+    "continuity:sync": "tsx scripts/continuity.ts sync",
+    "continuity:check": "tsx scripts/continuity.ts check",
+    "continuity:start": "tsx scripts/continuity.ts start",
+    "continuity:resume": "tsx scripts/continuity.ts resume"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",

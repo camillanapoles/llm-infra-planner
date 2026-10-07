@@ -1,0 +1,482 @@
+{
+  "schema": 1,
+  "project": "LLMcalc — LLM Infrastructure Calculator",
+  "version": "1.0.0",
+  "updatedAt": "2026-10-07",
+  "notes": [
+    "Fonte de verdade do escopo e do progresso do projeto (state-driven).",
+    "'status' é atualizado pelas branches e consolidado na main por scripts/continuity.ts sync.",
+    "'paths' limita o que cada tarefa pode tocar — o gate de continuidade recusa mudanças fora do escopo declarado.",
+    "'verify' é o comando que comprova a entrega da tarefa; o gate usa isso como critério de aceite.",
+    "Não edite ids; adicione tarefas novas ao final da fase correspondente."
+  ],
+  "phases": [
+    {
+      "id": "P1",
+      "name": "Kernel de cálculo e base de dados",
+      "goal": "Fórmulas puras e testadas + catálogos de modelos, GPUs e nuvem.",
+      "status": "done",
+      "exitCriteria": [
+        {
+          "id": "tests-green",
+          "label": "Suite unitária + property-based verde",
+          "command": "npm test"
+        },
+        {
+          "id": "data-valid",
+          "label": "Dados validados por schema",
+          "command": "npm run validate"
+        }
+      ],
+      "tasks": [
+        {
+          "id": "T-101",
+          "title": "Motor de fórmulas (VRAM, KV cache, throughput, custo, treino)",
+          "status": "done",
+          "spec": "10-concurrent-user-capacity",
+          "paths": [
+            "src/lib/formulas/**",
+            "src/lib/formulas/*.test.ts"
+          ],
+          "verify": "npm test",
+          "evidence": "src/lib/formulas/* — 19 arquivos de teste, 243 testes no baseline"
+        },
+        {
+          "id": "T-102",
+          "title": "Catálogos: 513 modelos, 147 GPUs, 37 instâncias de nuvem",
+          "status": "done",
+          "paths": [
+            "src/data/**",
+            "scripts/**"
+          ],
+          "verify": "npm run validate",
+          "evidence": "src/data/*.json + scripts/ingest-models.ts"
+        },
+        {
+          "id": "T-103",
+          "title": "Testes property-based das fórmulas (fast-check)",
+          "status": "done",
+          "paths": [
+            "src/lib/formulas/*.test.ts"
+          ],
+          "verify": "npm test",
+          "evidence": "fast-check em vram/kv-cache/parallelism/quantization/aggregate"
+        },
+        {
+          "id": "T-104",
+          "title": "Correção do teste de round-trip de URL (modos legados scale/finetune)",
+          "status": "done",
+          "paths": [
+            "src/lib/url-serializer.ts",
+            "src/lib/url-serializer.test.ts"
+          ],
+          "verify": "npm test",
+          "evidence": "round-trip só para modos canônicos + cobertura explícita dos aliases legados (13 testes)"
+        }
+      ]
+    },
+    {
+      "id": "P2",
+      "name": "Experiência da página",
+      "goal": "Calculadora completa, comparação, modo reverso, catálogos e guias.",
+      "status": "done",
+      "exitCriteria": [
+        {
+          "id": "routes-ok",
+          "label": "Todas as rotas renderizam",
+          "command": "npm run build"
+        }
+      ],
+      "tasks": [
+        {
+          "id": "T-201",
+          "title": "Calculadora com 4 modos (inference, train, scale, reverse)",
+          "status": "done",
+          "paths": [
+            "src/pages/Home.tsx",
+            "src/components/calculator/**",
+            "src/store/**"
+          ],
+          "verify": "npm test",
+          "evidence": "src/pages/Home.tsx + 50+ componentes em src/components/calculator"
+        },
+        {
+          "id": "T-202",
+          "title": "Compare, Reverse, Models, Hardware e Guides",
+          "status": "done",
+          "paths": [
+            "src/pages/**"
+          ],
+          "verify": "npm run build",
+          "evidence": "src/pages/{Compare,Reverse,Models,Hardware,Guides}.tsx"
+        },
+        {
+          "id": "T-203",
+          "title": "Estado na URL (compartilhamento de cenário)",
+          "status": "done",
+          "paths": [
+            "src/lib/url-serializer.ts",
+            "src/lib/url-serializer.test.ts"
+          ],
+          "verify": "npm test",
+          "evidence": "src/lib/url-serializer.ts + 13 testes"
+        },
+        {
+          "id": "T-204",
+          "title": "Tema claro/escuro, atalhos e acessibilidade base",
+          "status": "done",
+          "paths": [
+            "src/lib/use-theme.ts",
+            "src/components/layout/**",
+            "src/styles/**"
+          ],
+          "verify": "npm test",
+          "evidence": "use-theme + ShortcutsModal + skip-link"
+        }
+      ]
+    },
+    {
+      "id": "P3",
+      "name": "WebAssembly e entrega multi-ambiente",
+      "goal": "Kernel wasm no browser, runtime WASI, e a página publicada em dev/staging/produção.",
+      "status": "in_progress",
+      "exitCriteria": [
+        {
+          "id": "wasm-verify",
+          "label": "Artefatos wasm verificados (tamanho, exports, imports, selftest)",
+          "command": "npm run wasm:verify"
+        },
+        {
+          "id": "parity-green",
+          "label": "Paridade wasm ≈ TypeScript provada",
+          "command": "npm test"
+        },
+        {
+          "id": "three-envs",
+          "label": "Três ambientes publicados no Pages",
+          "command": "gh workflow run bootstrap-repo.yml"
+        },
+        {
+          "id": "docker-ok",
+          "label": "Imagens e compose válidos",
+          "command": "npm run deploy:docker"
+        }
+      ],
+      "tasks": [
+        {
+          "id": "T-301",
+          "title": "Kernel WebAssembly no browser (AssemblyScript, fallback TS, paridade)",
+          "status": "done",
+          "spec": "11-wasm-kernel",
+          "paths": [
+            "wasm/kernel.ts",
+            "src/wasm/**",
+            "scripts/build-wasm.mjs",
+            "scripts/verify-wasm.mjs",
+            ".kiro/specs/11-wasm-kernel.md"
+          ],
+          "verify": "npm run wasm:verify",
+          "evidence": "public/wasm/llmcalc-kernel.wasm (~2 KB, zero imports) + 10 testes de paridade"
+        },
+        {
+          "id": "T-302",
+          "title": "Runtime WASI: módulo command + host HTTP local + cliente no browser",
+          "status": "done",
+          "spec": "12-wasi-runtime",
+          "paths": [
+            "wasm/service.ts",
+            "scripts/wasi-*.mjs",
+            "scripts/lib/wasi-host.mjs",
+            "src/wasm/wasi-client.ts",
+            ".kiro/specs/12-wasi-runtime.md"
+          ],
+          "verify": "npm run wasi -- selftest",
+          "evidence": "wasi/dist/llmcalc-wasi.wasm + /api/plan executando dentro do módulo"
+        },
+        {
+          "id": "T-303",
+          "title": "Deploy GitHub Pages com 3 ambientes (dev/staging/produção)",
+          "status": "done",
+          "spec": "13-deploy-github-pages",
+          "paths": [
+            ".github/workflows/deploy-pages.yml",
+            "scripts/build-pages-artifact.mjs",
+            "src/lib/env.ts",
+            ".kiro/specs/13-deploy-github-pages.md"
+          ],
+          "verify": "npm run build:pages -- --env all --out _site",
+          "evidence": "_site/{,staging/,dev/} com base paths corretos e 404.html por ambiente"
+        },
+        {
+          "id": "T-304",
+          "title": "Imagens Docker (nginx + WASI) e compose com profiles",
+          "status": "done",
+          "spec": "14-deploy-docker",
+          "paths": [
+            "Dockerfile",
+            "docker/**",
+            "docker-compose.yaml",
+            "nginx.conf",
+            ".github/workflows/docker.yml",
+            ".kiro/specs/14-deploy-docker.md"
+          ],
+          "verify": "npm run deploy:docker",
+          "evidence": "Dockerfile multi-stage (runner/wasi) + 16 validações estáticas"
+        },
+        {
+          "id": "T-305",
+          "title": "Runtime local: stack de um comando e servidor estático de verificação",
+          "status": "done",
+          "spec": "15-deploy-local",
+          "paths": [
+            "scripts/dev-stack.mjs",
+            "scripts/serve-static.mjs",
+            "vite.config.ts",
+            ".env.example",
+            ".kiro/specs/15-deploy-local.md"
+          ],
+          "verify": "npm run stack",
+          "evidence": "npm run stack (vite :5173 + wasi :8787) e serve-static com proxy /api"
+        },
+        {
+          "id": "T-306",
+          "title": "Bootstrap de branches, environments e Pages via workflow (sem push local)",
+          "status": "done",
+          "spec": "16-branch-environments-bootstrap",
+          "paths": [
+            ".github/workflows/bootstrap-repo.yml",
+            ".kiro/specs/16-branch-environments-bootstrap.md"
+          ],
+          "verify": "gh workflow run bootstrap-repo.yml",
+          "evidence": "cria dev/staging, environments e habilita Pages via API"
+        },
+        {
+          "id": "T-307",
+          "title": "Gate de continuidade: estado do projeto, escopo por branch e retomada automática",
+          "status": "done",
+          "spec": "17-continuity-gate",
+          "paths": [
+            ".kiro/state/**",
+            "scripts/continuity.ts",
+            "scripts/lib/continuity-core.ts",
+            ".github/workflows/continuity-*.yml",
+            "CONTINUITY.md",
+            ".kiro/specs/17-continuity-gate.md"
+          ],
+          "verify": "npm run continuity:check",
+          "evidence": ".kiro/state/{roadmap,policy,project-state}.json + STATE.md/RESUME.md; scripts/continuity.ts + continuity-core.ts com 25 testes; workflows continuity-gate/continuity-sync; gate verde na branch"
+        },
+        {
+          "id": "T-308",
+          "title": "Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
+          "status": "todo",
+          "spec": "13-deploy-github-pages",
+          "dependsOn": [
+            "T-307"
+          ],
+          "paths": [
+            ".github/workflows/deploy-pages.yml",
+            ".kiro/state/**"
+          ],
+          "verify": "gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml",
+          "notes": "Depende do merge do PR #1 na main (os workflows precisam existir na branch default)."
+        }
+      ]
+    },
+    {
+      "id": "P4",
+      "name": "Qualidade contínua",
+      "goal": "Cobertura e2e, lint zerado, bundle enxuto e acessibilidade verificada.",
+      "status": "todo",
+      "exitCriteria": [
+        {
+          "id": "e2e-green",
+          "label": "Suíte e2e Playwright rodando no CI",
+          "command": "npm run test:e2e"
+        },
+        {
+          "id": "lint-zero",
+          "label": "npm run lint sem erros",
+          "command": "npm run lint"
+        }
+      ],
+      "tasks": [
+        {
+          "id": "T-401",
+          "title": "Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
+          "status": "todo",
+          "paths": [
+            "tests/e2e/**",
+            "playwright.config.ts",
+            "package.json"
+          ],
+          "verify": "npm run test:e2e",
+          "notes": "@playwright/test já está instalado e o script test:e2e existe, mas não há testes."
+        },
+        {
+          "id": "T-402",
+          "title": "Zerar o lint legado (20 erros / 5 avisos herdados)",
+          "status": "todo",
+          "paths": [
+            "src/**",
+            "scripts/**",
+            "eslint.config.js"
+          ],
+          "verify": "npm run lint",
+          "notes": "20 erros / 5 avisos herdados medidos por continuity:sync (lint legado, nenhum em arquivo novo)."
+        },
+        {
+          "id": "T-403",
+          "title": "Code-splitting do bundle (chunk principal ~700 kB)",
+          "status": "todo",
+          "paths": [
+            "vite.config.ts",
+            "src/**"
+          ],
+          "verify": "npm run build",
+          "notes": "Chunk index-*.js com 700 kB (139 kB gzip); dividir rotas com lazy + manualChunks."
+        },
+        {
+          "id": "T-404",
+          "title": "Cobertura de testes do store e das rotas",
+          "status": "todo",
+          "paths": [
+            "src/store/**",
+            "src/pages/**",
+            "vite.config.ts"
+          ],
+          "verify": "npm test",
+          "notes": "Store (recompute/URL/share) e páginas sem testes; Runtime.tsx já tem cobertura de render."
+        },
+        {
+          "id": "T-405",
+          "title": "Auditoria de acessibilidade (foco, ARIA das abas, contraste)",
+          "status": "todo",
+          "paths": [
+            "src/components/**",
+            "src/pages/**"
+          ],
+          "verify": "npm run test:e2e"
+        }
+      ]
+    },
+    {
+      "id": "P5",
+      "name": "Dados vivos",
+      "goal": "Preços e especificações atualizados automaticamente, com alerta de defasagem.",
+      "status": "todo",
+      "exitCriteria": [
+        {
+          "id": "meta-fresh",
+          "label": "meta.json com builtAt recente",
+          "command": "npm run validate"
+        }
+      ],
+      "tasks": [
+        {
+          "id": "T-501",
+          "title": "Rodar e validar os workflows de atualização de preços/hardware",
+          "status": "todo",
+          "paths": [
+            ".github/workflows/refresh-prices.yml",
+            "scripts/refresh-*.ts",
+            "src/data/**"
+          ],
+          "verify": "gh workflow run refresh-prices.yml",
+          "notes": "src/data/meta.json está com builtAt 2026-04-22."
+        },
+        {
+          "id": "T-502",
+          "title": "Alerta de dados defasados na UI e no gate",
+          "status": "todo",
+          "paths": [
+            "src/lib/continuity-badge?**",
+            "src/pages/**",
+            ".kiro/state/**"
+          ],
+          "verify": "npm test"
+        },
+        {
+          "id": "T-503",
+          "title": "Internacionalização PT-BR/EN da interface",
+          "status": "todo",
+          "paths": [
+            "src/i18n/**",
+            "src/**"
+          ],
+          "verify": "npm test"
+        }
+      ]
+    },
+    {
+      "id": "P6",
+      "name": "Runtime WASM avançado",
+      "goal": "Kernel mais rápido, execução fora da thread principal e deploy real do módulo WASI.",
+      "status": "todo",
+      "tasks": [
+        {
+          "id": "T-601",
+          "title": "Kernel com SIMD e orçamento de tamanho no gate",
+          "status": "todo",
+          "paths": [
+            "wasm/**",
+            "scripts/verify-wasm.mjs"
+          ],
+          "verify": "npm run wasm:verify"
+        },
+        {
+          "id": "T-602",
+          "title": "Kernel wasm em Web Worker para modo compare/lote",
+          "status": "todo",
+          "paths": [
+            "src/wasm/**",
+            "src/components/calculator/**"
+          ],
+          "verify": "npm test"
+        },
+        {
+          "id": "T-603",
+          "title": "Deploy do módulo WASI em host serverless (Spin/wasmCloud/wasmtime)",
+          "status": "todo",
+          "spec": "12-wasi-runtime",
+          "paths": [
+            "wasi/**",
+            ".github/workflows/**",
+            ".kiro/specs/12-wasi-runtime.md"
+          ],
+          "verify": "npm run wasi -- selftest"
+        }
+      ]
+    },
+    {
+      "id": "P7",
+      "name": "Publicação e comunidade",
+      "goal": "Versão anunciável, changelog e guia de contribuição.",
+      "status": "todo",
+      "tasks": [
+        {
+          "id": "T-701",
+          "title": "Release v1.0 com notas e changelog",
+          "status": "todo",
+          "paths": [
+            "CHANGELOG.md",
+            "package.json",
+            ".github/workflows/**"
+          ],
+          "verify": "gh release list"
+        },
+        {
+          "id": "T-702",
+          "title": "Documentar o fluxo de contribuição com o gate de continuidade",
+          "status": "todo",
+          "paths": [
+            "CONTRIBUTING.md",
+            "README.md",
+            "CONTINUITY.md"
+          ],
+          "verify": "npm run continuity:check"
+        }
+      ]
+    }
+  ]
+}

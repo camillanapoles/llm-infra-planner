@@ -14,6 +14,8 @@ name: Bootstrap repository
 #   3. enables GitHub Pages with "GitHub Actions" as the source, when possible
 #   4. dispatches `deploy-pages.yml` so the three environments go live
 #   5. optionally dispatches `docker.yml` (GHCR images)
+#   6. optionally (protect_main=true) makes the CI + continuity-gate checks
+#      mandatory on `main`, so the state gate cannot be bypassed
 #
 # Because it runs on `main`, the workflow files are already on the default
 # branch — which is what makes `workflow_dispatch` work for any ref afterwards,
@@ -59,6 +61,10 @@ on:
         options: [all, production, staging, dev]
       docker:
         description: 'Also dispatch the container/registry workflow'
+        type: boolean
+        default: false
+      protect_main:
+        description: 'Require the CI + continuity gate checks on main (adds to existing rules)'
         type: boolean
         default: false
 
@@ -185,6 +191,28 @@ jobs:
           fi
           PORTAL="${{ github.server_url }}/$REPO/settings/pages"
           echo "[Pages settings]($PORTAL)" >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 4b. Optional: make the gates mandatory on main ─────────────────────
+      - name: Require CI + continuity gate on main
+        if: ${{ inputs.protect_main == true }}
+        run: |
+          set -uo pipefail
+          # Only ADDS required status checks; existing protection is preserved via PATCH.
+          CURRENT=$(gh api "repos/$REPO/branches/$DEFAULT_BRANCH/protection" 2>/dev/null || echo '{}')
+          if [ "$CURRENT" = "{}" ]; then
+            echo "::notice::nenhuma proteção existente em $DEFAULT_BRANCH — criando uma mínima (sem review obrigatório)"
+            PAYLOAD='{"required_status_checks":{"strict":false,"contexts":["Build & test","State & scope"]},"enforce_admins":false,"required_pull_request_reviews":null,"restrictions":null}'
+            METHOD=PUT
+          else
+            echo "proteção existente detectada — adicionando os checks obrigatórios"
+            PAYLOAD='{"required_status_checks":{"strict":false,"contexts":["Build & test","State & scope"]}}'
+            METHOD=PATCH
+          fi
+          if gh api --method "$METHOD" "repos/$REPO/branches/$DEFAULT_BRANCH/protection" --input - <<< "$PAYLOAD" >/dev/null 2>&1; then
+            echo "✓ main exige os checks: CI 'Build & test' e 'State & scope'"
+          else
+            echo "::warning::não foi possível ajustar a proteção (precisa de admin) — configure em Settings → Branches → Require status checks"
+          fi
 
       # ── 5. Dispatch the deploys ────────────────────────────────────────────
       - name: Dispatch Pages deploy

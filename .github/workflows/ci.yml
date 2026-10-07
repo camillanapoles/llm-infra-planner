@@ -67,8 +67,18 @@ jobs:
           git fetch --no-tags origin "${{ github.base_ref }}" --depth=1 || true
           FILES=$(git diff --name-only --diff-filter=ACMR "$BASE"...HEAD -- '*.ts' '*.tsx' || true)
           if [ -z "$FILES" ]; then echo "no TypeScript changes"; exit 0; fi
-          echo "$FILES" | xargs npx eslint
+          echo "$FILES" | xargs npx eslint --no-warn-ignored
           echo "linted: $(echo "$FILES" | wc -l) file(s)"
+
+      - name: Continuity state check (informational on protected branches)
+        # The blocking gate lives in continuity-gate.yml (PRs). Here we only make
+        # the roadmap/handoff coherence visible on every push.
+        continue-on-error: true
+        run: |
+          BASE="${{ github.base_ref || 'main' }}"
+          git fetch --no-tags origin "$BASE" --depth=50 || true
+          npx tsx scripts/continuity.ts check --base "origin/$BASE" || true
+          npx tsx scripts/continuity.ts status
 
       - name: Lint full repo (reports legacy debt, non blocking)
         continue-on-error: true

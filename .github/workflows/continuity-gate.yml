@@ -1,0 +1,188 @@
+name: Continuity gate
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STATE-DRIVEN GATE — every PR against a protected branch must:
+#
+#   1. carry a scope handoff for its branch (.kiro/state/branches/<slug>.json)
+#      → if missing, this workflow CREATES one automatically from the roadmap and
+#        commits it to the PR branch (self-bootstrapping continuity);
+#   2. touch only the paths declared in that handoff (or shared/state paths);
+#   3. keep the roadmap coherent (tasks exist, phase order respected, done ⇒ evidence);
+#   4. re-verify the wasm kernel after any kernel change (wasm:verify + parity);
+#   5. leave a resume brief on the PR so the next session knows where to continue.
+#
+# Bypass: a declared dependency (renovate-style) can carry the `scope:allow`
+# label, which downgrades a scope violation to a warning.
+#
+# Spec: .kiro/specs/17-continuity-gate.md
+
+on:
+  pull_request:
+    branches: [main, dev, staging]
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: write        # only used to commit the auto-created handoff
+  pull-requests: write   # comment the resume brief
+  issues: write          # (fallback) comment when PR comments are unavailable
+
+concurrency:
+  group: continuity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  gate:
+    name: State & scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # ── 1. handoff: ensure it exists (self-bootstrapping) ────────────────────
+      - name: Ensure branch handoff
+        id: handoff
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          set -euo pipefail
+          SLUG=$(echo "$BRANCH" | tr '/[:upper:]' '-[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g')
+          FILE=".kiro/state/branches/$SLUG.json"
+          if [ -f "$FILE" ]; then
+            echo "✓ handoff existente: $FILE"
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::sem handoff para '$BRANCH' — criando a partir do roadmap"
+            npx tsx scripts/continuity.ts start --branch "$BRANCH" --auto || \
+              npx tsx scripts/continuity.ts start --branch "$BRANCH"
+            echo "created=true" >> "$GITHUB_OUTPUT"
+            echo "file=$FILE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit the new handoff to the PR branch
+        if: steps.handoff.outputs.created == 'true'
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          git config user.name  "continuity-gate[bot]"
+          git config user.email "continuity-gate@users.noreply.github.com"
+          git add .kiro/state/branches
+          if git diff --cached --quiet; then echo "nada a commitar"; exit 0; fi
+          git commit -m "chore(continuity): declare scope handoff for \`$BRANCH\` [skip ci]"
+          # never push to forks or protected branches
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+            echo "::warning::PR vem de um fork — handoff precisa ser commitado manualmente"; exit 0
+          fi
+          git push origin "HEAD:${BRANCH}" || echo "::warning::não foi possível commitar o handoff (branch protegida?)"
+
+      # ── 2. the gate itself ──────────────────────────────────────────────────
+      - name: Run continuity gate
+        id: gate
+        env:
+          BASE: ${{ github.event.pull_request.base.ref || 'main' }}
+          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          ALLOW: ${{ contains(github.event.pull_request.labels.*.name, 'scope:allow') }}
+        run: |
+          set -uo pipefail
+          ALLOW_FLAG=""
+          [ "$ALLOW" = "true" ] && ALLOW_FLAG="--allow-label"
+          npx tsx scripts/continuity.ts check --base "origin/$BASE" --branch "$BRANCH" $ALLOW_FLAG --json > gate-report.json
+          CODE=$?
+          echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
+          cat gate-report.json
+          exit 0     # reported in the next step, with the PR comment
+
+      - name: Resume brief + report on the PR
+        id: report
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          npx tsx scripts/continuity.ts resume --print > resume.md
+          {
+            echo "<!-- continuity-gate -->"
+            echo "## 🧭 Continuity gate — \`$BRANCH\`"
+            echo ""
+            echo "**_Ponto de retomada_**"
+            echo ""
+            sed -n '1,40p' resume.md
+            echo ""
+            echo "<details><summary>Estado do roadmap</summary>"
+            echo ""
+            cat .kiro/state/STATE.md
+            echo ""
+            echo "</details>"
+          } > comment.md
+          echo "comment-length=$(wc -c < comment.md)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish comment (PR) or summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          if [ -n "${PR:-}" ]; then
+            # replace the previous gate comment (idempotent)
+            PREV=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" \
+                    --jq '.[] | select(.body | startswith("<!-- continuity-gate -->")) | .id' | head -1)
+            if [ -n "$PREV" ]; then
+              gh api --method PATCH "repos/${{ github.repository }}/issues/comments/$PREV" -F body=@comment.md >/dev/null \
+                && echo "✓ comentário de retomada atualizado"
+            else
+              gh api --method POST "repos/${{ github.repository }}/issues/$PR/comments" -F body=@comment.md >/dev/null \
+                && echo "✓ comentário de retomada publicado"
+            fi
+          else
+            echo "::notice::sem PR — relatório disponível no summary da run"
+          fi
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 3. kernel re-verification (only when the kernel changed) ─────────────
+      - name: Wasm kernel re-verification
+        id: wasm
+        env:
+          BASE: ${{ github.event.pull_request.base.ref || 'main' }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$BASE" || true
+          FILES=$(git diff --name-only "origin/$BASE"...HEAD || true)
+          KERNEL=$(echo "$FILES" | grep -E '^(wasm/|src/lib/formulas/|src/wasm/)' || true)
+          if [ -z "$KERNEL" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Kernel não tocado — pulando re-verificação"; exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Kernel tocado:"; echo "$KERNEL"
+          npm run build:wasm
+          npm run wasm:verify
+          npx vitest --run src/wasm/kernel.test.ts
+
+      # ── 4. verdict ──────────────────────────────────────────────────────────
+      - name: Verdict
+        env:
+          GATE_CODE: ${{ steps.gate.outputs.exit_code }}
+          WASM_SKIP: ${{ steps.wasm.outputs.skip }}
+        run: |
+          echo "gate exit code: ${GATE_CODE:-0} · wasm re-verificado: $([ "${WASM_SKIP}" = "true" ] && echo não || echo sim)"
+          if [ "${GATE_CODE:-0}" != "0" ]; then
+            echo "::error::gate de continuidade reprovou — veja o comentário do PR (scope-violation / handoff / roadmap)"
+            exit 1
+          fi
+          echo "::notice::continuidade ok"

@@ -58,6 +58,35 @@ function Pill({ tone, children }: { tone: 'ok' | 'warn' | 'off' | 'info'; childr
   );
 }
 
+// ─── Project state (continuity) ──────────────────────────────────────────────
+
+interface ProjectStateFile {
+  generatedAt?: string;
+  phase?: string;
+  phaseName?: string;
+  percent?: number;
+  done?: number;
+  total?: number;
+  next?: { id: string; title: string; blockedBy: string[] }[];
+  invariants?: Record<string, number | string | boolean>;
+}
+
+/** Reads `public/state.json`, written by `npm run continuity:sync`. */
+function useProjectState(): ProjectStateFile | null {
+  const [state, setState] = React.useState<ProjectStateFile | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch(`${BASE_PATH}state.json`)
+      .then(response => (response.ok ? response.json() : null))
+      .then((data: ProjectStateFile | null) => {
+        if (!cancelled && data && typeof data === 'object') setState(data);
+      })
+      .catch(() => { /* state.json is optional (older builds) */ });
+    return () => { cancelled = true; };
+  }, []);
+  return state;
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function Runtime() {
@@ -65,6 +94,7 @@ export function Runtime() {
   const { health, loading: healthLoading, refresh } = useWasiRuntime();
   const { selectedModel, contextLength, breakdown, costMetrics, engine } = useCalculatorStore();
 
+  const projectState = useProjectState();
   const [wasiRun, setWasiRun] = React.useState<WasiResult | null>(null);
   const [wasiRunning, setWasiRunning] = React.useState(false);
   const [wasiError, setWasiError] = React.useState<string | null>(null);
@@ -281,6 +311,41 @@ npm run wasi -- selftest`}
           as the fallback and the test oracle (<code className="font-mono">src/wasm/kernel.test.ts</code>).
         </p>
       </Card>
+
+      {/* Continuity: where the project stopped and what comes next */}
+      {projectState && (
+        <Card
+          icon={<GitBranch size={16} />}
+          title="Estado do projeto (continuidade)"
+          subtitle="Gerado por npm run continuity:sync — o ponto de retomada viaja com o código."
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Stat label="Fase" value={`${projectState.phase ?? '—'} · ${projectState.phaseName ?? ''}`.trim()} mono={false} />
+            <Stat label="Progresso" value={projectState.percent != null ? `${projectState.percent}%` : '—'} />
+            <Stat label="Tarefas" value={projectState.done != null ? `${projectState.done}/${projectState.total ?? '?'}` : '—'} />
+            <Stat label="Sincronizado" value={projectState.generatedAt ? new Date(projectState.generatedAt).toLocaleString() : '—'} />
+          </div>
+          {projectState.next && projectState.next.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-fg-muted">Próximas tarefas</span>
+              {projectState.next.map(task => (
+                <div key={task.id} className="flex items-center gap-2 text-xs">
+                  <code className="font-mono text-fg-muted">{task.id}</code>
+                  <span className="text-fg-default">{task.title}</span>
+                  {task.blockedBy.length > 0 && (
+                    <Pill tone="warn">bloqueado: {task.blockedBy.join(', ')}</Pill>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-fg-muted">
+            Fluxo completo em <code className="font-mono">CONTINUITY.md</code> · estado legível em{' '}
+            <code className="font-mono">.kiro/state/STATE.md</code> · retomada em{' '}
+            <code className="font-mono">.kiro/state/RESUME.md</code>
+          </p>
+        </Card>
+      )}
 
       {/* Deployment targets */}
       <Card

@@ -178,6 +178,7 @@ The full calculator state (model, precision, KV precision, context, batch, mode,
 | WASI host | Node 20+ `node:wasi` (no native deps) — works with wasmtime/wasmedge/Spin too |
 | Container | Docker (node:20-alpine → nginx:1.27-alpine, + node wasi runtime image) |
 | CI/CD | GitHub Actions → GitHub Pages (3 environments) + GHCR images |
+| Continuidade | Roadmap + política em `.kiro/state` + gate de escopo/estado (spec 17) |
 
 ---
 
@@ -294,6 +295,30 @@ The `runner` image is nginx serving the bundle (hardened config, `/wasm/*` as
 `wasi` service. The `wasi` image runs `scripts/wasi-server.mjs` on Node with no
 dependencies — every `/api` request is executed inside `llmcalc-wasi.wasm`.
 
+### Continuidade entre branches (state-driven)
+
+O projeto carrega o próprio estado: escopo, progresso e ponto de retomada ficam em
+`.kiro/state/` e um gate de CI garante que cada branch continue de onde a anterior
+parou. Porta de entrada: [`CONTINUITY.md`](CONTINUITY.md).
+
+```bash
+npm run continuity:status     # fase atual, progresso, próximas tarefas
+npm run continuity:start -- --task T-402   # declara o escopo desta branch
+npm run continuity:check      # gate (o mesmo que bloqueia o PR)
+npm run continuity:sync       # mede testes/wasm/build/lint e atualiza o estado
+npm run continuity:resume     # briefing de retomada para a próxima sessão
+```
+
+- **Ponto de retomada:** [`.kiro/state/RESUME.md`](.kiro/state/RESUME.md) · **estado:** [`.kiro/state/STATE.md`](.kiro/state/STATE.md)
+- **Escopo por branch:** `.kiro/state/branches/<slug>.json` (criado automaticamente
+  pelo gate no primeiro push do PR).
+- **Gate:** `.github/workflows/continuity-gate.yml` reprova PR fora do escopo, com
+  tarefa inexistente, com roadmap desatualizado ou com mudança no núcleo wasm/TS
+  que não foi revalidada. A label `scope:allow` libera expansão intencional.
+- **Consolidação:** `.github/workflows/continuity-sync.yml` mede os invariantes
+  (wasm:verify, testes, build, lint, docker, artefato de Pages) no merge para a
+  `main` e publica o estado — que a página mostra em `/runtime`.
+
 ### WebAssembly engines
 
 | Engine | Artifact | Where it runs | Fallback |
@@ -348,7 +373,15 @@ scripts/
 ├── dev-stack.mjs            # npm run stack — page + runtime
 ├── serve-static.mjs         # nginx/Pages stand-in for built artifacts
 ├── build-pages-artifact.mjs # production + staging + dev → _site/
-└── docker-build.mjs         # image build / static validation
+├── docker-build.mjs         # image build / static validation
+├── continuity.ts            # estado do projeto: check · sync · start · resume
+└── lib/continuity-core.ts   # lógica do gate (escopo, progresso, roadmap)
+.kiro/state/
+├── roadmap.json             # fases, tarefas, escopo por caminho (fonte de verdade)
+├── policy.json              # regras do gate
+├── project-state.json       # estado derivado + invariantes medidos
+├── STATE.md / RESUME.md     # estado e ponto de retomada (gerados)
+└── branches/<slug>.json     # handoff de escopo de cada branch
 ```
 
 
