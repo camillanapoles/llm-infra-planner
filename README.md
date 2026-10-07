@@ -20,6 +20,8 @@ LLMcalc answers the questions you actually have before deploying or training a l
 - **How do I set up the software stack?** — OS, driver, CUDA, PyTorch, container, and monitoring recommendations
 
 Everything runs in the browser. No backend, no telemetry, no account required.
+
+The calculation kernel is also compiled to **WebAssembly** (AssemblyScript → `wasm32`, ~2 KB, zero host imports) and used for the headline metrics, with the TypeScript implementation kept as a parity-tested fallback. The same kernel ships as a **WASI preview1 command module** that runs in a local runtime host (`node:wasi`), a container, or any WASI platform — see [/runtime](.kiro/specs/12-wasi-runtime.md) in the app.
 <img width="2936" height="1668" alt="image" src="https://github.com/user-attachments/assets/072b10f6-7a8d-4537-ab32-3a06078e0a0a" />
 
 ---
@@ -154,6 +156,7 @@ The full calculator state (model, precision, KV precision, context, batch, mode,
 | `/models` | Sortable, filterable model catalog |
 | `/hardware` | Sortable, filterable GPU catalog |
 | `/guides` | Methodology docs, quantization guide, glossary |
+| `/runtime` | WebAssembly engine status, parity matrix, WASI host, deploy targets |
 
 ---
 
@@ -170,8 +173,11 @@ The full calculator state (model, precision, KV precision, context, batch, mode,
 | Charts | Recharts |
 | Tables | TanStack Table v8 |
 | Icons | Lucide React |
-| Testing | Vitest + fast-check (property-based tests) |
-| Container | Docker (node:20-alpine → nginx:1.27-alpine) |
+| Testing | Vitest + fast-check (property-based tests, incl. wasm↔TS parity) |
+| WebAssembly | AssemblyScript → `wasm32` (browser kernel) + `wasm32-wasi-preview1` (service) |
+| WASI host | Node 20+ `node:wasi` (no native deps) — works with wasmtime/wasmedge/Spin too |
+| Container | Docker (node:20-alpine → nginx:1.27-alpine, + node wasi runtime image) |
+| CI/CD | GitHub Actions → GitHub Pages (3 environments) + GHCR images |
 
 ---
 
@@ -204,6 +210,13 @@ npm run test:watch
 
 # Validate data files against schemas
 npm run validate
+
+# WebAssembly kernel + WASI module
+npm run build:wasm
+npm run wasm:verify
+
+# Page + WASI runtime together
+npm run stack
 ```
 
 ### Production Build
@@ -215,27 +228,80 @@ npm run build
 
 ---
 
-## Docker
+## Deployment
+
+One codebase, four targets. Each target has a spec in `.kiro/specs/`.
+
+| Target | How | URL |
+|---|---|---|
+| **Local** | `npm run stack` | http://localhost:5173 (+ WASI runtime on :8787) |
+| **GitHub Pages · production** | push to `main` | https://camillanapoles.github.io/llm-infra-planner/ |
+| **GitHub Pages · staging** | push to `staging` | https://camillanapoles.github.io/llm-infra-planner/staging/ |
+| **GitHub Pages · dev** | push to `dev` | https://camillanapoles.github.io/llm-infra-planner/dev/ |
+| **Docker** | `docker compose up -d` | http://localhost:3000 (+ wasi API on :8787) |
+
+### Local runtime (page + WebAssembly compute service)
 
 ```bash
-# Build and run
-docker build -t llm-hardware-calculator:latest .
-docker run -p 3000:80 llm-hardware-calculator:latest
+npm ci
+npm run stack          # vite :5173  +  WASI runtime :8787 (proxied at /api/*)
+# → open http://localhost:5173/runtime
 ```
 
 ```bash
-# Docker Compose (recommended)
-docker compose up -d
+npm run build:wasm       # compile the browser kernel + the WASI module
+npm run wasm:verify      # 16 checks: sizes, exports, imports, selftest goldens
+npm run wasi -- selftest # execute the wasm module in a WASI runtime (no server)
+npm run wasi:serve       # runtime host only — dashboard on http://localhost:8787
+npm run serve            # serve the built dist/ like nginx (SPA + /api proxy)
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+### GitHub Pages — three environments from one site
 
-The production image is a two-stage build:
+Push to a branch or dispatch the workflow; every run rebuilds all three environments
+(each from its own branch) and deploys them as one Pages artifact, so a `dev` deploy
+can never wipe production.
 
-1. **Builder** — `node:20-alpine` installs dependencies and runs `npm run build`
-2. **Runner** — `nginx:1.27-alpine` serves static assets with gzip, 1-year immutable cache for hashed assets, SPA routing, and rate limiting
+```bash
+gh workflow run deploy-pages.yml                                   # all environments
+gh workflow run deploy-pages.yml -f ref=my-feature -f environments=dev
+# → dev is built from my-feature, staging/production keep their branches (no push needed)
 
-Image size is approximately 25 MB.
+npm run build:pages -- --env all --out _site   # build/verify the artifact locally
+npm run serve:pages                            # http://localhost:4173/{,staging/,dev/}
+```
+
+First-time setup (branches, environments, Pages) is a workflow, not a manual step:
+`Actions → Bootstrap repository → Run workflow` creates `dev`/`staging`, prepares the
+GitHub Environments and dispatches the deploys (spec `16-branch-environments-bootstrap.md`).
+
+### Docker / nginx
+
+```bash
+docker compose up -d                                  # page :3000 + wasi runtime :8787
+docker compose --profile staging --profile dev up -d  # + staging :3001 + dev :3002
+docker compose up -d wasi                             # compute service only
+
+# single images
+docker build --target runner --build-arg APP_ENV=dev --build-arg BASE_PATH=/dev/ -t llmcalc:dev .
+docker build --target wasi -t llmcalc:wasi .
+
+npm run deploy:docker     # static validation everywhere, build+smoke where docker exists
+```
+
+The `runner` image is nginx serving the bundle (hardened config, `/wasm/*` as
+`application/wasm`, SPA fallback, security headers) with `/api/*` proxied to the
+`wasi` service. The `wasi` image runs `scripts/wasi-server.mjs` on Node with no
+dependencies — every `/api` request is executed inside `llmcalc-wasi.wasm`.
+
+### WebAssembly engines
+
+| Engine | Artifact | Where it runs | Fallback |
+|---|---|---|---|
+| Browser kernel | `public/wasm/llmcalc-kernel.wasm` (~2 KB, no imports) | page (all metric math) | `src/lib/formulas` (parity-tested) |
+| WASI service | `wasi/dist/llmcalc-wasi.wasm` (~5.6 KB, preview1 command) | `npm run wasi`, `npm run wasi:serve`, docker, any WASI host | — |
+
+`wasmtime run wasi/dist/llmcalc-wasi.wasm -- plan 16 0.54 0.5 1500 2.49` also works.
 
 ---
 
@@ -248,25 +314,43 @@ src/
 │   ├── feedback/       # Toast, EmptyState, ErrorState, Skeleton
 │   ├── layout/         # TopBar, ModeTabsBar, PageShell, Footer
 │   └── primitives/     # Button, Input, Slider, Dialog, Popover, etc.
+├── wasm/
+│   └── service.ts      # WASI preview1 command module (same kernel)
 ├── data/
 │   ├── models.json     # 513 LLM architecture specs
 │   ├── gpus.json       # 147 GPU specs with pricing
 │   ├── cloud.json      # 37 cloud instance pricing entries
 │   └── meta.json       # Data version and build timestamp
 ├── lib/
-│   ├── formulas/       # Pure calculation kernel (40+ formula modules)
+│   ├── formulas/       # Pure calculation kernel (40+ formula modules) — the TS oracle
 │   ├── keyboard-shortcuts.ts
 │   ├── url-serializer.ts
+│   ├── env.ts          # Build environment model (local/dev/staging/production)
 │   └── use-theme.ts
+├── wasm/
+│   ├── kernel.ts       # WebAssembly kernel (AssemblyScript) — browser engine
+│   ├── kernel.test.ts  # parity vs src/lib/formulas (property-based)
+│   ├── use-kernel.ts   # React bindings + benchmark
+│   └── wasi-client.ts  # /api client for the WASI runtime host
+├── pages/Runtime.tsx   # engine, parity matrix, WASI status, deploy targets
 ├── pages/              # Home, Compare, Reverse, Models, Hardware, Guides
 ├── store/              # Zustand calculator store
 └── styles/             # Tailwind config, design tokens, globals
 scripts/
-├── ingest-models.ts    # HuggingFace model ingestion pipeline
+├── ingest-models.ts         # HuggingFace model ingestion pipeline
 ├── refresh-cloud-prices.ts
 ├── refresh-hardware.ts
-└── validate-data.ts    # Build-time JSON schema validation
+├── validate-data.ts         # Build-time JSON schema validation
+├── build-wasm.mjs           # compiles wasm/kernel.ts + wasm/service.ts
+├── verify-wasm.mjs          # CI gate for both wasm artifacts
+├── wasi-run.mjs             # CLI: run the wasm module in a WASI runtime
+├── wasi-server.mjs          # HTTP runtime host (/api/*, dashboard)
+├── dev-stack.mjs            # npm run stack — page + runtime
+├── serve-static.mjs         # nginx/Pages stand-in for built artifacts
+├── build-pages-artifact.mjs # production + staging + dev → _site/
+└── docker-build.mjs         # image build / static validation
 ```
+
 
 ---
 
@@ -293,8 +377,12 @@ npx tsx scripts/ingest-models.ts
 1. Fork the repo
 2. Create a feature branch: `git checkout -b feat/your-feature`
 3. Make changes and add tests
-4. Run `npm test` and `npm run lint` — both must pass
-5. Open a pull request
+4. Run the gates: `npm run wasm:verify && npm test && npm run build`
+5. Open a pull request (CI also lints the files you touched)
+
+Touching the calculation kernel? `wasm/kernel.ts` and `src/lib/formulas/*` must stay
+numerically identical — `src/wasm/kernel.test.ts` fails otherwise, and that is
+intentional (`npm run wasm:verify` gates the artifacts themselves).
 
 ---
 

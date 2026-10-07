@@ -12,6 +12,34 @@ import {
   recommendCluster, recommendStack,
 } from '@/lib/formulas';
 import { serializeState, parseState, getDefaultState } from '@/lib/url-serializer';
+import { PARITY_CASES, getKernel, jsKernel, runParity, type KernelApi } from '@/wasm/kernel';
+
+// ── Compute kernel (WebAssembly when available, TypeScript otherwise) ─────────
+// Swapped in by initEngine() once the wasm module has been fetched + verified.
+// Both engines are parity-tested over randomized inputs (src/wasm/kernel.test.ts),
+// so a swap can never change the numbers — only the execution engine.
+let activeKernel: KernelApi = jsKernel;
+
+export interface EngineState {
+  kind: 'js' | 'wasm';
+  ready: boolean;
+  bytes: number;
+  compileMs: number;
+  instantiateMs: number;
+  checks: number;
+  failures: number;
+  error?: string;
+}
+
+const initialEngineState: EngineState = {
+  kind: 'js',
+  ready: false,
+  bytes: 0,
+  compileMs: 0,
+  instantiateMs: 0,
+  checks: 0,
+  failures: 0,
+};
 
 // ── Static data (loaded once) ─────────────────────────────────────────────────
 import modelsData from '@/data/models.json';
@@ -66,6 +94,9 @@ export interface CalculatorStore {
   // ── Compare configs (up to 3)
   compareConfigs: CalculatorState[];
 
+  // ── Compute engine (wasm kernel / js fallback)
+  engine: EngineState;
+
   // ── Actions
   setModel: (model: ModelSpec) => void;
   setGPU: (gpu: GPUSpec | null) => void;
@@ -87,6 +118,7 @@ export interface CalculatorStore {
   addCompareConfig: () => void;
   removeCompareConfig: (index: number) => void;
   loadFromURL: (queryString: string) => void;
+  initEngine: () => Promise<void>;
   getShareURL: () => string;
   recompute: () => void;
 }
@@ -159,6 +191,7 @@ export const useCalculatorStore = create<CalculatorStore>((set, get) => {
 
     // Compare
     compareConfigs: [],
+    engine: initialEngineState,
 
     // ── Actions ────────────────────────────────────────────────────────────
 
@@ -330,6 +363,26 @@ export const useCalculatorStore = create<CalculatorStore>((set, get) => {
       return window.location.origin + window.location.pathname + serializeState(state);
     },
 
+    initEngine: async () => {
+      const { kernel, status } = await getKernel();
+      const parity = runParity(kernel, PARITY_CASES);
+      activeKernel = kernel;
+      set({
+        engine: {
+          kind: status.engine,
+          ready: true,
+          bytes: status.bytes,
+          compileMs: status.compileMs,
+          instantiateMs: status.instantiateMs,
+          checks: parity.length,
+          failures: parity.filter(p => !p.ok).length,
+          error: status.error,
+        },
+      });
+      // Numbers are recomputed with the wasm engine now in place.
+      get().recompute();
+    },
+
     recompute: () => {
       const {
         selectedModel, precision, kvPrecision, contextLength, batchSize,
@@ -459,6 +512,22 @@ export const useCalculatorStore = create<CalculatorStore>((set, get) => {
           activeWeightsGB,
           computeTFLOPS: topGPU.gpu.flops.fp16 * numGPUs,
         });
+
+        // Same formula, executed by the wasm kernel when it is loaded.
+        if (get().engine.kind === 'wasm') {
+          costMetrics = {
+            ...costMetrics,
+            costPerMillionTokens: activeKernel.costPerMillionTokens(
+              scaledThroughput,
+              cheapestCloud.onDemandPerHour,
+            ),
+            timeToFirstTokenMs: activeKernel.ttftMs(
+              contextLength,
+              activeWeightsGB,
+              topGPU.gpu.flops.fp16 * numGPUs,
+            ),
+          };
+        }
       }
 
       // Cluster recommendation

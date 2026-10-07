@@ -1,0 +1,148 @@
+name: CI
+
+# Verification gate for every branch: wasm modules, tests, typecheck, build and
+# a lint check limited to the files a PR actually touches (the repo still has
+# legacy lint debt in untouched files — see the "Lint" step).
+#
+# Specs: .kiro/specs/11-wasm-kernel.md, 12-wasi-runtime.md
+
+on:
+  push:
+    branches: [main, dev, staging]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  verify:
+    name: Build & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed for the changed-files lint below
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build WebAssembly modules
+        run: npm run build:wasm
+
+      - name: Verify wasm artifacts
+        run: npm run wasm:verify
+
+      - name: Unit + property tests (includes wasm↔TS parity)
+        run: npm test
+
+      - name: Typecheck & bundle
+        run: npm run build:app
+        env:
+          VITE_APP_ENV: dev
+          VITE_BASE_PATH: /llm-infra-planner/dev/
+          VITE_COMMIT: ${{ github.sha }}
+          VITE_BUILT_AT: ${{ github.event.repository.updated_at }}
+
+      - name: Lint changed files (blocking)
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch --no-tags origin "${{ github.base_ref }}" --depth=1 || true
+          FILES=$(git diff --name-only --diff-filter=ACMR "$BASE"...HEAD -- '*.ts' '*.tsx' || true)
+          if [ -z "$FILES" ]; then echo "no TypeScript changes"; exit 0; fi
+          echo "$FILES" | xargs npx eslint
+          echo "linted: $(echo "$FILES" | wc -l) file(s)"
+
+      - name: Lint full repo (reports legacy debt, non blocking)
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: |
+            dist
+            wasi/dist
+          retention-days: 7
+
+  wasi-runtime:
+    name: WASI runtime smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build wasm
+        run: npm run build:wasm
+      - name: Run the module (CLI path)
+        run: |
+          node scripts/wasi-run.mjs selftest
+          node scripts/wasi-run.mjs plan 16 0.54 0.5 1500 2.49
+      - name: Start the runtime host and call the API
+        run: |
+          node scripts/wasi-server.mjs &
+          for i in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:8787/health >/dev/null; then break; fi
+            sleep 0.5
+          done
+          echo "── /health ──"
+          curl -sf http://127.0.0.1:8787/health | head -20
+          echo "── /api/selftest ──"
+          curl -sf http://127.0.0.1:8787/api/selftest
+          echo "── /api/plan ──"
+          curl -sf "http://127.0.0.1:8787/api/plan?weightsGB=16&kvGB=0.54&overheadGB=0.5&tps=1500&hourlyUsd=2.49"
+
+  pages-artifact:
+    name: Pages artifact (all environments)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build production + staging + dev bundles
+        run: node scripts/build-pages-artifact.mjs --env all --out _site
+      - name: Verify the artifact layout
+        run: |
+          test -f _site/index.html
+          test -f _site/staging/index.html
+          test -f _site/dev/index.html
+          test -f _site/404.html
+          test -f _site/wasm/llmcalc-kernel.wasm
+          for env in "" staging/ dev; do
+            grep -q "/llm-infra-planner/${env}assets/" "_site/${env}index.html" \
+              || { echo "base path mismatch in ${env:-root}"; exit 1; }
+          done
+          echo "✓ three environments, correct base paths, wasm included"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pages-artifact
+          path: _site
+          retention-days: 7
