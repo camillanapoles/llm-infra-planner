@@ -24,14 +24,14 @@ measures objective invariants and writes the state that the next session resumes
 - `roadmap.json` describes phases (with `exitCriteria`) and tasks with `id`, `title`, `status`, `paths` (escopo), `verify` (aceite), `dependsOn`, optional `spec`, `evidence`.
 - `policy.json` declares `baseBranch`, `protectedBranches`, `statePaths`, `sharedPaths`, `kernelPaths`, `scopes` (spec → paths) e o nome da label de bypass.
 - `validateRoadmap()` rejeita: ids duplicados, status inválido, dependência inexistente, auto-dependência; e avisa `done` sem `evidence`.
-- Roadmap validation and phase rules are unit-tested (`scripts/continuity.test.ts`, 25 testes).
+- Roadmap validation and phase rules are unit-tested (`scripts/continuity.test.ts`, 37 testes).
 
 ### Requirement 2: Every branch declares what it delivers (handoff)
 **User Story:** As a reviewer, I want each branch to state its scope and resume point before I review the code.
 
 **Acceptance Criteria:**
 - `npm run continuity:start [--task T-xxx] [--spec id] [--auto]` cria/atualiza `.kiro/state/branches/<slug>.json` com `scope {specs,tasks,paths}` e `resumePoint {summary,next,blockedBy}` e um `history` append-only.
-- `--auto` infere o escopo pelo nome da branch (casando palavras do id/título/spec das tarefas).
+- `--auto` infere o escopo pelo nome da branch em camadas (ver Requirement 8) e nunca cria um handoff vazio que reprovaria a própria branch.
 - O gate **cria o handoff automaticamente** no primeiro push de um PR que não o tenha e o commita na branch do PR (nunca em forks), então a adoção é sem atrito.
 - Um handoff sem escopo ou sem `resumePoint.summary` é erro: a próxima sessão precisa saber onde parou.
 
@@ -81,6 +81,19 @@ measures objective invariants and writes the state that the next session resumes
 - `ci.yml` roda o check de continuidade de forma informativa em cada push, mantendo o bloqueio no workflow dedicado.
 - `ci.yml` valida os próprios arquivos de workflow (`npm run validate:workflows`) — chave YAML duplicada faz o GitHub rejeitar o arquivo inteiro com falha em 0s, sem log.
 
+### Requirement 8: A new branch bootstraps its own scope from the roadmap
+**User Story:** As the next developer (or agent), I want to create a branch after a merge and have it start already aligned with the project and positioned exactly where the work stopped — without anyone narrating it.
+
+**Acceptance Criteria:**
+- `inferScope(branch, roadmap, policy)` (pure, in `continuity-core.ts`) resolves in tiers, from the most specific to the least:
+  1. `explicit` — task id in any spelling (`t-401`, `t401`, `401`), a word of the task title (accents ignored) or a spec slug/word (`13-deploy-github-pages`, `wasi-runtime`); declaring a spec also declares the open tasks it owes the roadmap;
+  2. `resume-point` — nothing matched: the branch inherits the **first open task whose dependencies are satisfied** (the same task `RESUME.md` shows as next), with its paths, spec and acceptance command, so "continue from where it stopped" is the default rather than an error;
+  3. `promotion` — `main`/`dev`/`staging` carry whole-tree merges: file scope is not applicable and the gate reports `promotion-branch` (info) instead of validating a diff that is the entire history;
+  4. `none` — nothing matched and the roadmap has no open task: the branch must declare scope explicitly.
+- The handoff records **why** the scope was chosen (`history[].note`) and the CLI prints it (`↳ escopo reconhecido…`, `↬ escopo herdado do ponto de retomada…`), so the inference is auditable, never silent.
+- Every tier is unit-tested, including: numbers that are not task ids falling back to the resume point, blocked-first-task resolution, accented titles, and environment branches.
+- `npm run continuity:start -- --auto` on an environment branch creates no handoff (there is nothing to scope).
+
 ## Usage
 
 ```bash
@@ -104,7 +117,7 @@ npm run continuity:resume                       # briefing de retomada
 public/state.json                   estado publicado com a página
 scripts/lib/continuity-core.ts      lógica pura (validação, escopo, progresso, render)
 scripts/continuity.ts               CLI: status · check · start · sync · resume
-scripts/continuity.test.ts          29 testes do núcleo do gate
+scripts/continuity.test.ts          37 testes do núcleo do gate
 scripts/validate-workflows.py       detecta chave duplicada em workflow (falha silenciosa do GitHub)
 .github/workflows/continuity-gate.yml   gate bloqueante em PRs + comentário de retomada
 .github/workflows/continuity-sync.yml   consolidação do estado na main

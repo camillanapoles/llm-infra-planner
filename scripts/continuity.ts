@@ -21,6 +21,7 @@ import {
   checkPhaseDiscipline,
   checkScope,
   computeNextTasks,
+  inferScope,
   evaluateKernelFreshness,
   computeOverall,
   computePhaseProgress,
@@ -255,7 +256,14 @@ function cmdCheck(): number {
   findings.push(...checkPhaseDiscipline(roadmap));
 
   // 2. handoff presence + coherence (skipped on the branches that consolidate state)
-  if (!handoff && !isProtected) {
+  if (isProtected) {
+    findings.push({
+      level: 'info',
+      code: 'promotion-branch',
+      message: `"${branch}" é branch de ambiente (${policy.protectedBranches.join('/')}): promoção carrega um merge de árvore inteira, então o escopo de arquivos não é verificado`,
+      hint: 'o escopo é conferido nas branches de trabalho que entram nela',
+    });
+  } else if (!handoff) {
     findings.push({
       level: 'error',
       code: 'missing-handoff',
@@ -343,15 +351,9 @@ function cmdCheck(): number {
 
 // ─── command: start (handoff scaffold) ───────────────────────────────────────
 
-function inferScopeFromBranch(branch: string, roadmap: ReturnType<typeof loadRoadmap>) {
-  const haystack = branch.toLowerCase();
-  const tasks = roadmap.phases.flatMap(phase => phase.tasks).filter(task => {
-    const words = `${task.id} ${task.title} ${task.spec ?? ''}`.toLowerCase().split(/[^a-z0-9]+/).filter(word => word.length > 3);
-    return words.some(word => haystack.includes(word));
-  });
-  const specs = [...new Set(tasks.map(task => task.spec).filter((spec): spec is string => Boolean(spec)))];
-  const paths = [...new Set(tasks.flatMap(task => task.paths ?? []))];
-  return { tasks: tasks.map(task => task.id), specs, paths };
+/** Inferência de escopo (core): task id → título → spec → ponto de retomada. */
+function inferScopeFor(branch: string, roadmap: ReturnType<typeof loadRoadmap>, policy: ReturnType<typeof loadPolicy>) {
+  return inferScope(branch, roadmap, policy);
 }
 
 function cmdStart(): number {
@@ -366,12 +368,18 @@ function cmdStart(): number {
   const requestedSpecs = flag('--spec')?.split(',').filter(Boolean) ?? [];
   const requestedPaths = flag('--paths')?.split(',').filter(Boolean) ?? [];
 
-  const inferred = auto || requestedTasks.length === 0 ? inferScopeFromBranch(branch, roadmap) : { tasks: [], specs: [], paths: [] };
+  const inference = inferScopeFor(branch, roadmap, policy);
+  const inferred = auto || requestedTasks.length === 0 ? inference : { tasks: [], specs: [], paths: [] };
   const index = taskIndex(roadmap);
   const tasks = [...new Set([...requestedTasks, ...inferred.tasks])].filter(id => index.has(id));
   const taskPaths = tasks.flatMap(id => index.get(id)?.paths ?? []);
   const specs = [...new Set([...requestedSpecs, ...inferred.specs])];
   const paths = [...new Set([...requestedPaths, ...inferred.paths, ...taskPaths, ...specs.flatMap(spec => policy.scopes[spec] ?? [])])];
+
+  if (inference.kind === 'promotion' && !existing && !requestedTasks.length && !requestedSpecs.length && !requestedPaths.length) {
+    process.stdout.write(`${C.dim}· ${inference.reason} — sem handoff para esta branch${C.reset}\n`);
+    return 0;
+  }
 
   const handoff: Handoff = existing
     ? {
@@ -390,7 +398,7 @@ function cmdStart(): number {
         scope: { specs, tasks, paths },
         resumePoint: {
           summary: tasks.length
-            ? `Trabalho em ${tasks.join(', ')} (${tasks.map(id => index.get(id)?.title).filter(Boolean).join('; ')})`
+            ? `${inference.kind === 'resume-point' ? 'Continuação automática — ' : ''}trabalho em ${tasks.join(', ')} (${tasks.map(id => index.get(id)?.title).filter(Boolean).join('; ')})`
             : 'Escopo ainda não detalhado — descreva aqui o objetivo desta branch.',
           next: tasks.flatMap(id => {
             const task = index.get(id);
@@ -398,12 +406,21 @@ function cmdStart(): number {
           }),
           blockedBy: tasks.flatMap(id => (index.get(id)?.dependsOn ?? []).filter(dep => index.get(dep)?.status !== 'done').map(dep => `${id} depende de ${dep}`)),
         },
-        history: [{ at: now, event: 'created', note: auto ? 'handoff criado automaticamente pelo gate de continuidade' : 'handoff criado manualmente' }],
+        history: [{
+          at: now,
+          event: 'created',
+          note: auto ? `handoff criado automaticamente — ${inference.reason}` : `handoff criado manualmente — ${inference.reason}`,
+        }],
       };
 
   const file = saveHandoff(handoff, root);
   process.stdout.write(`${C.green}✓${C.reset} handoff ${existing ? 'atualizado' : 'criado'}: ${file}\n`);
   process.stdout.write(`  tarefas: ${handoff.scope.tasks.join(', ') || '—'}\n  specs:   ${handoff.scope.specs.join(', ') || '—'}\n  paths:   ${handoff.scope.paths.length} glob(s)\n`);
+  if (inference.kind === 'resume-point') {
+    process.stdout.write(`  ${C.blue}↬${C.reset} ${inference.reason}\n`);
+  } else if (inference.kind === 'explicit') {
+    process.stdout.write(`  ${C.dim}↳ ${inference.reason}${C.reset}\n`);
+  }
   if (!handoff.scope.tasks.length) {
     process.stdout.write(`  ${C.yellow}!${C.reset} nenhum escopo inferido — ajuste o arquivo ou rode com ${C.bold}--task T-xxx${C.reset}\n`);
   }

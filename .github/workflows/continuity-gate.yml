@@ -68,11 +68,19 @@ jobs:
             echo "✓ handoff existente: $FILE"
             echo "created=false" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::sem handoff para '$BRANCH' — criando a partir do roadmap"
+            echo "::notice::sem handoff para '$BRANCH' — inferindo escopo do roadmap"
             npx tsx scripts/continuity.ts start --branch "$BRANCH" --auto || \
               npx tsx scripts/continuity.ts start --branch "$BRANCH"
-            echo "created=true" >> "$GITHUB_OUTPUT"
-            echo "file=$FILE" >> "$GITHUB_OUTPUT"
+            if [ -f "$FILE" ]; then
+              # --auto resolves in tiers: task/spec in the branch name, else the
+              # resume point (first open task without blockers).
+              echo "created=true" >> "$GITHUB_OUTPUT"
+              echo "file=$FILE" >> "$GITHUB_OUTPUT"
+            else
+              # environment branches (main/dev/staging) are promotions: no file scope
+              echo "created=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::$BRANCH é branch de ambiente — sem handoff"
+            fi
           fi
 
       - name: Commit the new handoff to the PR branch

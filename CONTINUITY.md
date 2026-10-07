@@ -34,8 +34,11 @@ npm run continuity:status
 
 # 2. declarar o escopo desta branch (cria .kiro/state/branches/<slug>.json)
 npm run continuity:start -- --task T-402
-#    ou, para inferir pelo nome da branch:
+#    ou deixar o nome da branch falar por si:
 npm run continuity:start -- --auto
+#    --auto: t-401/t401/401 ou palavra do título → escopo exato da tarefa
+#             spec (13-deploy-github-pages, wasi-runtime) → escopo do spec
+#             nada reconhecido → herda o ponto de retomada (primeira tarefa aberta)
 
 # 3. trabalhar… e então validar localmente com o MESMO gate do CI
 npm run lint:changed      # passo bloqueante do CI (só arquivos alterados)
@@ -60,11 +63,29 @@ git add -A && git commit -m "feat: ..."
 | `phase-out-of-order` | tarefa de fase posterior adiantada | conclua a fase aberta ou marque `"crossPhase": true` |
 | `done-without-evidence` | tarefa concluída sem evidência | preencha `evidence` com o artefato que comprova |
 | `stale-state` | estado muito atrás do HEAD | `npm run continuity:sync` |
+| `promotion-branch` *(info)* | `main`/`dev`/`staging` carregam merge de árvore inteira | nada a fazer — o escopo é cobrado nas branches de trabalho |
 
 O gate roda em **todo PR** contra `main`/`dev`/`staging`
 (`.github/workflows/continuity-gate.yml`) e publica um comentário com o
 **ponto de retomada** + o roadmap. Merges na `main` consolidam o estado
 (`.github/workflows/continuity-sync.yml`).
+
+## Branch nova, sem narração
+
+Criou a branch depois do merge? Rode `npm run continuity:start -- --auto` (ou simplesmente
+abra o PR: o workflow `continuity-gate` cria e commita o handoff para você). A escolha do
+escopo é determinística e registrada no próprio handoff (`history[].note`):
+
+| nome da branch | escopo inferido |
+|---|---|
+| `feat/401-observability-dashboards` | tarefa **T-401** (id reconhecido em qualquer grafia) |
+| `fix/acessibilidade-das-abas` | tarefa cujo **título** casa (acentos ignorados) |
+| `spike/wasi-runtime-hardening` | **spec** `12-wasi-runtime` + as tarefas abertas dele |
+| `feat/qualquer-coisa` | **ponto de retomada**: a primeira tarefa aberta sem bloqueio (hoje `T-308`) |
+| `dev`, `staging`, `main` | **promoção**: sem handoff, escopo de arquivos não se aplica |
+
+Se ainda assim o escopo não servir, `--task`/`--spec` têm precedência e o handoff é
+mesclado (nunca perdido). O CI confere tudo outra vez no PR.
 
 ## Adicionar trabalho novo
 
@@ -90,9 +111,11 @@ O gate roda em **todo PR** contra `main`/`dev`/`staging`
   reflete a realidade e que o núcleo foi revalidado depois da última mudança.
 - **No merge:** `continuity-sync` mede os invariantes objetivos (testes, wasm,
   build, lint, docker) e grava o estado com o SHA verificado.
-- **Depois do merge, em qualquer branch nova:** `npm run continuity:resume`
-  imprime o briefing com fase atual, próximas tarefas, bloqueios e guardrails; o
-  handoff da branch nova herda o ponto de parada anterior.
+- **Depois do merge, em qualquer branch nova:** o handoff é inferido do roadmap
+  (`inferScope`) — se o nome da branch cita uma tarefa/spec, o escopo é exato; se não
+  cita nada, ela **herda o ponto de retomada** (primeira tarefa aberta e sem bloqueio)
+  em vez de falhar. `npm run continuity:resume` imprime o mesmo briefing que o gate
+  publica no PR: fase atual, próximas tarefas, bloqueios e guardrails.
 
 Guardrails que o estado carrega junto (de `policy.json > resume.guardrails`):
 wasm ≡ TypeScript, sem segredos versionados, navegador nunca chama `localhost`

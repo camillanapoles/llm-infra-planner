@@ -304,6 +304,7 @@ parou. Porta de entrada: [`CONTINUITY.md`](CONTINUITY.md).
 ```bash
 npm run continuity:status     # fase atual, progresso, próximas tarefas
 npm run continuity:start -- --task T-402   # declara o escopo desta branch
+npm run continuity:start -- --auto         # ou infere do nome da branch (#401, spec, …)
 npm run continuity:check      # gate (o mesmo que bloqueia o PR)
 npm run continuity:sync       # mede testes/wasm/build/lint e atualiza o estado
 npm run continuity:resume     # briefing de retomada para a próxima sessão
@@ -311,7 +312,10 @@ npm run continuity:resume     # briefing de retomada para a próxima sessão
 
 - **Ponto de retomada:** [`.kiro/state/RESUME.md`](.kiro/state/RESUME.md) · **estado:** [`.kiro/state/STATE.md`](.kiro/state/STATE.md)
 - **Escopo por branch:** `.kiro/state/branches/<slug>.json` (criado automaticamente
-  pelo gate no primeiro push do PR).
+  pelo gate no primeiro push do PR). Sem `--task`, o escopo é inferido do roadmap: o
+  nome da branch pode citar a tarefa (`feat/401-…`), o spec (`wasi-runtime`) ou nada —
+  e a branch **herda o ponto de retomada** (primeira tarefa aberta sem bloqueio) em vez
+  de falhar. `main`/`dev`/`staging` são promoções: não têm escopo de arquivo.
 - **Gate:** `.github/workflows/continuity-gate.yml` reprova PR fora do escopo, com
   tarefa inexistente, com roadmap desatualizado ou com mudança no núcleo wasm/TS
   que não foi revalidada. A label `scope:allow` libera expansão intencional.

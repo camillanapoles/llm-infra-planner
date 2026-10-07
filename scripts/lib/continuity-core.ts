@@ -519,6 +519,139 @@ export function computeNextTasks(roadmap: Roadmap, limit = 5): NextTask[] {
   return next;
 }
 
+// ─── Scope inference for new branches ────────────────────────────────────────
+
+/** Accent-insensitive lowercase, so `Suíte` in a title matches `suite` in a branch. */
+const normalize = (text: string): string =>
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+export type ScopeInferenceKind = 'explicit' | 'resume-point' | 'promotion' | 'none';
+
+export interface InferredScope {
+  kind: ScopeInferenceKind;
+  tasks: string[];
+  specs: string[];
+  paths: string[];
+  /** Human-readable explanation — recorded in the handoff and printed by the CLI. */
+  reason: string;
+}
+
+/**
+ * Infers the scope of a branch from the roadmap alone.
+ *
+ * This is what makes continuity automatic: a branch created after a merge does
+ * not need anyone to narrate what it is for — the roadmap says where the project
+ * stopped, and the handoff is derived from it.
+ *
+ * Tiers, in order of precision:
+ *   1. `explicit`     — the branch name names a task (`t-401`/`t401`/`401`) or a
+ *                       word of its title, or a spec (`13-deploy-github-pages`
+ *                       or a distinctive word of it);
+ *   2. `resume-point` — nothing matched, so the branch inherits the next
+ *                       unblocked task: it continues exactly where the project
+ *                       stopped, instead of failing as "empty scope";
+ *   3. `promotion`    — `dev`/`staging`/`main` carry whole-tree merges, so file
+ *                       scope does not apply to them;
+ *   4. `none`         — nothing matched and the roadmap has no open task left.
+ */
+export function inferScope(branch: string, roadmap: Roadmap, policy: Policy): InferredScope {
+  const haystack = normalize(branch);
+  const tasks = flattenTasks(roadmap);
+  const index = taskIndex(roadmap);
+
+  if (policy.protectedBranches.includes(branch)) {
+    return {
+      kind: 'promotion',
+      tasks: [],
+      specs: [],
+      paths: [],
+      reason: `"${branch}" é branch de ambiente (${policy.protectedBranches.join('/')}): promoção carrega um merge de árvore inteira, então escopo de arquivos não se aplica`,
+    };
+  }
+
+  const taskIds = new Set<string>();
+  const specs = new Set<string>();
+
+  // tier 1a — task id in any spelling: t-401, t401, 401
+  const idTokens = new Set<string>();
+  for (const match of haystack.matchAll(/(?:^|[^0-9a-z])(?:t-?)?(\d{1,4})(?![0-9a-z])/g)) idTokens.add(match[1]);
+  if (idTokens.size) {
+    for (const task of tasks) {
+      const digits = task.id.replace(/\D/g, '');
+      if (digits && idTokens.has(digits)) taskIds.add(task.id);
+    }
+  }
+
+  // tier 1b — a word of the task title (>= 4 chars) appears in the branch name
+  if (taskIds.size === 0) {
+    for (const task of tasks) {
+      const words = normalize(`${task.title} ${task.spec ?? ''}`)
+        .split(/[^a-z0-9]+/)
+        .filter(word => word.length >= 4);
+      if (words.some(word => haystack.includes(word))) taskIds.add(task.id);
+    }
+  }
+
+  // tier 1c — a spec slug (`13-deploy-github-pages`) or a distinctive word of it
+  if (taskIds.size === 0) {
+    for (const spec of Object.keys(policy.scopes)) {
+      const slug = normalize(spec);
+      const words = slug.split(/[^a-z0-9]+/).filter(word => word.length >= 5);
+      if (haystack.includes(slug) || words.some(word => haystack.includes(word))) specs.add(spec);
+    }
+    // declaring the spec also declares the tasks it still owes the roadmap
+    for (const task of tasks) {
+      if (task.spec && specs.has(task.spec) && task.status !== 'done') taskIds.add(task.id);
+    }
+  }
+
+  if (taskIds.size || specs.size) {
+    const paths = [
+      ...new Set([
+        ...[...taskIds].flatMap(id => index.get(id)?.paths ?? []),
+        ...[...specs].flatMap(spec => policy.scopes[spec] ?? []),
+      ]),
+    ];
+    return {
+      kind: 'explicit',
+      tasks: [...taskIds],
+      specs: [...specs],
+      paths,
+      reason: `escopo reconhecido no nome da branch: ${[...taskIds, ...specs].join(', ')}`,
+    };
+  }
+
+  // tier 2 — resume point: continue exactly where the project stopped.
+  // The first open task whose dependencies are satisfied is the honest answer;
+  // if every open task is blocked, the first one is still where the project is.
+  const open = computeNextTasks(roadmap, flattenTasks(roadmap).length || 1);
+  const next = open.find(task => task.blockedBy.length === 0) ?? open[0];
+  const nextTask = next ? index.get(next.id) : undefined;
+  if (next && nextTask) {
+    const paths = [
+      ...new Set([...(nextTask.paths ?? []), ...(nextTask.spec ? policy.scopes[nextTask.spec] ?? [] : [])]),
+    ];
+    return {
+      kind: 'resume-point',
+      tasks: [nextTask.id],
+      specs: nextTask.spec ? [nextTask.spec] : [],
+      paths,
+      reason: `nada no nome da branch; escopo herdado do ponto de retomada: ${nextTask.id} — ${nextTask.title}`,
+    };
+  }
+
+  return {
+    kind: 'none',
+    tasks: [],
+    specs: [],
+    paths: [],
+    reason: 'nenhum escopo reconhecido no nome da branch e o roadmap não tem tarefa aberta',
+  };
+}
+
 export function currentPhase(roadmap: Roadmap): RoadmapPhase {
   return (
     roadmap.phases.find(phase => phase.tasks.some(task => task.status === 'in_progress')) ??

@@ -16,6 +16,7 @@ import {
   computePhaseProgress,
   evaluateKernelFreshness,
   globToRegExp,
+  inferScope,
   matchGlob,
   renderResumeMd,
   renderStateMd,
@@ -147,6 +148,102 @@ describe('checkScope', () => {
     const result = checkScope(['.github/workflows/deploy-pages.yml', 'wasm/kernel.ts'], viaTask, policy, roadmap);
     expect(result.inScope).toEqual(['.github/workflows/deploy-pages.yml']);
     expect(result.outOfScope).toEqual(['wasm/kernel.ts']);
+  });
+});
+
+// ─── Scope inference for new branches ────────────────────────────────────────
+// This is the mechanism behind "automatic continuity": a branch created after a
+// merge derives its own scope from the roadmap, so it never fails as
+// `handoff-empty-scope` and never loses the place where the project stopped.
+
+describe('inferScope', () => {
+  it('recognises a task id written in any spelling', () => {
+    for (const branch of ['feat/t-2-something', 'feat/t2-something', 'feat/2-something']) {
+      const inferred = inferScope(branch, roadmap, policy);
+      expect(inferred.kind).toBe('explicit');
+      expect(inferred.tasks).toContain('T-2');
+      expect(inferred.paths).toContain('wasm/**');
+    }
+  });
+
+  it('does not turn an unrelated number into a task id', () => {
+    const inferred = inferScope('fix/999-deep-cleanup', roadmap, policy);
+    expect(inferred.kind).toBe('resume-point'); // 999 não é tarefa → herda o ponto de retomada
+    expect(inferred.reason).toContain('ponto de retomada');
+  });
+
+  it('recognises a word of the task title, accents included', () => {
+    const withAccents: Roadmap = {
+      ...roadmap,
+      phases: [...roadmap.phases.slice(0, 1), {
+        ...roadmap.phases[1],
+        tasks: [{ id: 'T-9', title: 'Auditoria de acessibilidade', status: 'todo', paths: ['src/a11y/**'] }],
+      }],
+    };
+    const inferred = inferScope('feat/acessibilidade-da-ui', withAccents, policy);
+    expect(inferred.kind).toBe('explicit');
+    expect(inferred.tasks).toEqual(['T-9']);
+  });
+
+  it('recognises a spec slug and pulls the tasks it still owes the roadmap', () => {
+    const inferred = inferScope('spike/wasi-runtime-hardening', roadmap, policy);
+    expect(inferred.kind).toBe('explicit');
+    expect(inferred.specs).toContain('wasi-runtime');
+    expect(inferred.paths).toContain('scripts/wasi-*.mjs');
+  });
+
+  it('inherits the resume point when the branch name says nothing', () => {
+    const inferred = inferScope('zzq-none', roadmap, policy);
+    expect(inferred.kind).toBe('resume-point');
+    expect(inferred.tasks).toEqual(['T-2']); // primeiro aberto em ordem de roadmap
+    expect(inferred.paths.length).toBeGreaterThan(0);
+    expect(inferred.reason).toContain('ponto de retomada');
+  });
+
+  it('prefers the first open task whose dependencies are satisfied', () => {
+    const dependent: Roadmap = {
+      ...roadmap,
+      phases: [...roadmap.phases.slice(0, 1), {
+        ...roadmap.phases[1],
+        tasks: [
+          { id: 'T-2', title: 'Primeiro', status: 'todo', dependsOn: ['T-8'], paths: ['wasm/**'] },
+          { id: 'T-8', title: 'Dependência', status: 'todo', paths: ['src/dep/**'] },
+          { id: 'T-5', title: 'Livre', status: 'todo', paths: ['src/livre/**'] },
+        ],
+      }],
+    };
+    // T-2 espera T-8 (aberto) → a branch retoma em T-8, não em T-2
+    expect(inferScope('zzq-none', dependent, policy).tasks).toEqual(['T-8']);
+    const allBlocked: Roadmap = {
+      ...dependent,
+      phases: [...dependent.phases.slice(0, 1), {
+        ...dependent.phases[1],
+        tasks: dependent.phases[1].tasks.map(task => ({ ...task, dependsOn: ['T-999'] })),
+      }],
+    };
+    // tudo bloqueado → ainda aponta para onde o projeto está (primeiro aberto)
+    expect(inferScope('zzq-none', allBlocked, policy).tasks).toEqual(['T-2']);
+  });
+
+  it('treats environment branches as promotions (no file scope)', () => {
+    for (const branch of ['dev', 'staging', 'main']) {
+      const inferred = inferScope(branch, roadmap, policy);
+      expect(inferred.kind).toBe('promotion');
+      expect(inferred.paths).toEqual([]);
+    }
+  });
+
+  it('reports `none` when the roadmap has nothing left to do', () => {
+    const finished: Roadmap = {
+      ...roadmap,
+      phases: roadmap.phases.map(phase => ({
+        ...phase,
+        tasks: phase.tasks.map(task => ({ ...task, status: 'done' as const, evidence: 'pronto' })),
+      })),
+    };
+    const inferred = inferScope('zzq-none', finished, policy);
+    expect(inferred.kind).toBe('none');
+    expect(inferred.tasks).toEqual([]);
   });
 });
 
