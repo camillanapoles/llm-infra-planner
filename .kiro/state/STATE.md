@@ -1,6 +1,6 @@
 # Estado do projeto — LLMcalc
 
-> Gerado automaticamente por `npm run continuity:sync` em 2026-10-07T17:52:26.076Z (branch `arena/fe62ce6d-llm-infra-planner` @ `9b9024f`).
+> Gerado automaticamente por `npm run continuity:sync` em 2026-10-07T17:55:52.784Z (branch `arena/fe62ce6d-llm-infra-planner` @ `24a41d1`).
 > Não edite à mão: a fonte são `.kiro/state/roadmap.json`, `policy.json` e os handoffs em `.kiro/state/branches/`.
 
 **Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 15/29 tarefas (52%)

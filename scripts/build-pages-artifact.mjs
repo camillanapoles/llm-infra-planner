@@ -46,6 +46,30 @@ for (const target of targets) {
   }
 }
 
+/**
+ * The wasm artifacts are not versioned (see .gitignore) — they are generated.
+ * Make sure they exist before the bundle is built, otherwise the deployed site
+ * would ship without its kernel and the CI layout check would fail.
+ */
+function ensureWasmArtifacts() {
+  const manifest = path.join(root, 'public', 'wasm', 'manifest.json');
+  const kernel = path.join(root, 'public', 'wasm', 'llmcalc-kernel.wasm');
+  const wasi = path.join(root, 'wasi', 'dist', 'llmcalc-wasi.wasm');
+  const sources = ['wasm/kernel.ts', 'wasm/service.ts', 'scripts/build-wasm.mjs'];
+  const newestSource = Math.max(...sources.map(file => {
+    const full = path.join(root, file);
+    return fs.existsSync(full) ? fs.statSync(full).mtimeMs : 0;
+  }));
+  const upToDate = fs.existsSync(kernel) && fs.existsSync(wasi) && fs.existsSync(manifest)
+    && fs.statSync(manifest).mtimeMs >= newestSource;
+  if (upToDate) {
+    console.log('· wasm artifacts up to date');
+    return;
+  }
+  console.log('· building wasm artifacts (missing or out of date)');
+  execFileSync(process.execPath, ['scripts/build-wasm.mjs'], { cwd: root, stdio: 'inherit' });
+}
+
 function buildOne(name) {
   const { base, appEnv, dir } = ENVS[name];
   const destination = path.join(outDir, dir);
@@ -95,6 +119,7 @@ function gitHead() {
 }
 
 fs.mkdirSync(outDir, { recursive: true });
+ensureWasmArtifacts();
 for (const target of targets) buildOne(target);
 
 // A landing helper so /llm-infra-planner/ cannot be confused with the envs
