@@ -87,6 +87,9 @@ escopo é determinística e registrada no próprio handoff (`history[].note`):
 Se ainda assim o escopo não servir, `--task`/`--spec` têm precedência e o handoff é
 mesclado (nunca perdido). O CI confere tudo outra vez no PR.
 
+O gate também **repara** um handoff que exista porém sem escopo (criado à mão ou por uma
+versão anterior): ele infere de novo e commita, em vez de travar o PR num beco sem saída.
+
 ## Adicionar trabalho novo
 
 1. Abra `.kiro/state/roadmap.json` e acrescente a tarefa na fase correspondente:

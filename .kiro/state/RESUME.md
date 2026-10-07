@@ -1,11 +1,11 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-07T18:05:17.018Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-07T18:06:13.155Z.
 
 ## Onde estamos
 
 - Fase **P3 — WebAssembly e entrega multi-ambiente**, 52% do roadmap (15/29 tarefas).
-- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `6f631e6`.
+- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `44cdf0a`.
 - Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
 - Resumo do handoff: Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).
 - Próximos passos já registrados nesta branch:
@@ -27,11 +27,11 @@
 ## Últimos commits
 
 ```
+44cdf0a feat(continuity): a new branch infers its own scope, including the resume point
 6f631e6 fix(ci): correct the Pages artifact verification (loop skipped 'dev/')
 064c48b fix(pages): build wasm artifacts before the Pages artifact
 24a41d1 fix(lint): drop unused import in continuity CLI + add lint:changed script
 9b9024f fix(ci): repair duplicate env key in continuity-sync + validate workflow files
-b6a3128 feat(continuity): state-driven gate keeps every branch in scope and resumable
 ```
 
 ## Guardrails (não negociáveis)

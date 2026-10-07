@@ -64,16 +64,26 @@ jobs:
           set -euo pipefail
           SLUG=$(echo "$BRANCH" | tr '/[:upper:]' '-[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g')
           FILE=".kiro/state/branches/$SLUG.json"
+          # O handoff existe e tem escopo? Então nada a fazer. Um handoff vazio
+          # (criado antes da inferência em camadas, ou à mão) é reparado aqui —
+          # continuidade que se cura sozinha em vez de travar o PR.
+          HAS_SCOPE=false
           if [ -f "$FILE" ]; then
+            COUNT=$(jq -r '((.scope.tasks // []) | length) + ((.scope.paths // []) | length)' "$FILE")
+            if [ "$COUNT" != "0" ]; then HAS_SCOPE=true; fi
+          fi
+
+          if [ "$HAS_SCOPE" = "true" ]; then
             echo "✓ handoff existente: $FILE"
             echo "created=false" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::sem handoff para '$BRANCH' — inferindo escopo do roadmap"
+            echo "::notice::sem escopo em '$FILE' — inferindo do roadmap"
             npx tsx scripts/continuity.ts start --branch "$BRANCH" --auto || \
               npx tsx scripts/continuity.ts start --branch "$BRANCH"
             if [ -f "$FILE" ]; then
               # --auto resolves in tiers: task/spec in the branch name, else the
               # resume point (first open task without blockers).
+              # o arquivo passou a existir (criado ou reparado) → commitar
               echo "created=true" >> "$GITHUB_OUTPUT"
               echo "file=$FILE" >> "$GITHUB_OUTPUT"
             else
