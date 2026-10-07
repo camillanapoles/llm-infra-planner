@@ -202,7 +202,8 @@
             ".github/workflows/deploy-pages.yml",
             "scripts/build-pages-artifact.mjs",
             "src/lib/env.ts",
-            ".kiro/specs/13-deploy-github-pages.md"
+            ".kiro/specs/13-deploy-github-pages.md",
+            "scripts/verify-pages-artifact.sh"
           ],
           "verify": "npm run build:pages -- --env all --out _site",
           "evidence": "_site/{,staging/,dev/} com base paths corretos e 404.html por ambiente"

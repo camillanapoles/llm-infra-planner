@@ -88,6 +88,7 @@ npm run serve:pages -- --port 4180     # http://localhost:4180/{,staging/,dev/}
 ```
 scripts/build-pages-artifact.mjs   multi-environment artifact builder
 scripts/serve-static.mjs           local stand-in for Pages/nginx (SPA 404, wasm MIME, /api proxy)
+scripts/verify-pages-artifact.sh   pre-publish check (3 envs, base paths, wasm per env)
 .github/workflows/deploy-pages.yml detect → build → assemble → deploy
 .github/workflows/ci.yml           pages-artifact job (layout + base path assertions)
 src/lib/env.ts                     VITE_APP_ENV / BASE_URL → env badge, runtime page
