@@ -28,6 +28,7 @@ import {
   startSession,
   touchSession,
   writeSnapshot,
+  importSnapshot,
 } from './lib/store-core.js';
 import {
   RESUME_FILE,
@@ -305,6 +306,16 @@ async function cmdSync(): Promise<number> {
     const ledger = openStore();
     if (ledger.repos && ledger.store) {
       const repos = ledger.repos;
+      // Auto-cura: sandbox/branch nova abre um banco vazio, mas o histórico está no
+      // snapshot versionado. Sem isto, o ledger perderia a memória que existe para guardar.
+      if (gatesSummary(repos).total === 0 && fs.existsSync(path.join(root, SNAPSHOT_FILE))) {
+        try {
+          const restored = importSnapshot(repos, JSON.parse(fs.readFileSync(path.join(root, SNAPSHOT_FILE), 'utf8')));
+          process.stdout.write(`  ${C.dim}ledger restaurado do snapshot: ${Object.entries(restored.imported).map(([table, count]) => `${table}=${count}`).join(' ')}${C.reset}\n`);
+        } catch (error) {
+          process.stdout.write(`  ${C.yellow}!${C.reset} snapshot não pôde ser importado: ${(error as Error).message}\n`);
+        }
+      }
       const commit = state.invariants.commit ?? state.headSha;
       for (const gate of state.gates) {
         recordGate(repos, { id: gate.id, ok: gate.ok, detail: gate.detail, commit, branch, ranAt: gate.ranAt });

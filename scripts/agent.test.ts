@@ -63,11 +63,39 @@ describe('summarizeAudit', () => {
   it('reports failing gates, the session and staleness', () => {
     const report = summarizeAudit(snapshot(), 'fff9999');
     expect(report.gates.total).toBe(2);
-    expect(report.gates.failed).toBe(1);
+    expect(report.gates.failedRuns).toBe(1);
+    expect(report.gates.ok).toBe(false); // a última execução do lint falhou
     expect(report.gates.failing[0].id).toBe('lint@2');
     expect(report.lastSession?.resume_point).toBe('falta o merge');
     expect(report.lastSession?.blockers).toEqual(['T-308 depende do merge']);
     expect(report.stale).toBe(true); // abc1234 ≠ fff9999
+  });
+
+  it('judges by the latest run of each gate, not by history', () => {
+    // lint falhou e depois passou: o histórico permanece, o veredito não
+    const healed = snapshot({
+      tables: {
+        ...snapshot().tables,
+        gates: [
+          { id: 'lint@1', ok: false, detail: '19 erros', ran_at: '2026-01-02T00:01:00.000Z' },
+          { id: 'lint@2', ok: true, detail: '0 problemas', ran_at: '2026-01-02T00:05:00.000Z' },
+        ],
+      },
+    });
+    const report = summarizeAudit(healed, 'abc1234');
+    expect(report.gates.total).toBe(2);
+    expect(report.gates.failedRuns).toBe(1); // o histórico continua visível
+    expect(report.gates.ok).toBe(true); // a última execução passou
+    expect(report.gates.failing).toEqual([]);
+  });
+
+  it('still fails when a gate id is registered only as failing', () => {
+    const broken = snapshot({
+      tables: { ...snapshot().tables, gates: [{ id: 'pages@1', ok: false, detail: '2/3 ambientes', ran_at: '2026-01-02T00:03:00.000Z' }] },
+    });
+    const report = summarizeAudit(broken, 'abc1234');
+    expect(report.gates.ok).toBe(false);
+    expect(report.gates.failing.map(gate => gate.id)).toEqual(['pages@1']);
   });
 
   it('is not stale when the snapshot commit matches HEAD', () => {
@@ -87,6 +115,7 @@ describe('renderAuditMd', () => {
     const md = renderAuditMd(summarizeAudit(snapshot(), 'fff9999'));
     expect(md).toContain('Auditoria do ledger');
     expect(md).toContain('gates registrados: **2**');
+    expect(md).toContain('veredito pela última execução de cada gate: **há gate vermelho**');
     expect(md).toContain('lint@2');
     expect(md).toContain('atrás do HEAD');
     expect(md).toContain('bloqueios: T-308 depende do merge');

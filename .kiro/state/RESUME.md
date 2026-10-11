@@ -1,11 +1,11 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-11T23:31:34.492Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-11T23:34:31.863Z.
 
 ## Onde estamos
 
 - Fase **P3 — WebAssembly e entrega multi-ambiente**, 56% do roadmap (18/32 tarefas).
-- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `cdfee43`.
+- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `0f53282`.
 - Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
 - Resumo do handoff: Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).
 - Próximos passos já registrados nesta branch:
@@ -27,6 +27,7 @@
 ## Últimos commits
 
 ```
+0f53282 feat(agent): GitOps actions by API, with no personal credential anywhere
 cdfee43 feat: implement GA consent mode v2 with EEA region defaults, URL passthrough, ads data redaction
 ```
 

@@ -122,7 +122,16 @@ function sh(command: string, argv: string[], options: { dry?: boolean; allowFail
 export interface AuditReport {
   generatedAt: string;
   collections: Record<string, number>;
-  gates: { total: number; failed: number; failing: { id: string; detail: string; ran_at: string }[] };
+  gates: {
+    /** Execuções registradas (histórico completo). */
+    total: number;
+    /** Quantas dessas execuções falharam — histórico, não veredito. */
+    failedRuns: number;
+    /** Última execução de cada gate cujo resultado foi falha. */
+    failing: { id: string; detail: string; ran_at: string }[];
+    /** `true` quando a última execução de todos os gates passou. */
+    ok: boolean;
+  };
   lastSession: { id: string; branch: string; goal: string; resume_point: string; blockers: string[]; heartbeat_at: string } | null;
   recentEvents: { at: string; type: string; summary: string }[];
   stale: boolean;
@@ -130,7 +139,18 @@ export interface AuditReport {
 
 export function summarizeAudit(snapshot: Snapshot, headSha: string, limit = 20): AuditReport {
   const gates = snapshot.tables.gates ?? [];
-  const failed = gates.filter(gate => gate.ok === false);
+  const failedRuns = gates.filter(gate => gate.ok === false);
+
+  // Veredito = última execução de cada gate (id no formato `<gate>@<timestamp>`);
+  // falhas antigas já corrigidas continuam no histórico, mas não reprovam a auditoria.
+  const latestOf = new Map<string, Record<string, unknown>>();
+  for (const gate of gates) {
+    const name = String(gate.id ?? '').split('@')[0];
+    const current = latestOf.get(name);
+    if (!current || String(gate.ran_at ?? '') > String(current.ran_at ?? '')) latestOf.set(name, gate);
+  }
+  const failing = [...latestOf.values()].filter(gate => gate.ok === false);
+
   const sessions = snapshot.tables.sessions ?? [];
   const events = (snapshot.tables.events ?? []).slice(0, limit);
   const lastSync = (snapshot.tables.kv ?? []).find(row => row.key === 'last_sync')?.value as { commit?: string } | undefined;
@@ -139,8 +159,9 @@ export function summarizeAudit(snapshot: Snapshot, headSha: string, limit = 20):
     collections: snapshot.counts ?? {},
     gates: {
       total: gates.length,
-      failed: failed.length,
-      failing: failed.slice(0, 10).map(gate => ({ id: String(gate.id), detail: String(gate.detail ?? ''), ran_at: String(gate.ran_at ?? '') })),
+      failedRuns: failedRuns.length,
+      failing: failing.slice(0, 10).map(gate => ({ id: String(gate.id), detail: String(gate.detail ?? ''), ran_at: String(gate.ran_at ?? '') })),
+      ok: failing.length === 0,
     },
     lastSession: sessions[0]
       ? {
@@ -163,7 +184,8 @@ export function renderAuditMd(report: AuditReport): string {
   lines.push('');
   lines.push(`- snapshot: \`${report.generatedAt}\`${report.stale ? ' · **atrás do HEAD** (rode `npm run continuity:sync`)' : ''}`);
   lines.push(`- coleções: ${Object.entries(report.collections).map(([table, count]) => `${table}=${count}`).join(' · ')}`);
-  lines.push(`- gates registrados: **${report.gates.total}** · com falha: **${report.gates.failed}**`);
+  lines.push(`- gates registrados: **${report.gates.total}** (${report.gates.failedRuns} execução(ões) com falha no histórico)`);
+  lines.push(`- veredito pela última execução de cada gate: ${report.gates.ok ? '**tudo verde**' : '**há gate vermelho**'}`);
   for (const gate of report.gates.failing) lines.push(`  - ✗ \`${gate.id}\` — ${gate.detail} (${gate.ran_at})`);
   if (report.lastSession) {
     lines.push('');
@@ -218,7 +240,9 @@ function actionAudit(args: AgentArgs): number {
   if (!snapshot) throw new Error(`${SNAPSHOT_FILE} não existe — rode \`npm run continuity:sync\` (ou \`npm run store -- export\`)`);
   const report = summarizeAudit(snapshot, headSha(), args.limit);
   emit(renderAuditMd(report), args, report);
-  return report.gates.failed > 0 && !args.summary ? 1 : 0; // falha de gate é sinal, não ruído
+  // Reprova quando a última execução de algum gate falhou (ou o snapshot está atrás do HEAD);
+  // histórico de falhas já corrigidas fica visível no relatório sem derrubar o comando.
+  return report.gates.ok && !report.stale ? 0 : 1;
 }
 
 function actionCheck(args: AgentArgs): number {

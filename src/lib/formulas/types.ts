@@ -28,6 +28,8 @@ export interface ModelSpec {
     attentionType: "mha" | "gqa" | "mqa" | "mla";
     maxContextLength: number;
     positionalEmbedding: "rope" | "alibi" | "yarn" | "learned";
+    /** Presente quando o config de origem declara uma torre de visão (modelos VLM). */
+    visionConfig?: { hiddenSize?: number; numLayers?: number };
   };
   moe?: {
     numExperts: number;

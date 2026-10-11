@@ -239,8 +239,11 @@ npm run validate
 
 This checks:
 - All required fields present
-- Sanity ranges (VRAM 1-1024 GB, params 1M-2T, etc.)
-- Type correctness
+- Sanity ranges — deliberately wide, meant to catch unit mistakes rather than
+  editorialize hardware (on-chip SRAM of a Groq LPU is 0.23 GB; a GB300 NVL72
+  rack sums 20,736 GB). The exact bounds live in `scripts/validate-data.ts`.
+- Enums mirror the app's own types (`GPUSpec` in `src/lib/formulas/types.ts`):
+  adding a vendor/category to the type without adding it here fails the catalog.
 
 ### 2. Run unit tests
 
@@ -248,9 +251,20 @@ This checks:
 npm test
 ```
 
-All 244 tests must pass.
+The whole suite must be green — no failing and no skipped-to-hide-a-failure tests.
 
-### 3. Build the app
+### 3. Lint
+
+```bash
+npm run lint
+```
+
+Must report `0 problems` (errors and warnings both). One convention that the
+lint config encodes: a parameter or variable that is intentionally unused gets a
+`_` prefix (`_modelId`), which documents the intent instead of silently breaking
+the build. See `eslint.config.js`.
+
+### 4. Build the app
 
 ```bash
 npm run build
@@ -258,7 +272,7 @@ npm run build
 
 Must complete with 0 TypeScript errors.
 
-### 4. Test locally
+### 5. Test locally
 
 ```bash
 npm run dev

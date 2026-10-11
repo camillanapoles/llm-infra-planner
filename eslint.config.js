@@ -31,7 +31,23 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': [
         'warn',
-        { allowConstantExport: true },
+        {
+          allowConstantExport: true,
+          // `useToast` mora junto do provider de propósito: 7 arquivos importam
+          // o hook daqui. Componentes deste arquivo não participam do HMR.
+          allowExportNames: ['useToast'],
+        },
+      ],
+      // Convenção `_prefixo`: valor lido de propósito e descartado (ex.: cabeçalho
+      // binário lido só para avançar o offset). Documentado em CONTRIBUTING.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
       ],
       // Allow empty interfaces in primitive component files (extends pattern)
       '@typescript-eslint/no-empty-object-type': 'off',

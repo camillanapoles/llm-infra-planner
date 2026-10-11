@@ -12,11 +12,46 @@ import type { CalculatorState, ModelSpec, GPUSpec, CloudInstance, GPUFitResult }
 
 const DEFAULT_EFFICIENCY = 0.8;
 
+// ── Comparison table (constante de módulo: tipada e fora das deps dos hooks) ──
+type MetricKey = 'totalVRAM' | 'weightsGB' | 'kvCacheGB' | 'tokensPerSecond' | 'bestCloudPerHour' | 'costPerMTok';
+
+interface MetricRow {
+  key: MetricKey;
+  label: string;
+  /** Toda métrica aceita null — célula vazia vira '—' em vez de quebrar a renderização. */
+  fmt: (value: number | null) => string;
+  unit: string;
+  lowerIsBetter: boolean;
+}
+
+const METRICS: MetricRow[] = [
+  { key: 'totalVRAM',        label: 'Total VRAM',     fmt: v => v != null ? `${v.toFixed(1)} GB` : '—', unit: ' GB', lowerIsBetter: true },
+  { key: 'weightsGB',        label: 'Weights',        fmt: v => v != null ? `${v.toFixed(1)} GB` : '—', unit: ' GB', lowerIsBetter: true },
+  { key: 'kvCacheGB',        label: 'KV Cache',       fmt: v => v != null ? `${v.toFixed(2)} GB` : '—', unit: ' GB', lowerIsBetter: true },
+  { key: 'tokensPerSecond',  label: 'Throughput',     fmt: v => v != null ? `${Math.round(v).toLocaleString()} tok/s` : '—', unit: '', lowerIsBetter: false },
+  { key: 'bestCloudPerHour', label: 'Best Cloud $/h', fmt: v => v != null ? `$${v.toFixed(2)}` : '—', unit: '$', lowerIsBetter: true },
+  { key: 'costPerMTok',      label: '$/M tokens',     fmt: v => v != null ? `$${v.toFixed(2)}` : '—', unit: '$', lowerIsBetter: true },
+];
+
 const PRECISION_OPTIONS = ['fp32', 'fp16', 'bf16', 'fp8', 'int8', 'int4'];
 const CTX_OPTIONS = [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072];
 
 // ── Compute metrics for a config ─────────────────────────────────────────────
-function computeConfig(state: CalculatorState, modelDb: ModelSpec[], gpuDb: GPUSpec[], cloudDb: CloudInstance[]) {
+interface ComputedConfig {
+  state: CalculatorState;
+  model: ModelSpec | null;
+  modelName: string;
+  totalVRAM: number;
+  weightsGB: number;
+  kvCacheGB: number;
+  tokensPerSecond: number | null;
+  fitLabel: string;
+  fitStatus: 'green' | 'yellow' | 'red';
+  bestCloudPerHour: number | null;
+  costPerMTok: number | null;
+}
+
+function computeConfig(state: CalculatorState, modelDb: ModelSpec[], gpuDb: GPUSpec[], cloudDb: CloudInstance[]): ComputedConfig {
   const model = modelDb.find(m => m.id === state.model);
   if (!model) return { state, model: null, modelName: state.model, totalVRAM: 0, weightsGB: 0, kvCacheGB: 0, tokensPerSecond: null, fitLabel: '—', fitStatus: 'red' as const, bestCloudPerHour: null, costPerMTok: null };
 
@@ -167,10 +202,11 @@ export function Compare() {
   // Local editable copies of configs
   const [localConfigs, setLocalConfigs] = React.useState<CalculatorState[]>([]);
 
-  // Sync when compareConfigs changes (new config added)
+  // Sync quando uma configuração é adicionada/removida (não a cada edição local):
+  // a dependência é o array inteiro, e o guarda compara o tamanho.
   React.useEffect(() => {
-    setLocalConfigs(compareConfigs.map(c => ({ ...c })));
-  }, [compareConfigs.length]);
+    setLocalConfigs(prev => prev.length === compareConfigs.length ? prev : compareConfigs.map(c => ({ ...c })));
+  }, [compareConfigs]);
 
   const handleConfigChange = (index: number, updates: Partial<CalculatorState>) => {
     setLocalConfigs(prev => prev.map((c, i) => i === index ? { ...c, ...updates } : c));
@@ -240,16 +276,6 @@ export function Compare() {
     );
   }
 
-  // ── Comparison table ────────────────────────────────────────────────────────
-  const METRICS = [
-    { key: 'totalVRAM',       label: 'Total VRAM',     fmt: (v: number) => `${v.toFixed(1)} GB`,   unit: ' GB', lowerIsBetter: true },
-    { key: 'weightsGB',       label: 'Weights',        fmt: (v: number) => `${v.toFixed(1)} GB`,   unit: ' GB', lowerIsBetter: true },
-    { key: 'kvCacheGB',       label: 'KV Cache',       fmt: (v: number) => `${v.toFixed(2)} GB`,   unit: ' GB', lowerIsBetter: true },
-    { key: 'tokensPerSecond', label: 'Throughput',     fmt: (v: number | null) => v != null ? `${Math.round(v).toLocaleString()} tok/s` : '—', unit: '', lowerIsBetter: false },
-    { key: 'bestCloudPerHour',label: 'Best Cloud $/h', fmt: (v: number | null) => v != null ? `$${v.toFixed(2)}` : '—', unit: '$', lowerIsBetter: true },
-    { key: 'costPerMTok',     label: '$/M tokens',     fmt: (v: number | null) => v != null ? `$${v.toFixed(2)}` : '—', unit: '$', lowerIsBetter: true },
-  ];
-
   return (
     <div className="max-w-[1760px] mx-auto px-6 py-8 flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -288,15 +314,15 @@ export function Compare() {
             {/* Metrics */}
             <div className="px-4 py-3 flex flex-col gap-2.5 bg-bg-base">
               {METRICS.map(metric => {
-                const val = cfg[metric.key as keyof typeof cfg] as number | null;
-                const anchorVal = anchor?.[metric.key as keyof typeof anchor] as number | null;
-                const delta = i > 0 && val != null && anchorVal != null ? (val as number) - (anchorVal as number) : null;
+                const val = cfg[metric.key];
+                const anchorVal = anchor ? anchor[metric.key] : null;
+                const delta = i > 0 && val != null && anchorVal != null ? val - anchorVal : null;
                 return (
                   <div key={metric.key} className="flex items-center justify-between gap-2">
                     <span className="text-xs text-fg-muted">{metric.label}</span>
                     <div className="flex items-center gap-1.5">
                       {delta != null && <DeltaBadge value={delta} unit={metric.unit} lowerIsBetter={metric.lowerIsBetter} />}
-                      <span className="text-sm font-mono font-semibold text-fg-primary tabular-nums">{metric.fmt(val as any)}</span>
+                      <span className="text-sm font-mono font-semibold text-fg-primary tabular-nums">{metric.fmt(val)}</span>
                     </div>
                   </div>
                 );

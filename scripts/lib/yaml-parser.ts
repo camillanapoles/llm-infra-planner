@@ -58,7 +58,7 @@ export function parseYAML(yaml: string): YAMLObject {
     return line;
   });
 
-  return parseBlock(cleaned, 0, 0).value as YAMLObject;
+  return parseBlock(cleaned, 0).value as YAMLObject;
 }
 
 interface ParseResult {
@@ -66,7 +66,7 @@ interface ParseResult {
   nextLine: number;
 }
 
-function parseBlock(lines: string[], startLine: number, baseIndent: number): ParseResult {
+function parseBlock(lines: string[], startLine: number): ParseResult {
   // Skip blank lines
   let i = startLine;
   while (i < lines.length && lines[i].trim() === "") i++;
@@ -111,7 +111,7 @@ function parseList(lines: string[], startLine: number, baseIndent: number): Pars
       i++;
       const nextNonEmpty = skipBlanks(lines, i);
       if (nextNonEmpty < lines.length && getIndent(lines[nextNonEmpty]) > baseIndent) {
-        const nested = parseBlock(lines, nextNonEmpty, getIndent(lines[nextNonEmpty]));
+        const nested = parseBlock(lines, nextNonEmpty);
         result.push(nested.value);
         i = nested.nextLine;
       } else {
