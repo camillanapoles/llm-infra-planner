@@ -2,9 +2,9 @@
   "schema": 1,
   "kind": "project-access-descriptor",
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-11T23:34:31.863Z",
+  "generatedAt": "2026-10-11T23:57:46.195Z",
   "provenance": {
-    "headSha": "0f532825353d26f2cdf9f401f4964af2a66bf7df",
+    "headSha": "ea0c7524a35017e78095ba9688ee4dcdaaf1339c",
     "branch": "arena/fe62ce6d-llm-infra-planner",
     "baseBranch": "main",
     "generatedBy": "npm run continuity:sync",

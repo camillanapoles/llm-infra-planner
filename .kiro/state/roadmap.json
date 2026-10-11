@@ -365,15 +365,18 @@
         },
         {
           "id": "T-402",
-          "title": "Zerar o lint legado (20 erros / 5 avisos herdados)",
-          "status": "todo",
+          "title": "Zerar o lint legado (19 erros / 5 avisos herdados)",
+          "status": "done",
+          "crossPhase": true,
           "paths": [
             "src/**",
             "scripts/**",
-            "eslint.config.js"
+            "eslint.config.js",
+            "CONTRIBUTING.md"
           ],
           "verify": "npm run lint",
-          "notes": "20 erros / 5 avisos herdados (medidos por continuity:sync); nenhum em arquivo novo. Inclui a validação de workflows (duplicate keys) que já roda no CI."
+          "notes": "Tipos reais no lugar de `any` (Home/Compare), popover com `align` implementado, CurrencyPicker com uma só fonte de moeda, convenção `_prefixo` documentada no CONTRIBUTING e `allowExportNames` para o useToast (hook+provider no mesmo arquivo).",
+          "evidence": "ea0c752: npm run lint → 0 problemas (0 erros / 0 avisos), lint:changed verde; 202 arquivos cobertos"
         },
         {
           "id": "T-403",
@@ -407,6 +410,22 @@
             "src/pages/**"
           ],
           "verify": "npm run test:e2e"
+        },
+        {
+          "id": "T-406",
+          "title": "Validadores e veredito da auditoria alinhados à fonte de verdade",
+          "status": "done",
+          "crossPhase": true,
+          "paths": [
+            "scripts/validate-data.ts",
+            "scripts/agent.ts",
+            "scripts/agent.test.ts",
+            "scripts/lib/**",
+            "src/lib/formulas/**",
+            "CONTRIBUTING.md"
+          ],
+          "verify": "npm run validate && npm run agent -- audit",
+          "evidence": "ea0c752: validate 513 modelos / 147 GPUs / 61 instâncias sem erro; agent audit verde — veredito pela última execução de cada gate (failedRuns mantém o histórico); 358 testes"
         }
       ]
     },

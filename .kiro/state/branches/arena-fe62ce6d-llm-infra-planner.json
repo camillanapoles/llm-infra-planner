@@ -3,7 +3,7 @@
   "branch": "arena/fe62ce6d-llm-infra-planner",
   "base": "main",
   "createdAt": "2026-10-07T17:44:39.281Z",
-  "updatedAt": "2026-10-07T17:44:48.073Z",
+  "updatedAt": "2026-10-11T23:58:29.178Z",
   "status": "in_progress",
   "scope": {
     "specs": [
@@ -23,7 +23,9 @@
       "T-305",
       "T-306",
       "T-307",
-      "T-104"
+      "T-104",
+      "T-402",
+      "T-406"
     ],
     "paths": [
       "wasm/kernel.ts",
@@ -78,7 +80,16 @@
       ".github/workflows/continuity-gate.yml",
       ".github/workflows/continuity-sync.yml",
       "src/lib/url-serializer.ts",
-      "src/lib/url-serializer.test.ts"
+      "src/lib/url-serializer.test.ts",
+      "src/**",
+      "scripts/**",
+      "eslint.config.js",
+      "CONTRIBUTING.md",
+      "scripts/validate-data.ts",
+      "scripts/agent.ts",
+      "scripts/agent.test.ts",
+      "scripts/lib/**",
+      "src/lib/formulas/**"
     ]
   },
   "resumePoint": {
@@ -107,6 +118,11 @@
       "at": "2026-10-07T17:44:48.073Z",
       "event": "scope-updated",
       "note": "tasks=[T-104] specs=[]"
+    },
+    {
+      "at": "2026-10-11T23:58:29.178Z",
+      "event": "scope-updated",
+      "note": "tasks=[T-402,T-406] specs=[]"
     }
   ]
 }
