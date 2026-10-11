@@ -149,6 +149,7 @@ jobs:
       - name: Build ${{ matrix.env }}
         if: steps.src.outputs.ref != ''
         env:
+          PAGES_BASE: "/${{ github.event.repository.name }}/"
           VITE_APP_ENV: ${{ matrix.env }}
           VITE_BASE_PATH: ${{ matrix.base }}
           VITE_APP_VERSION: ${{ github.sha }}
@@ -157,11 +158,11 @@ jobs:
         run: |
           set -euo pipefail
           npm ci --no-audit --no-fund
-          npm run build:wasm
-          npx vite build --outDir "$RUNNER_TEMP/out/${{ matrix.dir }}" --emptyOutDir
-          cd "$RUNNER_TEMP/out/${{ matrix.dir }}"
-          cp index.html 404.html        # Pages has no SPA rewrite — deep links use 404.html
-          touch .nojekyll
+          # Um único caminho de build: o mesmo script que o CI verifica e que um
+          # laptop reproduz (compila o wasm se estiver velho, aplica o base path,
+          # escreve 404.html + .nojekyll).
+          node scripts/build-pages-artifact.mjs --env ${{ matrix.env }} --out "$RUNNER_TEMP/out"
+          test -f "$RUNNER_TEMP/out/${{ matrix.dir }}/index.html" || { echo "✖ build não produziu ${{ matrix.dir }}/index.html"; exit 1; }
           echo "✓ ${{ matrix.env }} · base=${{ matrix.base }} · ref=${{ steps.src.outputs.ref }}"
 
       - name: Placeholder for ${{ matrix.env }}
@@ -193,6 +194,8 @@ jobs:
     if: needs.build.result == 'success'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download the three environments
         uses: actions/download-artifact@v4
         with:
@@ -200,14 +203,10 @@ jobs:
           path: _site
           merge-multiple: true
 
+      # Mesmo verificador do CI e do laptop: 3 ambientes, base paths corretos,
+      # wasm em cada ambiente e 404.html. Publicar site quebrado é pior que falhar aqui.
       - name: Verify layout (fails the deploy rather than publishing a broken site)
-        run: |
-          set -euo pipefail
-          for path in index.html staging/index.html dev/index.html; do
-            test -f "_site/$path" || { echo "missing _site/$path"; ls -R _site | head -50; exit 1; }
-          done
-          test -f _site/wasm/llmcalc-kernel.wasm || { echo "wasm kernel missing from artifact"; exit 1; }
-          du -sh _site
+        run: bash scripts/verify-pages-artifact.sh _site
 
       - uses: actions/configure-pages@v5
         with:

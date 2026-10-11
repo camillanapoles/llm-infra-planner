@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-11T18:20:35.368Z",
+  "generatedAt": "2026-10-11T18:24:07.874Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "70a33639eb866122e11f5e782b6b80032c4db528",
+  "headSha": "0c5dfdd600eec84c78614fe4f57de2f2386aaea8",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -145,26 +145,26 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-11T18:20:35.028Z",
+    "generatedAt": "2026-10-11T18:24:07.540Z",
     "stale": true,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "commit": "70a33639eb866122e11f5e782b6b80032c4db528"
+    "commit": "0c5dfdd600eec84c78614fe4f57de2f2386aaea8"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-11T18:20:35.028Z"
+      "ranAt": "2026-10-11T18:24:07.540Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-11T18:20:35.028Z"
+      "ranAt": "2026-10-11T18:24:07.540Z"
     }
   ],
   "resume": {
