@@ -125,7 +125,14 @@ function renderRows(rows: Row[]): string {
 }
 const formatCell = (value: unknown): string => {
   if (value === null || value === undefined) return '·';
-  if (typeof value === 'object') return Array.isArray(value) ? (value.length ? value.join('|') : '[]') : JSON.stringify(value);
+  if (typeof value === 'object') {
+    if (!Array.isArray(value)) return JSON.stringify(value);
+    if (!value.length) return '[]';
+    // listas de objetos aparecem pelo seu identificador (id/name/key), não como [object Object]
+    return value
+      .map(item => (item && typeof item === 'object' ? String((item as Row).id ?? (item as Row).name ?? (item as Row).key ?? JSON.stringify(item)) : String(item)))
+      .join('|');
+  }
   const text = String(value);
   return text.length > 48 ? `${text.slice(0, 45)}…` : text;
 };
