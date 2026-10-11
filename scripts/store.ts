@@ -254,11 +254,16 @@ function main(): number {
         const latest = latestSession(repos);
         if (!latest) return fail('nenhuma sessão registrada — rode `store session start`');
         if (action === 'note' || action === 'end') {
-          const summary = rest.filter(token => !token.startsWith('--') && token !== action).join(' ');
-          const patch: Row = { resume_point: flag('--resume') ?? summary ?? '' };
+          const summary = (flag('--resume') ?? rest.filter(token => !token.startsWith('--') && token !== action).join(' ')).trim();
+          if (!summary && action === 'note') return fail('uso: store session note --resume "onde parei e o que falta"');
+          const patch: Row = {};
+          if (summary) patch.resume_point = summary;
           if (action === 'end') patch.ended_at = new Date().toISOString();
           const row = touchSession(repos, String(latest.id), patch);
-          out(row, `${C.green}✓${C.reset} sessão ${C.bold}${String(latest.id)}${C.reset} ${action === 'end' ? 'encerrada' : 'anotada'}`);
+          // a nota da sessão vive no kv: `sync` atualiza o resume_point do handoff,
+          // e o que a sessão escreveu continua recuperável.
+          if (summary) kvSet(repos, 'session_note', { at: new Date().toISOString(), session: latest.id, note: summary }, flag('--agent') ?? 'cli');
+          out(row, `${C.green}✓${C.reset} sessão ${C.bold}${String(latest.id)}${C.reset} ${action === 'end' ? 'encerrada' : 'anotada'}${summary ? `\n  ${C.dim}nota guardada em kv.session_note${C.reset}` : ''}`);
           return 0;
         }
         return fail(`ação desconhecida: ${action} (start|note|end)`);

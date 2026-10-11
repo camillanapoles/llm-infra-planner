@@ -1,11 +1,11 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-11T18:49:53.378Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-11T18:51:48.358Z.
 
 ## Onde estamos
 
 - Fase **P3 — WebAssembly e entrega multi-ambiente**, 55% do roadmap (17/31 tarefas).
-- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `4c1a5bf`.
+- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `a1af5b3`.
 - Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
 - Resumo do handoff: Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).
 - Próximos passos já registrados nesta branch:
@@ -27,11 +27,11 @@
 ## Últimos commits
 
 ```
+a1af5b3 fix(store): render object lists by identifier, not [object Object]
 4c1a5bf fix(ci): run on Node 22 and keep the ledger runtime-aware
 260eaca feat(continuity): SQLite ledger with CRUD, query and gates as data
 8612932 refactor(deploy): one build path for the Pages artifact, verified by the shared script
 0c5dfdd feat(continuity): access descriptor — one JSON per project, served by the WASI runtime
-70a3363 fix(continuity): repair an empty handoff instead of blocking the branch
 ```
 
 ## Guardrails (não negociáveis)

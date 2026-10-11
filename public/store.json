@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-11T18:49:53.378Z",
+  "generatedAt": "2026-10-11T18:51:48.358Z",
   "counts": {
     "sessions": 1,
-    "kv": 4,
-    "events": 9,
-    "gates": 22,
+    "kv": 5,
+    "events": 10,
+    "gates": 24,
     "tasks": 31,
     "handoffs": 1,
     "artifacts": 0
@@ -17,7 +17,7 @@
         "agent": "unknown",
         "goal": "Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).",
         "started_at": "2026-10-11T18:39:55.395Z",
-        "heartbeat_at": "2026-10-11T18:49:53.949Z",
+        "heartbeat_at": "2026-10-11T18:51:48.961Z",
         "ended_at": null,
         "resume_point": "Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).",
         "blockers": [
@@ -53,6 +53,22 @@
       }
     ],
     "gates": [
+      {
+        "id": "wasm-verify@2026-10-11T18:51:48.045Z",
+        "ran_at": "2026-10-11T18:51:48.045Z",
+        "ok": true,
+        "detail": "16 verificações ok",
+        "commit_sha": "a1af5b3fb729137fe82256d7140519fa6386957e",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "docker-static@2026-10-11T18:51:48.045Z",
+        "ran_at": "2026-10-11T18:51:48.045Z",
+        "ok": true,
+        "detail": "16 validações estáticas",
+        "commit_sha": "a1af5b3fb729137fe82256d7140519fa6386957e",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
       {
         "id": "wasm-verify@2026-10-11T18:49:52.980Z",
         "ran_at": "2026-10-11T18:49:52.980Z",
@@ -196,37 +212,31 @@
         "detail": "19 erros / 5 avisos",
         "commit_sha": "86129322173939cc2970c3519db51b7eefd1584d",
         "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "wasm-verify@2026-10-11T18:40:59.703Z",
-        "ran_at": "2026-10-11T18:40:59.703Z",
-        "ok": true,
-        "detail": "16 verificações ok",
-        "commit_sha": "86129322173939cc2970c3519db51b7eefd1584d",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "docker-static@2026-10-11T18:40:59.703Z",
-        "ran_at": "2026-10-11T18:40:59.703Z",
-        "ok": true,
-        "detail": "16 validações estáticas",
-        "commit_sha": "86129322173939cc2970c3519db51b7eefd1584d",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
       }
     ],
     "kv": [
       {
         "key": "last_sync",
         "value": {
-          "at": "2026-10-11T18:49:53.378Z",
-          "commit": "4c1a5bfc9a507d4ddfbaf85e0f86a2a66ed56390",
+          "at": "2026-10-11T18:51:48.358Z",
+          "commit": "a1af5b3fb729137fe82256d7140519fa6386957e",
           "branch": "arena/fe62ce6d-llm-infra-planner",
           "phase": "P3",
           "percent": 55,
           "tests": null
         },
-        "updated_at": "2026-10-11T18:49:53.951Z",
+        "updated_at": "2026-10-11T18:51:48.963Z",
         "updated_by": "continuity:sync"
+      },
+      {
+        "key": "session_note",
+        "value": {
+          "at": "2026-10-11T18:51:47.493Z",
+          "session": "arena-fe62ce6d-llm-infra-planner@2026-10-11",
+          "note": "ledger pronto e validado; falta o merge do PR #1 para publicar"
+        },
+        "updated_at": "2026-10-11T18:51:47.493Z",
+        "updated_by": "cli"
       },
       {
         "key": "api_do_store",
@@ -262,7 +272,7 @@
         "status": "done",
         "spec": "10-concurrent-user-capacity",
         "evidence": "src/lib/formulas/* — 19 arquivos de teste, 243 testes no baseline",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-102",
@@ -271,7 +281,7 @@
         "status": "done",
         "spec": "",
         "evidence": "src/data/*.json + scripts/ingest-models.ts",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-103",
@@ -280,7 +290,7 @@
         "status": "done",
         "spec": "",
         "evidence": "fast-check em vram/kv-cache/parallelism/quantization/aggregate",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-104",
@@ -289,7 +299,7 @@
         "status": "done",
         "spec": "",
         "evidence": "round-trip só para modos canônicos + cobertura explícita dos aliases legados (13 testes)",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-201",
@@ -298,7 +308,7 @@
         "status": "done",
         "spec": "",
         "evidence": "src/pages/Home.tsx + 50+ componentes em src/components/calculator",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-202",
@@ -307,7 +317,7 @@
         "status": "done",
         "spec": "",
         "evidence": "src/pages/{Compare,Reverse,Models,Hardware,Guides}.tsx",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-203",
@@ -316,7 +326,7 @@
         "status": "done",
         "spec": "",
         "evidence": "src/lib/url-serializer.ts + 13 testes",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-204",
@@ -325,7 +335,7 @@
         "status": "done",
         "spec": "",
         "evidence": "use-theme + ShortcutsModal + skip-link",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-301",
@@ -334,7 +344,7 @@
         "status": "done",
         "spec": "11-wasm-kernel",
         "evidence": "public/wasm/llmcalc-kernel.wasm (~2 KB, zero imports) + 10 testes de paridade",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-302",
@@ -343,7 +353,7 @@
         "status": "done",
         "spec": "12-wasi-runtime",
         "evidence": "wasi/dist/llmcalc-wasi.wasm + /api/plan executando dentro do módulo",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-303",
@@ -352,7 +362,7 @@
         "status": "done",
         "spec": "13-deploy-github-pages",
         "evidence": "_site/{,staging/,dev/} com base paths corretos e 404.html por ambiente",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-304",
@@ -361,7 +371,7 @@
         "status": "done",
         "spec": "14-deploy-docker",
         "evidence": "Dockerfile multi-stage (runner/wasi) + 16 validações estáticas",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-305",
@@ -370,7 +380,7 @@
         "status": "done",
         "spec": "15-deploy-local",
         "evidence": "npm run stack (vite :5173 + wasi :8787) e serve-static com proxy /api",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-306",
@@ -379,7 +389,7 @@
         "status": "done",
         "spec": "16-branch-environments-bootstrap",
         "evidence": "cria dev/staging, environments e habilita Pages via API",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-307",
@@ -388,7 +398,7 @@
         "status": "done",
         "spec": "17-continuity-gate",
         "evidence": ".kiro/state/{roadmap,policy,project-state}.json + STATE.md/RESUME.md; scripts/continuity.ts + continuity-core.ts com 25 testes; workflows continuity-gate/continuity-sync; gate verde na branch",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-308",
@@ -397,7 +407,7 @@
         "status": "todo",
         "spec": "13-deploy-github-pages",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-309",
@@ -406,7 +416,7 @@
         "status": "done",
         "spec": "17-continuity-gate",
         "evidence": "gerado pelo continuity:sync e servido pelo runtime WASI em /api/access; validador com 7 testes negativos (token vazado, senha, comando/script/workflow inexistente, tarefa fora do roadmap, URL de outro site) todos detectados",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-310",
@@ -415,7 +425,7 @@
         "status": "done",
         "spec": "17-continuity-gate",
         "evidence": "7 coleções (sessions, kv, events, gates, tasks, handoffs, artifacts) em dois drivers (node:sqlite + json); mesma suíte de 40 testes nos dois; meta-classe valida palavras reservadas e tipos; query com guarda de injeção; sync registra gates/sessão/espelhos e exporta snapshot; /api/store servido pelo runtime WASI (somente leitura)",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-401",
@@ -424,7 +434,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-402",
@@ -433,7 +443,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-403",
@@ -442,7 +452,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-404",
@@ -451,7 +461,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-405",
@@ -460,7 +470,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-501",
@@ -469,7 +479,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-502",
@@ -478,7 +488,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-503",
@@ -487,7 +497,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-601",
@@ -496,7 +506,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-602",
@@ -505,7 +515,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-603",
@@ -514,7 +524,7 @@
         "status": "todo",
         "spec": "12-wasi-runtime",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-701",
@@ -523,7 +533,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       },
       {
         "id": "T-702",
@@ -532,7 +542,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-11T18:49:53.378Z"
+        "updated_at": "2026-10-11T18:51:48.358Z"
       }
     ]
   }
