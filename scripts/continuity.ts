@@ -14,6 +14,22 @@ import { execFileSync, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  PUBLIC_SNAPSHOT_FILE,
+  SNAPSHOT_FILE,
+  STORE_FILE,
+  checkStore,
+  createStore,
+  gatesSummary,
+  kvSet,
+  latestSession,
+  recordEvent,
+  recordGate,
+  repositories,
+  startSession,
+  touchSession,
+  writeSnapshot,
+} from './lib/store-core.js';
+import {
   RESUME_FILE,
   ACCESS_FILE,
   STATE_FILE,
@@ -25,6 +41,7 @@ import {
   computeNextTasks,
   inferScope,
   evaluateKernelFreshness,
+  flattenTasks,
   computeOverall,
   computePhaseProgress,
   currentPhase,
@@ -227,6 +244,16 @@ function projectCoordinates(branch: string, policy: ReturnType<typeof loadPolicy
   };
 }
 
+/** Abre o ledger. Falha do store nunca derruba um comando: vira aviso. */
+function openStore() {
+  try {
+    const store = createStore({ file: path.join(root, STORE_FILE), silent: true });
+    return { store, repos: repositories(store), error: null as string | null };
+  } catch (error) {
+    return { store: null, repos: null, error: (error as Error).message };
+  }
+}
+
 async function cmdSync(): Promise<number> {
   const fast = has('--fast');
   const pages = has('--pages');
@@ -273,6 +300,53 @@ async function cmdSync(): Promise<number> {
     fs.writeFileSync(path.join(root, 'public', 'access.json'), `${JSON.stringify(access, null, 2)}\n`);
     process.stdout.write(`${C.green}✓${C.reset} estado atualizado: ${STATE_FILE}, ${STATE_MD_FILE}, ${RESUME_FILE}, public/state.json\n`);
     process.stdout.write(`${C.green}✓${C.reset} descriptor de acesso: ${ACCESS_FILE} + public/access.json (servido em /api/access)\n`);
+
+    // ── ledger: gates/sessão/espelhos no store, snapshot versionável ──────────
+    const ledger = openStore();
+    if (ledger.repos && ledger.store) {
+      const repos = ledger.repos;
+      const commit = state.invariants.commit ?? state.headSha;
+      for (const gate of state.gates) {
+        recordGate(repos, { id: gate.id, ok: gate.ok, detail: gate.detail, commit, branch, ranAt: gate.ranAt });
+      }
+      // espelhos consultáveis: tasks do roadmap e handoffs das branches
+      for (const task of flattenTasks(roadmap)) {
+        repos.tasks.upsert({ id: task.id, phase: task.phase, title: task.title, status: task.status, spec: task.spec ?? '', evidence: task.evidence ?? '', updated_at: state.generatedAt });
+      }
+      for (const { handoff: item } of listHandoffs(root)) {
+        repos.handoffs.upsert({
+          branch: item.branch,
+          status: item.status,
+          tasks: item.scope.tasks,
+          specs: item.scope.specs,
+          paths: item.scope.paths.length,
+          resume_point: item.resumePoint.summary,
+          updated_at: item.updatedAt,
+        });
+      }
+      const existing = latestSession(repos);
+      const session = existing && !existing.ended_at && existing.branch === branch
+        ? touchSession(repos, String(existing.id), {
+            resume_point: handoff?.resumePoint.summary ?? state.resume.summary,
+            blockers: handoff?.resumePoint.blockedBy ?? [],
+            next_tasks: state.nextTasks.map(task => ({ id: task.id, title: task.title, blockedBy: task.blockedBy })),
+          })
+        : startSession(repos, { branch, agent: process.env.CONTINUITY_AGENT ?? 'unknown', goal: handoff?.resumePoint.summary ?? '' });
+      kvSet(repos, 'last_sync', { at: state.generatedAt, commit, branch, phase: state.currentPhase, percent: state.overall.percent, tests: state.invariants.testsPassed ?? null }, 'continuity:sync');
+      recordEvent(repos, { type: 'sync', summary: `estado consolidado em ${String(commit).slice(0, 7)} (${state.overall.done}/${state.overall.total} tarefas)`, branch, data: { gates: state.gates.map(gate => ({ id: gate.id, ok: gate.ok })) } });
+      const snapshot = writeSnapshot(repos, { snapshot: path.join(root, SNAPSHOT_FILE), publicSnapshot: path.join(root, PUBLIC_SNAPSHOT_FILE) }, state.generatedAt);
+      const storeFindings = checkStore(repos);
+      const storeErrors = storeFindings.filter(finding => finding.level === 'error');
+      for (const finding of storeFindings.filter(item => item.level !== 'info')) {
+        process.stdout.write(`  ${finding.level === 'error' ? `${C.red}✗${C.reset}` : `${C.yellow}!${C.reset}`} store: ${finding.message}\n`);
+      }
+      process.stdout.write(`${C.green}✓${C.reset} ledger: ${STORE_FILE} (${ledger.store.driver.kind}) · snapshot ${SNAPSHOT_FILE} (${Object.entries(snapshot.counts).map(([table, count]) => `${table}=${count}`).join(' ')})\n`);
+      if (session) process.stdout.write(`  ${C.dim}sessão ${String(session.id)} · gates com falha: ${gatesSummary(repos).failed}${C.reset}\n`);
+      ledger.store.driver.close();
+      if (storeErrors.length) return 1;
+    } else {
+      process.stdout.write(`  ${C.yellow}!${C.reset} store indisponível: ${ledger.error}\n`);
+    }
   }
 
   process.stdout.write(`\n${C.bold}Estado do projeto${C.reset} — fase ${state.currentPhase} (${state.overall.percent}% · ${state.overall.done}/${state.overall.total})\n`);
@@ -391,6 +465,23 @@ function cmdCheck(): number {
     process.stdout.write(`  ${icon(finding.level)} ${finding.code}: ${finding.message}\n`);
     if (finding.hint) process.stdout.write(`      ${C.dim}↳ ${finding.hint}${C.reset}\n`);
   }
+  // O gate também é dado: cada execução fica registrada no ledger.
+  const ledger = openStore();
+  if (ledger.repos && ledger.store) {
+    try {
+      recordGate(ledger.repos, { id: 'continuity-check', ok: errors.length === 0, detail: `${errors.length} erro(s), ${warnings.length} aviso(s)`, branch });
+      recordEvent(ledger.repos, {
+        type: 'check',
+        summary: errors.length === 0 ? `continuidade ok (${changed.length} arquivo(s))` : `${errors.length} problema(s): ${errors.map(error => error.code).join(', ')}`,
+        branch,
+        data: { base, files: changed.length },
+      });
+    } catch (error) {
+      process.stdout.write(`  ${C.yellow}!${C.reset} ledger não registrou o gate: ${(error as Error).message}\n`);
+    }
+    ledger.store.driver.close();
+  }
+
   process.stdout.write(
     errors.length === 0
       ? `\n${C.green}✓ continuidade ok${C.reset} ${C.dim}(${warnings.length} aviso(s), ${infos.length} info)${C.reset}\n\n`

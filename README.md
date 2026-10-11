@@ -323,6 +323,12 @@ npm run continuity:resume     # briefing de retomada para a próxima sessão
   branch, PR), runtime local, URLs de deploy por ambiente, comandos de retomada e próximas
   tarefas; **sem segredos por design**, validado por `npm run validate:access` no gate e
   servido pelo runtime wasm em `/api/access`. Resumo: `npm run continuity:access`.
+- **Ledger (`npm run store`):** SQLite local (`node:sqlite`) com CRUD, query e os gates
+  gravados como dados — coleções `sessions`, `kv`, `events`, `gates`, `tasks`, `handoffs`,
+  `artifacts`. Serve para *setar e recuperar* o que a sessão precisa lembrar; o snapshot
+  `.kiro/state/store.json` é versionado e a leitura sai em `/api/store` (escrita é pelo CLI).
+  Arquitetura em meta-classe + factory + repositório, com guarda de injeção e recusa de
+  credencial; `npm run validate:store` roda no gate.
 - **Consolidação:** `.github/workflows/continuity-sync.yml` mede os invariantes
   (wasm:verify, testes, build, lint, docker, artefato de Pages) no merge para a
   `main` e publica o estado — que a página mostra em `/runtime`.

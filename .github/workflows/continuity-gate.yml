@@ -116,6 +116,10 @@ jobs:
       - name: Validate the access descriptor
         run: npm run validate:access
 
+      # O ledger é mutável: qualquer valor com cara de credencial reprova o PR.
+      - name: Check the continuity store
+        run: npm run validate:store
+
       - name: Run continuity gate
         id: gate
         env:

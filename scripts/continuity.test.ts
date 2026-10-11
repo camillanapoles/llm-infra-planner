@@ -412,7 +412,7 @@ const accessInput = () => {
 };
 
 const validateCtx = () => ({
-  scripts: ['continuity:sync', 'continuity:check', 'continuity:resume', 'continuity:status', 'build:wasm', 'stack', 'validate:access'],
+  scripts: ['continuity:sync', 'continuity:check', 'continuity:resume', 'continuity:status', 'build:wasm', 'stack', 'validate:access', 'store', 'validate:store'],
   exists: (relative: string) => !relative.includes('missing'),
   headSha: 'abc1234',
   branch: 'arena/x',

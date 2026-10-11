@@ -2,9 +2,9 @@
   "schema": 1,
   "kind": "project-access-descriptor",
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-11T18:24:07.874Z",
+  "generatedAt": "2026-10-11T18:44:08.193Z",
   "provenance": {
-    "headSha": "0c5dfdd600eec84c78614fe4f57de2f2386aaea8",
+    "headSha": "86129322173939cc2970c3519db51b7eefd1584d",
     "branch": "arena/fe62ce6d-llm-infra-planner",
     "baseBranch": "main",
     "generatedBy": "npm run continuity:sync",
@@ -100,6 +100,35 @@
     }
   },
   "continuity": {
+    "store": {
+      "file": ".kiro/state/continuity.db",
+      "snapshot": ".kiro/state/store.json",
+      "driver": "sqlite",
+      "collections": [
+        "sessions",
+        "kv",
+        "events",
+        "gates",
+        "tasks",
+        "handoffs",
+        "artifacts"
+      ],
+      "cli": [
+        "npm run store -- set <chave> <valor…>  # objeto que a sessão seta",
+        "npm run store -- get <chave>           # …e recupera",
+        "npm run store -- query <coleção> --where \"status=done\" --order id:desc",
+        "npm run store -- gate <id> --ok false --detail \"…\"",
+        "npm run store -- session start|note|end",
+        "npm run store -- export | import"
+      ],
+      "api": [
+        "/api/store",
+        "/api/store/:collection?limit=&where=&order=",
+        "/api/store/:collection/:id",
+        "/api/session"
+      ],
+      "readOnly": "a API é somente leitura (a porta aparece em previews); escrita só pelo CLI"
+    },
     "gate": "npm run continuity:check",
     "sync": "npm run continuity:sync",
     "resume": "npm run continuity:resume",

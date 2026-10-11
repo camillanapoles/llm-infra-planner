@@ -31,3 +31,9 @@ _site
 *.njsproj
 *.sln
 *.sw?
+
+# Store local (snapshot .json é o que viaja no git)
+.kiro/state/*.db
+.kiro/state/*.db-journal
+.kiro/state/*.db-wal
+.kiro/state/continuity.json

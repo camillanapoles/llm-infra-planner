@@ -13,6 +13,9 @@
  * Endpoints:
  *   GET  /health, /api/health runtime + module status
  *   GET  /api/access          continuity access descriptor (the JSON of the project)
+ *   GET  /api/store           continuity store snapshot (sessions, gates, kv, events…)
+ *   GET  /api/store/:table    one collection, with ?limit=&where=&order= filters
+ *   GET  /api/session         the current session row
  *   GET  /api/selftest        deterministic kernel checks (JSON)
  *   GET  /api/plan?...        weightsGB, kvGB, overheadGB, tps, hourlyUsd
  *   GET  /api/kv?...          layers, batch, seq, kvHeads, headDim, bytes, attn, mlaDim
@@ -131,7 +134,7 @@ function dashboardHtml(status) {
   </div>
 
   <p class="muted">API: <code>/health</code> · <code>/api/health</code> · <code>/api/selftest</code> ·
-  <code>/api/access</code> · <code>/api/plan</code> · <code>/api/kv</code> · <code>/api/roofline</code> ·
+  <code>/api/access</code> · <code>/api/store</code> · <code>/api/session</code> · <code>/api/plan</code> · <code>/api/kv</code> · <code>/api/roofline</code> ·
   <code>/api/gpus</code> · <code>/api/latency</code> · <code>POST /api/compute</code></p>
 <script>
   async function run() {
@@ -175,6 +178,64 @@ const server = http.createServer(async (req, res) => {
         });
       }
       return send(res, 200, JSON.parse(fs.readFileSync(file, 'utf8')));
+    }
+
+    // ── continuity store (read-only by design) ───────────────────────────────
+    // The store is mutated by the agent through `npm run store`; this port is
+    // exposed in previews, so an unauthenticated write API would be a footgun.
+    if (pathname === '/api/store' || pathname.startsWith('/api/store/')) {
+      const file = path.join(root, 'public', 'store.json');
+      if (!fs.existsSync(file)) {
+        return send(res, 404, { ok: false, error: 'store snapshot missing', hint: 'npm run continuity:sync (grava public/store.json)' });
+      }
+      const snapshot = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (req.method !== 'GET') {
+        return send(res, 403, {
+          ok: false,
+          error: 'store é somente leitura por API',
+          hint: 'use o CLI: npm run store -- set <chave> <valor…> | gate | event | session',
+          why: 'esta porta fica exposta no preview; escrita anônima seria um risco',
+        });
+      }
+      if (pathname === '/api/store') {
+        return send(res, 200, { generatedAt: snapshot.generatedAt, counts: snapshot.counts, tables: Object.keys(snapshot.tables) });
+      }
+      const [collection, id] = pathname.replace('/api/store/', '').split('/');
+      const rows = snapshot.tables?.[collection];
+      if (!rows) {
+        return send(res, 404, { ok: false, error: `coleção desconhecida: ${collection}`, collections: Object.keys(snapshot.tables ?? {}) });
+      }
+      const limit = Number(url.searchParams.get('limit') ?? 50);
+      const where = url.searchParams.get('where');
+      const order = url.searchParams.get('order');
+      let selected = rows;
+      if (id) selected = rows.filter(row => String(Object.values(row)[0]) === id);
+      if (where) {
+        const clauses = where.split(',').map(clause => /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(!=|>=|<=|=|>|<|~)\s*(.+?)\s*$/.exec(clause)).filter(Boolean);
+        selected = selected.filter(row => clauses.every(match => {
+          const [, column, op, value] = match;
+          const cell = row[column];
+          if (op === '~') return String(cell ?? '').toLowerCase().includes(value.toLowerCase());
+          if (op === '=') return String(cell) === value || (typeof cell === 'boolean' && String(cell) === value);
+          if (op === '!=') return String(cell) !== value;
+          const left = typeof cell === 'number' ? cell : String(cell ?? '');
+          const right = typeof cell === 'number' || /^-?\d+$/.test(value) ? Number(value) : value;
+          return op === '>' ? left > right : op === '>=' ? left >= right : op === '<' ? left < right : left <= right;
+        }));
+      }
+      if (order) {
+        const [column, direction = 'asc'] = order.split(':');
+        selected = [...selected].sort((a, b) => (direction === 'desc' ? -1 : 1) * String(a[column] ?? '').localeCompare(String(b[column] ?? '')));
+      }
+      return send(res, 200, { collection, count: Math.min(selected.length, limit), rows: selected.slice(0, limit) });
+    }
+
+    if (pathname === '/api/session') {
+      const file = path.join(root, 'public', 'store.json');
+      if (!fs.existsSync(file)) return send(res, 404, { ok: false, error: 'store snapshot missing', hint: 'npm run continuity:sync' });
+      const snapshot = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const session = (snapshot.tables?.sessions ?? [])[0] ?? null;
+      return session ? send(res, 200, session) : send(res, 404, { ok: false, error: 'nenhuma sessão registrada', hint: 'npm run store -- session start' });
     }
 
     if (pathname.startsWith('/wasm/')) {

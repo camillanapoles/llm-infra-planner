@@ -17,6 +17,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { ENTITIES, SNAPSHOT_FILE, detectDriver } from './store-core.js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -873,6 +874,15 @@ export interface AccessDescriptor {
     sync: string;
     resume: string;
     handoff: string;
+    store: {
+      file: string;
+      snapshot: string;
+      driver: string;
+      collections: string[];
+      cli: string[];
+      api: string[];
+      readOnly: string;
+    };
     readOrder: string[];
     resumeCommands: string[];
     nextTasks: { id: string; title: string; blockedBy: string[] }[];
@@ -971,6 +981,22 @@ export function buildAccessDescriptor(input: {
       },
     },
     continuity: {
+      store: {
+        file: '.kiro/state/continuity.db',
+        snapshot: SNAPSHOT_FILE,
+        driver: detectDriver(),
+        collections: ENTITIES.map(entity => entity.table),
+        cli: [
+          'npm run store -- set <chave> <valor…>  # objeto que a sessão seta',
+          'npm run store -- get <chave>           # …e recupera',
+          'npm run store -- query <coleção> --where "status=done" --order id:desc',
+          'npm run store -- gate <id> --ok false --detail "…"',
+          'npm run store -- session start|note|end',
+          'npm run store -- export | import',
+        ],
+        api: ['/api/store', '/api/store/:collection?limit=&where=&order=', '/api/store/:collection/:id', '/api/session'],
+        readOnly: 'a API é somente leitura (a porta aparece em previews); escrita só pelo CLI',
+      },
       gate: 'npm run continuity:check',
       sync: 'npm run continuity:sync',
       resume: 'npm run continuity:resume',
@@ -1063,6 +1089,22 @@ export function validateAccessDescriptor(
     if (!known) findings.push({ level: 'error', code: 'access-unknown-task', message: `descriptor lista a tarefa ${task.id}, que não existe no roadmap` });
     else if (known.status === 'done') findings.push({ level: 'warn', code: 'access-stale-next', message: `${task.id} já está done mas continua listada como próxima`, hint: 'rode `npm run continuity:sync`' });
   }
+  for (const command of [...(access.continuity?.store?.cli ?? []), ...(access.continuity?.store?.api ?? [])]) {
+    for (const [, script] of command.matchAll(/npm run ([a-z0-9:_-]+)/gi)) {
+      if (!ctx.scripts.includes(script)) {
+        findings.push({ level: 'error', code: 'access-script-missing', message: `store cita "npm run ${script}", que não existe em package.json` });
+      }
+    }
+  }
+  if (access.continuity?.store) {
+    if (!ctx.exists(access.continuity.store.snapshot)) {
+      findings.push({ level: 'warn', code: 'access-store-snapshot-missing', message: `snapshot do store não existe ainda (${access.continuity.store.snapshot})`, hint: 'rode `npm run continuity:sync`' });
+    }
+    if (!access.continuity.store.readOnly?.includes('somente leitura')) {
+      findings.push({ level: 'error', code: 'access-store-writable', message: 'a API do store precisa declarar-se somente leitura' });
+    }
+  }
+
   for (const handle of Object.values(access.deploy?.environments ?? {})) {
     if (typeof handle?.url === 'string' && !handle.url.startsWith(`${access.coordinates?.siteOrigin ?? ''}/${access.coordinates?.repo?.split('/')[1] ?? ''}`)) {
       findings.push({ level: 'error', code: 'access-url-mismatch', message: `URL de ambiente fora do site do projeto: ${handle.url}` });
@@ -1072,8 +1114,17 @@ export function validateAccessDescriptor(
     }
   }
 
-  if (!findings.some(finding => finding.level === 'error')) {
-    findings.push({ level: 'info', code: 'access-ok', message: `descriptor de acesso válido (${commands.length} comandos conferidos, ${(access.continuity?.nextTasks ?? []).length} próximas tarefas)` });
+  // a mesma mensagem repetida (um comando citado em várias linhas) não ajuda ninguém
+  const seen = new Set<string>();
+  const unique = findings.filter(finding => {
+    const key = `${finding.level}|${finding.code}|${finding.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  if (!unique.some(finding => finding.level === 'error')) {
+    unique.push({ level: 'info', code: 'access-ok', message: `descriptor de acesso válido (${commands.length} comandos conferidos, ${(access.continuity?.nextTasks ?? []).length} próximas tarefas)` });
   }
-  return findings;
+  return unique;
 }

@@ -24,7 +24,7 @@ measures objective invariants and writes the state that the next session resumes
 - `roadmap.json` describes phases (with `exitCriteria`) and tasks with `id`, `title`, `status`, `paths` (escopo), `verify` (aceite), `dependsOn`, optional `spec`, `evidence`.
 - `policy.json` declares `baseBranch`, `protectedBranches`, `statePaths`, `sharedPaths`, `kernelPaths`, `scopes` (spec → paths) e o nome da label de bypass.
 - `validateRoadmap()` rejeita: ids duplicados, status inválido, dependência inexistente, auto-dependência; e avisa `done` sem `evidence`.
-- Roadmap validation and phase rules are unit-tested (`scripts/continuity.test.ts`, 46 testes).
+- Roadmap validation and phase rules are unit-tested (`scripts/continuity.test.ts`, 46 testes; ledger em `scripts/store.test.ts`, 40).
 
 ### Requirement 2: Every branch declares what it delivers (handoff)
 **User Story:** As a reviewer, I want each branch to state its scope and resume point before I review the code.
@@ -104,6 +104,19 @@ measures objective invariants and writes the state that the next session resumes
 - `npm run validate:access` reprova: valor com cara de segredo, campo de credencial, `npm run`/`scripts/*`/workflow citado que não existe, tarefa que não está no roadmap, URL/base fora do site do projeto; e **avisa** (sem bloquear) quando o descriptor está atrás do HEAD ou quando o HEAD está destacado (checkout de CI).
 - O gate bloqueante roda `npm run validate:access` em todo PR; o núcleo é testado com casos positivos e negativos (token/senha/comando/script/workflow/tarefa/URL).
 
+### Requirement 10: A continuity ledger (SQLite) with CRUD, query and gates as data
+**User Story:** As a session that will end, I want to leave behind a queryable ledger — not just files — so the next session can recover what I set, what I ran and where I stopped.
+
+**Acceptance Criteria:**
+- `scripts/lib/store-core.ts` define as coleções `sessions`, `kv`, `events`, `gates`, `tasks`, `handoffs`, `artifacts` por **meta-classe** (`EntityMeta`): colunas tipadas, pk única, defaults, coerção, validação de identificadores (palavra reservada de SQL e camelCase são erro **na construção**, não em runtime) e `findSecret`.
+- **Factory:** `defineEntity()` cria o meta; `createStore()` escolhe o driver (`node:sqlite` preferido, JSON como fallback portátil) e aplica o DDL de forma idempotente; `repositoryFor()`/`repositories()` devolvem as fachadas.
+- **Repository:** `insert/get/list/update/upsert/remove/query/count`. Nenhuma string SQL sai do módulo: filtros passam por `buildQuery()`, que **recusa coluna fora do schema** (guarda de injeção) e coage valores conforme o tipo da coluna (booleano → 1/0, inteiro → number).
+- Gate como função: `recordGate()` grava `{id, ran_at, ok, detail, commit_sha, branch}`; `continuity:sync` registra todos os gates medidos, espelha tarefas/handoffs, abre/atualiza a sessão, escreve `kv.last_sync` e um evento; `continuity:check` registra o próprio resultado.
+- `kv` é o **objeto que a sessão seta e recupera** (`npm run store -- set/get/del`, valores JSON aceitos); `session start|note|end` guarda objetivo, ponto de retomada, bloqueios e próximas tarefas.
+- O store **recusa credencial por construção**: `scanForSecrets()` (usa os mesmos padrões do validador de acesso) roda em toda escrita, e `checkStore()` varre todas as coleções; `npm run validate:store` roda no gate.
+- Portabilidade: `store export` grava `.kiro/state/store.json` + `public/store.json` (texto, diffável, versionado) e `store import` reconstrói o banco — o `.db` fica fora do git e um sandbox apagado não perde o histórico.
+- API de leitura pelo runtime WASI: `/api/store`, `/api/store/:coleção?limit=&where=&order=`, `/api/store/:coleção/:id` e `/api/session`; **escrita por API é recusada com explicação** (a porta aparece em previews).
+
 ## Usage
 
 ```bash
@@ -131,6 +144,9 @@ public/state.json                   estado publicado com a página
 scripts/lib/continuity-core.ts      lógica pura (validação, escopo, progresso, render)
 scripts/continuity.ts               CLI: status · check · start · sync · resume
 scripts/continuity.test.ts          46 testes do núcleo do gate
+scripts/lib/store-core.ts           ledger: meta-classe, factory de drivers, repositórios
+scripts/store.ts                    CLI do ledger: set/get/query/gate/session/export
+scripts/store.test.ts               40 testes do ledger (a mesma suíte nos dois drivers)
 scripts/validate-access.ts          valida o descriptor (sem segredos, comandos vivos, tarefas reais)
 scripts/validate-workflows.py       detecta chave duplicada em workflow (falha silenciosa do GitHub)
 .github/workflows/continuity-gate.yml   gate bloqueante em PRs + comentário de retomada

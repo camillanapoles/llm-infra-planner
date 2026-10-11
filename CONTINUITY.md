@@ -96,6 +96,55 @@ O validador morde: token vazado, campo de credencial, comando/arquivo/workflow i
 tarefa fora do roadmap e URL de outro site **reprovam**; descriptor atrás do HEAD **avisa**.
 Leia com `npm run continuity:access` (resumo) ou `--json` (cru).
 
+## O ledger (`.kiro/state/store.json` + `.db` local)
+
+Estado declarado (`roadmap.json`) vs **estado vivido**: o ledger guarda o que
+aconteceu — sessões, eventos, execuções de gate, notas que a sessão setou e os
+espelhos consultáveis de tarefas/handoffs. SQLite local (`node:sqlite`), com
+fallback JSON; o snapshot `.json` é o que viaja no git.
+
+```bash
+npm run store -- set objetivo_do_dia "merge + publicar dev/staging"   # seta
+npm run store -- get objetivo_do_dia                                  # recupera (JSON-aware)
+npm run store -- query gates --where 'ok=false' --order ran_at:desc   # pergunta
+npm run store -- gate wasm-verify --ok true --detail "16/16"          # gate como dado
+npm run store -- session start --goal "…"                             # onde estou
+npm run store -- events                                               # o que aconteceu
+npm run store -- export                                               # snapshot p/ o git e /api/store
+```
+
+| coleção | o que guarda |
+|---|---|
+| `sessions` | uma sessão: agente, objetivo, heartbeat, ponto de retomada, bloqueios |
+| `kv` | **o objeto que a sessão seta e recupera** (qualquer JSON) |
+| `events` | jornal append-only do que aconteceu |
+| `gates` | resultado de cada verificação (`ok`, detalhe, commit) — consultável |
+| `tasks` / `handoffs` | espelhos do roadmap e dos handoffs, para query |
+| `artifacts` | o que foi construído e onde encontrar |
+
+Arquitetura: **meta-classe** (`EntityMeta` deriva DDL, coerção e validação da
+declaração), **factory** (`defineEntity` → `createStore` → `repositories`) e
+**repositório** (`insert/get/list/update/upsert/remove/query`) — filtros passam por
+um construtor que **recusa coluna fora do schema**, então injeção vira erro claro.
+Pelo runtime WASI a leitura está em `/api/store`, `/api/store/<coleção>` e
+`/api/session`; **escrita por API é recusada de propósito** (a porta aparece em
+previews): escrever é pelo CLI.
+
+## Segredos: onde a credencial mora (e onde não mora)
+
+Nada neste repositório guarda token — nem o `access.json`, nem o ledger, nem o
+`kv`. Três camadas, todas verificáveis:
+
+| camada | como autentica | onde é conferido |
+|---|---|---|
+| workflows | `GITHUB_TOKEN` **efêmero**, criado pelo Actions a cada run (é assim que o gate commita handoff e comenta no PR) | `.github/workflows/*.yml` |
+| sessão local/agente | `gh auth status` do ambiente (a credencial da Arena, nunca um arquivo) | `access.json > credentials.check` |
+| store/descriptor | **não carregam credencial**: escrita com cara de token é recusada | `npm run validate:store` · `npm run validate:access` |
+
+Se um dia for preciso agir por API fora do Actions, o caminho é o mesmo desta
+sessão (conexão do ambiente ou `GITHUB_TOKEN` do workflow) — **nunca** um PAT
+versionado ou guardado em `kv`, que é justamente o que os validadores reprovam.
+
 ## Branch nova, sem narração
 
 Criou a branch depois do merge? Rode `npm run continuity:start -- --auto` (ou simplesmente
@@ -160,6 +209,8 @@ npm run continuity:check     # gate (mesmo do CI) · --json para máquina
 npm run continuity:sync      # mede invariantes e atualiza o estado · --fast, --pages
 npm run continuity:access    # descriptor de acesso (JSON da retomada) · --json
 npm run validate:access      # confere o descriptor (roda no gate)
+npm run store -- …           # ledger: set/get/query/gate/session/export
+npm run validate:store       # confere o ledger (roda no gate)
 ```
 
 Spec completa: [`.kiro/specs/17-continuity-gate.md`](.kiro/specs/17-continuity-gate.md)

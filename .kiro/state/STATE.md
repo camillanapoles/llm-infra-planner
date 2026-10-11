@@ -1,15 +1,15 @@
 # Estado do projeto — LLMcalc
 
-> Gerado automaticamente por `npm run continuity:sync` em 2026-10-11T18:24:07.874Z (branch `arena/fe62ce6d-llm-infra-planner` @ `0c5dfdd`).
+> Gerado automaticamente por `npm run continuity:sync` em 2026-10-11T18:44:08.193Z (branch `arena/fe62ce6d-llm-infra-planner` @ `8612932`).
 > Não edite à mão: a fonte são `.kiro/state/roadmap.json`, `policy.json` e os handoffs em `.kiro/state/branches/`.
 
-**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 16/30 tarefas (53%)
+**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 17/31 tarefas (55%)
 
 | fase | nome | status | tarefas | aberto |
 |---|---|---|---|---|
 | ✓ P1 | Kernel de cálculo e base de dados | done | 4/4 (100%) | — |
 | ✓ P2 | Experiência da página | done | 4/4 (100%) | — |
-| ▶ P3 | WebAssembly e entrega multi-ambiente | in_progress | 8/9 (89%) | T-308 |
+| ▶ P3 | WebAssembly e entrega multi-ambiente | in_progress | 9/10 (90%) | T-308 |
 | · P4 | Qualidade contínua | todo | 0/5 (0%) | T-401, T-402, T-403, T-404, T-405 |
 | · P5 | Dados vivos | todo | 0/3 (0%) | T-501, T-502, T-503 |
 | · P6 | Runtime WASM avançado | todo | 0/3 (0%) | T-601, T-602, T-603 |
@@ -29,11 +29,13 @@
 
 | métrica | valor |
 |---|---|
+| testes passando | 345 em 23 arquivos |
 | kernel wasm (browser) | 2057 bytes |
 | módulo WASI | 5728 bytes |
 | verificações wasm | 16 |
+| build | ok (chunk 701.7 kB) |
+| lint | 19 erros / 5 avisos |
 | validações docker | 16 |
-| _coleta_ | parcial (`--fast`) |
 
 ## Gates
 
@@ -41,4 +43,7 @@
 |---|---|---|
 | `wasm-verify` | ✓ | 16 verificações ok |
 | `docker-static` | ✓ | 16 validações estáticas |
+| `tests` | ✓ | 345 testes / 23 arquivos |
+| `build` | ✓ | bundle principal 701.7 kB |
+| `lint` | ✗ | 19 erros / 5 avisos |
 

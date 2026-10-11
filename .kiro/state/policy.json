@@ -10,7 +10,8 @@
     ".kiro/state/**",
     "CONTINUITY.md",
     "public/state.json",
-    "public/access.json"
+    "public/access.json",
+    "public/store.json"
   ],
   "sharedPaths": [
     "README.md",
@@ -98,7 +99,11 @@
       "scripts/validate-workflows.py",
       ".github/workflows/ci.yml",
       "package.json",
-      "scripts/validate-access.ts"
+      "scripts/validate-access.ts",
+      "scripts/store.ts",
+      "scripts/lib/store-core.ts",
+      "scripts/store.test.ts",
+      "scripts/wasi-server.mjs"
     ]
   },
   "resume": {

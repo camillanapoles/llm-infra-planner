@@ -299,6 +299,22 @@
           "verify": "npm run validate:access",
           "evidence": "gerado pelo continuity:sync e servido pelo runtime WASI em /api/access; validador com 7 testes negativos (token vazado, senha, comando/script/workflow inexistente, tarefa fora do roadmap, URL de outro site) todos detectados",
           "notes": "Sem credenciais por design (guardrail: sem segredos versionados)."
+        },
+        {
+          "id": "T-310",
+          "title": "Ledger de continuidade: SQLite com CRUD, query e gates como dados",
+          "status": "done",
+          "spec": "17-continuity-gate",
+          "paths": [
+            "scripts/lib/store-core.ts",
+            "scripts/store.ts",
+            "scripts/store.test.ts",
+            ".kiro/state/store.json",
+            "public/store.json"
+          ],
+          "verify": "npm run store -- check && npx vitest run scripts/store.test.ts",
+          "evidence": "7 coleções (sessions, kv, events, gates, tasks, handoffs, artifacts) em dois drivers (node:sqlite + json); mesma suíte de 40 testes nos dois; meta-classe valida palavras reservadas e tipos; query com guarda de injeção; sync registra gates/sessão/espelhos e exporta snapshot; /api/store servido pelo runtime WASI (somente leitura)",
+          "notes": "Meta-classe + factory: defineEntity/createStore/repositoryFor. O store recusa credencial por construção."
         }
       ]
     },
