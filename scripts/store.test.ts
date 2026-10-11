@@ -54,9 +54,15 @@ afterEach(() => {
 });
 
 describe('driver detection', () => {
-  it('prefers sqlite when the runtime offers it', () => {
-    expect(['sqlite', 'json']).toContain(detectDriver());
-    expect(detectDriver()).toBe('sqlite'); // Node 22 ships node:sqlite
+  it('prefers sqlite when the runtime offers it and falls back cleanly when not', () => {
+    const detected = detectDriver();
+    expect(['sqlite', 'json']).toContain(detected);
+    // Node < 22.13 has no node:sqlite; asking for sqlite must degrade, never crash
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'store-detect-'));
+    tmp.push(dir);
+    const store = createStore({ file: path.join(dir, 'x.db'), driver: 'sqlite', silent: true });
+    expect(store.driver.kind).toBe(detected === 'sqlite' ? 'sqlite' : 'json');
+    store.driver.close();
   });
 });
 

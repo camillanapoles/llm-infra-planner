@@ -1,11 +1,11 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-11T18:44:08.193Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-11T18:47:08.864Z.
 
 ## Onde estamos
 
 - Fase **P3 — WebAssembly e entrega multi-ambiente**, 55% do roadmap (17/31 tarefas).
-- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `8612932`.
+- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `260eaca`.
 - Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
 - Resumo do handoff: Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).
 - Próximos passos já registrados nesta branch:
@@ -27,11 +27,11 @@
 ## Últimos commits
 
 ```
+260eaca feat(continuity): SQLite ledger with CRUD, query and gates as data
 8612932 refactor(deploy): one build path for the Pages artifact, verified by the shared script
 0c5dfdd feat(continuity): access descriptor — one JSON per project, served by the WASI runtime
 70a3363 fix(continuity): repair an empty handoff instead of blocking the branch
 44cdf0a feat(continuity): a new branch infers its own scope, including the resume point
-6f631e6 fix(ci): correct the Pages artifact verification (loop skipped 'dev/')
 ```
 
 ## Guardrails (não negociáveis)
