@@ -103,7 +103,10 @@
       "scripts/store.ts",
       "scripts/lib/store-core.ts",
       "scripts/store.test.ts",
-      "scripts/wasi-server.mjs"
+      "scripts/wasi-server.mjs",
+      "scripts/agent.ts",
+      "scripts/agent.test.ts",
+      ".github/workflows/agent.yml"
     ]
   },
   "resume": {

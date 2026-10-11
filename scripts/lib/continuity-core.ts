@@ -18,6 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ENTITIES, SNAPSHOT_FILE, detectDriver } from './store-core.js';
+import { AGENT_ACTIONS } from '../agent.js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -874,6 +875,13 @@ export interface AccessDescriptor {
     sync: string;
     resume: string;
     handoff: string;
+    agent: {
+      workflow: string;
+      actions: string[];
+      commands: string[];
+      identity: string;
+      note: string;
+    };
     store: {
       file: string;
       snapshot: string;
@@ -981,6 +989,21 @@ export function buildAccessDescriptor(input: {
       },
     },
     continuity: {
+      agent: {
+        workflow: '.github/workflows/agent.yml',
+        actions: [...AGENT_ACTIONS],
+        commands: [
+          'gh workflow run agent.yml -f action=status',
+          'gh workflow run agent.yml -f action=audit',
+          'gh workflow run agent.yml -f action=resume -f pr=<n> -f post=true',
+          'gh workflow run agent.yml -f action=check -f base=main',
+          'gh workflow run agent.yml -f action=deploy -f ref=<branch> -f environments=dev,staging',
+          'gh workflow run agent.yml -f action=bootstrap -f protect_main=true',
+          'gh workflow run agent.yml -f action=sync',
+        ],
+        identity: 'GITHUB_TOKEN efêmero da run (nada guardado); GitHub App opcional via secrets APP_ID/APP_PRIVATE_KEY',
+        note: 'cada ação é auditável no summary da run e no ledger; --dry-run mostra os comandos sem tocar na API',
+      },
       store: {
         file: '.kiro/state/continuity.db',
         snapshot: SNAPSHOT_FILE,
@@ -1096,6 +1119,21 @@ export function validateAccessDescriptor(
       }
     }
   }
+  if (access.continuity?.agent) {
+    const agent = access.continuity.agent;
+    if (agent.actions.length === 0) {
+      findings.push({ level: 'error', code: 'access-agent-empty', message: 'descriptor anuncia o agente sem nenhuma ação' });
+    }
+    for (const action of agent.actions) {
+      if (!AGENT_ACTIONS.includes(action as (typeof AGENT_ACTIONS)[number])) {
+        findings.push({ level: 'error', code: 'access-agent-unknown', message: `descriptor anuncia a ação "${action}", que o agente não implementa` });
+      }
+    }
+    if (!ctx.exists(agent.workflow)) {
+      findings.push({ level: 'error', code: 'access-agent-workflow-missing', message: `o workflow do agente não existe: ${agent.workflow}` });
+    }
+  }
+
   if (access.continuity?.store) {
     if (!ctx.exists(access.continuity.store.snapshot)) {
       findings.push({ level: 'warn', code: 'access-store-snapshot-missing', message: `snapshot do store não existe ainda (${access.continuity.store.snapshot})`, hint: 'rode `npm run continuity:sync`' });

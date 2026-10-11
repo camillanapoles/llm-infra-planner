@@ -315,6 +315,21 @@
           "verify": "npm run store -- check && npx vitest run scripts/store.test.ts",
           "evidence": "7 coleções (sessions, kv, events, gates, tasks, handoffs, artifacts) em dois drivers (node:sqlite + json); mesma suíte de 40 testes nos dois; meta-classe valida palavras reservadas e tipos; query com guarda de injeção; sync registra gates/sessão/espelhos e exporta snapshot; /api/store servido pelo runtime WASI (somente leitura)",
           "notes": "Meta-classe + factory: defineEntity/createStore/repositoryFor. O store recusa credencial por construção."
+        },
+        {
+          "id": "T-311",
+          "title": "Agente por API: ações de GitOps e CI/CD dispatcháveis sem credencial pessoal",
+          "status": "done",
+          "spec": "17-continuity-gate",
+          "paths": [
+            "scripts/agent.ts",
+            "scripts/agent.test.ts",
+            ".github/workflows/agent.yml",
+            ".kiro/state/access.json"
+          ],
+          "verify": "npm run validate:workflows && npx vitest run scripts/agent.test.ts && npm run agent -- audit",
+          "evidence": "agent.yml (workflow_dispatch com 7 ações) + CLI npm run agent; identidade = GITHUB_TOKEN efêmero, com GitHub App opcional via secrets APP_ID/APP_PRIVATE_KEY; 11 testes das partes puras; --dry-run imprime os comandos/API sem executar; ações registradas no summary da run e no ledger",
+          "notes": "Ações: status, audit, resume, check, deploy, bootstrap, sync. O ref de deploy é validado. Nada de segredo em argv, arquivo ou no store."
         }
       ]
     },

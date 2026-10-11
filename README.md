@@ -323,6 +323,11 @@ npm run continuity:resume     # briefing de retomada para a próxima sessão
   branch, PR), runtime local, URLs de deploy por ambiente, comandos de retomada e próximas
   tarefas; **sem segredos por design**, validado por `npm run validate:access` no gate e
   servido pelo runtime wasm em `/api/access`. Resumo: `npm run continuity:access`.
+- **Agente por API (`npm run agent` · workflow `Agent API`):** ações de GitOps dispatcháveis —
+  `status`, `audit`, `resume`, `check`, `deploy`, `bootstrap`, `sync` — rodando com o
+  `GITHUB_TOKEN` **efêmero** de cada run (GitHub App opcional via secrets). Nenhuma
+  credencial pessoal, nenhum segredo no repositório; `--dry-run` mostra os comandos e o
+  corpo do comentário vai por arquivo. Assim a continuidade não depende de quem está online.
 - **Ledger (`npm run store`):** SQLite local (`node:sqlite`) com CRUD, query e os gates
   gravados como dados — coleções `sessions`, `kv`, `events`, `gates`, `tasks`, `handoffs`,
   `artifacts`. Serve para *setar e recuperar* o que a sessão precisa lembrar; o snapshot

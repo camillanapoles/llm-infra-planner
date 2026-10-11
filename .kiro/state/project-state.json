@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-11T18:51:48.358Z",
+  "generatedAt": "2026-10-11T23:31:34.492Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "a1af5b3fb729137fe82256d7140519fa6386957e",
+  "headSha": "cdfee4325ef43a647a113ada5e31c0c91f08de4c",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -30,9 +30,9 @@
       "id": "P3",
       "name": "WebAssembly e entrega multi-ambiente",
       "status": "in_progress",
-      "done": 9,
-      "total": 10,
-      "percent": 90,
+      "done": 10,
+      "total": 11,
+      "percent": 91,
       "open": [
         "T-308"
       ]
@@ -92,9 +92,9 @@
     }
   ],
   "overall": {
-    "done": 17,
-    "total": 31,
-    "percent": 55
+    "done": 18,
+    "total": 32,
+    "percent": 56
   },
   "nextTasks": [
     {
@@ -145,30 +145,30 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-11T18:51:48.045Z",
+    "generatedAt": "2026-10-11T23:31:34.167Z",
     "stale": true,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "commit": "a1af5b3fb729137fe82256d7140519fa6386957e"
+    "commit": "cdfee4325ef43a647a113ada5e31c0c91f08de4c"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-11T18:51:48.045Z"
+      "ranAt": "2026-10-11T23:31:34.167Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-11T18:51:48.045Z"
+      "ranAt": "2026-10-11T23:31:34.167Z"
     }
   ],
   "resume": {
-    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (55% do roadmap concluído)",
+    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (56% do roadmap concluído)",
     "next": [
       "T-308 Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
       "T-401 Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",

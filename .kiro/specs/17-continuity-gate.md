@@ -24,7 +24,7 @@ measures objective invariants and writes the state that the next session resumes
 - `roadmap.json` describes phases (with `exitCriteria`) and tasks with `id`, `title`, `status`, `paths` (escopo), `verify` (aceite), `dependsOn`, optional `spec`, `evidence`.
 - `policy.json` declares `baseBranch`, `protectedBranches`, `statePaths`, `sharedPaths`, `kernelPaths`, `scopes` (spec → paths) e o nome da label de bypass.
 - `validateRoadmap()` rejeita: ids duplicados, status inválido, dependência inexistente, auto-dependência; e avisa `done` sem `evidence`.
-- Roadmap validation and phase rules are unit-tested (`scripts/continuity.test.ts`, 46 testes; ledger em `scripts/store.test.ts`, 40).
+- Roadmap validation and phase rules are unit-tested (`scripts/continuity.test.ts`, 46 testes; ledger em `scripts/store.test.ts`, 40; agente em `scripts/agent.test.ts`, 11).
 
 ### Requirement 2: Every branch declares what it delivers (handoff)
 **User Story:** As a reviewer, I want each branch to state its scope and resume point before I review the code.
@@ -117,6 +117,18 @@ measures objective invariants and writes the state that the next session resumes
 - Portabilidade: `store export` grava `.kiro/state/store.json` + `public/store.json` (texto, diffável, versionado) e `store import` reconstrói o banco — o `.db` fica fora do git e um sandbox apagado não perde o histórico.
 - API de leitura pelo runtime WASI: `/api/store`, `/api/store/:coleção?limit=&where=&order=`, `/api/store/:coleção/:id` e `/api/session`; **escrita por API é recusada com explicação** (a porta aparece em previews).
 
+### Requirement 11: The agent acts by API — without anyone's personal credential
+**User Story:** As a maintainer, I want the agent to keep operating GitOps and continuity *after* a session ends, without storing a token anywhere and without depending on whoever is at the keyboard.
+
+**Acceptance Criteria:**
+- `.github/workflows/agent.yml` (dispatchável por API) expõe as ações `status`, `audit`, `resume`, `check`, `deploy`, `bootstrap` e `sync`; `scripts/agent.ts` (CLI `npm run agent -- <ação>`) é o corpo testável de cada uma.
+- A identidade é o **`GITHUB_TOKEN` efêmero da run**; se existirem os secrets `APP_ID`/`APP_PRIVATE_KEY`, o token é emitido por **GitHub App** (`actions/create-github-app-token`) — a chave privada vive só no cofre do Actions, nunca no repositório, no ledger, no descriptor ou em argv.
+- **Nenhum segredo é lido, impresso ou persistido** pelo agente; o token é injetado como variável de ambiente do passo que age.
+- `--dry-run` imprime exatamente os comandos/`gh api` que a ação executaria — verificação sem efeito colateral (é como o agente se prova numa sessão sem permissão de dispatch).
+- `deploy` valida o `ref` (apenas ref normal do git) e o `environments` contra `all|production|staging|dev`; `resume --post` publica o briefing num comentário idempotente (`<!-- agent-resume -->`), com o corpo enviado por arquivo (`-F body=@…`), nunca inline em argv.
+- Cada execução fica auditável: markdown no summary da run (`--summary`) e a leitura do ledger (`audit`) mostra gates com falha, sessão mais recente, bloqueios e eventos.
+- O `access.json` anuncia o agente (`continuity.agent`) com workflow, ações e comandos; `npm run validate:access` reprova anúncio de ação inexistente ou workflow ausente.
+
 ## Usage
 
 ```bash
@@ -147,6 +159,9 @@ scripts/continuity.test.ts          46 testes do núcleo do gate
 scripts/lib/store-core.ts           ledger: meta-classe, factory de drivers, repositórios
 scripts/store.ts                    CLI do ledger: set/get/query/gate/session/export
 scripts/store.test.ts               40 testes do ledger (a mesma suíte nos dois drivers)
+scripts/agent.ts                    ações de GitOps por API (corpo testável do workflow)
+scripts/agent.test.ts               11 testes das partes puras do agente
+.github/workflows/agent.yml         workflow_dispatch: as ações do agente
 scripts/validate-access.ts          valida o descriptor (sem segredos, comandos vivos, tarefas reais)
 scripts/validate-workflows.py       detecta chave duplicada em workflow (falha silenciosa do GitHub)
 .github/workflows/continuity-gate.yml   gate bloqueante em PRs + comentário de retomada

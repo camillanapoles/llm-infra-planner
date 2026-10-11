@@ -36,7 +36,8 @@
     "validate:access": "tsx scripts/validate-access.ts",
     "store": "tsx scripts/store.ts",
     "validate:store": "tsx scripts/store.ts check",
-    "store:export": "tsx scripts/store.ts export"
+    "store:export": "tsx scripts/store.ts export",
+    "agent": "tsx scripts/agent.ts"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",

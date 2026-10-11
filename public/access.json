@@ -2,9 +2,9 @@
   "schema": 1,
   "kind": "project-access-descriptor",
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-11T18:51:48.358Z",
+  "generatedAt": "2026-10-11T23:31:34.492Z",
   "provenance": {
-    "headSha": "a1af5b3fb729137fe82256d7140519fa6386957e",
+    "headSha": "cdfee4325ef43a647a113ada5e31c0c91f08de4c",
     "branch": "arena/fe62ce6d-llm-infra-planner",
     "baseBranch": "main",
     "generatedBy": "npm run continuity:sync",
@@ -100,6 +100,29 @@
     }
   },
   "continuity": {
+    "agent": {
+      "workflow": ".github/workflows/agent.yml",
+      "actions": [
+        "status",
+        "audit",
+        "resume",
+        "check",
+        "deploy",
+        "bootstrap",
+        "sync"
+      ],
+      "commands": [
+        "gh workflow run agent.yml -f action=status",
+        "gh workflow run agent.yml -f action=audit",
+        "gh workflow run agent.yml -f action=resume -f pr=<n> -f post=true",
+        "gh workflow run agent.yml -f action=check -f base=main",
+        "gh workflow run agent.yml -f action=deploy -f ref=<branch> -f environments=dev,staging",
+        "gh workflow run agent.yml -f action=bootstrap -f protect_main=true",
+        "gh workflow run agent.yml -f action=sync"
+      ],
+      "identity": "GITHUB_TOKEN efêmero da run (nada guardado); GitHub App opcional via secrets APP_ID/APP_PRIVATE_KEY",
+      "note": "cada ação é auditável no summary da run e no ledger; --dry-run mostra os comandos sem tocar na API"
+    },
     "store": {
       "file": ".kiro/state/continuity.db",
       "snapshot": ".kiro/state/store.json",

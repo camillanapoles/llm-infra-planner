@@ -1,0 +1,148 @@
+name: Agent API
+
+# ─────────────────────────────────────────────────────────────────────────────
+# O agente operando por API — sem credencial pessoal de ninguém.
+#
+# Qualquer sessão (humana ou agente) pode disparar estas ações; a identidade é o
+# `GITHUB_TOKEN` **efêmero** que o Actions cria para a run. Nada de PAT no repo,
+# nada de segredo em arquivo, nada de token que precise sobreviver à sessão:
+# é assim que a continuidade fica independente de quem está vivo.
+#
+#   gh workflow run agent.yml -f action=status
+#   gh workflow run agent.yml -f action=audit            # ledger: gates, sessões, eventos
+#   gh workflow run agent.yml -f action=resume -f pr=1 -f post=true
+#   gh workflow run agent.yml -f action=check -f base=main
+#   gh workflow run agent.yml -f action=deploy -f ref=<branch> -f environments=dev,staging
+#   gh workflow run agent.yml -f action=bootstrap -f protect_main=true
+#   gh workflow run agent.yml -f action=sync
+#
+# Preferir GitHub App (identidade própria, útil para agir fora do repo):
+# crie a App, instale e defina os **secrets** APP_ID e APP_PRIVATE_KEY. Se eles
+# existirem, o token é emitido pela App (1 h, por run); se não, cai no
+# GITHUB_TOKEN e nada muda. A chave privada vive só no cofre do Actions — este
+# repositório, o ledger e o agente nunca a leem.
+#
+# Spec: .kiro/specs/17-continuity-gate.md (Requirement 11)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Ação do agente'
+        required: true
+        type: choice
+        default: status
+        options: [status, audit, resume, check, deploy, bootstrap, sync]
+      ref:
+        description: 'Branch/ref para o deploy (vazio = branch de cada ambiente)'
+        required: false
+        default: ''
+      environments:
+        description: 'Ambientes do deploy (usado só por action=deploy)'
+        required: false
+        default: 'dev'
+      base:
+        description: 'Base do gate (usado só por action=check)'
+        required: false
+        default: 'main'
+      pr:
+        description: 'PR para publicar o briefing (action=resume)'
+        required: false
+        default: ''
+      post:
+        description: 'Publicar o briefing no PR (action=resume)'
+        required: false
+        type: boolean
+        default: false
+      protect_main:
+        description: 'Proteger a main (action=bootstrap)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write      # o próprio workflow pode commitar estado
+  pull-requests: write # briefing no PR
+  actions: write       # disparar deploy/bootstrap/sync (workflow_dispatch de outro workflow)
+  issues: write        # comentários (issues e PRs compartilham a API)
+
+concurrency:
+  group: agent-${{ inputs.action }}
+  cancel-in-progress: false
+
+jobs:
+  act:
+    name: 'Agent · ${{ inputs.action }}'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # ── Identidade: App quando existir, senão o token efêmero da run ─────────
+      - name: Detect identity
+        id: identity
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+        run: |
+          if [ -n "${APP_ID:-}" ]; then
+            echo "mode=app" >> "$GITHUB_OUTPUT"
+            echo "::notice::identidade: GitHub App (APP_ID definido nos secrets)"
+          else
+            echo "mode=github-token" >> "$GITHUB_OUTPUT"
+            echo "::notice::identidade: GITHUB_TOKEN efêmero (nenhuma App configurada)"
+          fi
+
+      - name: Mint token from the GitHub App
+        id: app
+        if: steps.identity.outputs.mode == 'app'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Act by API
+        env:
+          # nunca escrito em arquivo, nunca impresso: só vive no ambiente deste passo
+          GH_TOKEN: ${{ steps.app.outputs.token || secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR_INPUT: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          ARGS=()
+          REF="${{ inputs.ref }}"
+          ENVS="${{ inputs.environments }}"
+          BASE="${{ inputs.base }}"
+          PR="${{ inputs.pr }}"
+          [ -n "$REF" ]  && ARGS+=(--ref "$REF")
+          [ -n "$ENVS" ] && ARGS+=(--environments "$ENVS")
+          [ -n "$BASE" ] && ARGS+=(--base "$BASE")
+          [ -n "$PR" ]   && ARGS+=(--pr "$PR")
+          if [ "${{ inputs.post }}" = "true" ]; then ARGS+=(--post); fi
+          if [ "${{ inputs.protect_main }}" = "true" ]; then ARGS+=(--protect-main); fi
+          npm run agent -- ${{ inputs.action }} "${ARGS[@]}" --summary
+
+      # O ledger local do runner é descartável; o que fica auditável é o summary
+      # da run + o snapshot commitado (continuity-sync cuida do snapshot na main).
+      - name: Run summary
+        if: always()
+        env:
+          ACTION: ${{ inputs.action }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          {
+            echo ""
+            echo "---"
+            echo "**ação:** \`$ACTION\` · **pedido por:** \`$ACTOR\` · **identidade:** \`${{ steps.identity.outputs.mode }}\`"
+            echo "**reproduzir localmente:** \`npm run agent -- $ACTION --dry-run\`"
+          } >> "$GITHUB_STEP_SUMMARY"

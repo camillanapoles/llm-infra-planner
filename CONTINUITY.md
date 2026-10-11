@@ -96,6 +96,49 @@ O validador morde: token vazado, campo de credencial, comando/arquivo/workflow i
 tarefa fora do roadmap e URL de outro site **reprovam**; descriptor atrás do HEAD **avisa**.
 Leia com `npm run continuity:access` (resumo) ou `--json` (cru).
 
+## O agente por API (`npm run agent` · workflow `Agent API`)
+
+Ações de GitOps/continuidade que **qualquer sessão dispara sem credencial própria**:
+
+```bash
+npm run agent -- status                                  # onde estamos (fase, %, próximas, bloqueios)
+npm run agent -- audit                                   # ledger: gates com falha, sessão, eventos
+npm run agent -- resume --pr 1 --post                    # briefing no PR (comentário idempotente)
+npm run agent -- check --base main                       # roda o gate
+npm run agent -- deploy --ref <branch> --environments dev,staging
+npm run agent -- bootstrap --protect-main                # cria dev/staging + proteção
+npm run agent -- sync                                    # consolida a estado na main
+npm run agent -- <ação> --dry-run                        # imprime os comandos, não toca na API
+```
+
+Pela API, o mesmo conjunto (o workflow é o envelope):
+
+```bash
+gh workflow run agent.yml -f action=status
+gh workflow run agent.yml -f action=deploy -f ref=<branch> -f environments=dev,staging
+```
+
+**Identidade — e por que não existe segredo no repositório:**
+
+| cenário | quem autentica | onde vive |
+|---|---|---|
+| workflow (padrão) | `GITHUB_TOKEN` **efêmero** criado pelo Actions a cada run | só na memória da run |
+| GitHub App (opcional) | token de instalação (~1 h) emitido por run | chave privada **só** nos secrets `APP_ID`/`APP_PRIVATE_KEY` do Actions |
+| sessão local/agente | `gh auth` do ambiente (instalação de app) | no ambiente — nunca em arquivo |
+
+O agente nunca lê, imprime ou guarda credencial: o token entra como variável de
+ambiente do passo que age, o corpo do comentário vai por arquivo (`-F body=@…`) e
+`--dry-run` mostra a chamada exata sem executá-la. Toda ação termina auditável no
+summary da run, e `npm run agent -- audit` reconstrói o que aconteceu a partir do
+ledger versionado.
+
+**Para ligar o GitHub App (opcional, útil para agir fora deste repo):** crie a App
+em *Settings → Developer settings → GitHub Apps*, dê permissão de
+`contents: read/write` + `pull_requests: write`, instale no repositório e defina os
+secrets `APP_ID` e `APP_PRIVATE_KEY` (o `gh secret set` precisa de permissão de
+admin: o token deste agente **não** alcança secrets — foi verificado, 403).
+Sem eles, nada muda: o agente usa o token efêmero da run.
+
 ## O ledger (`.kiro/state/store.json` + `.db` local)
 
 Estado declarado (`roadmap.json`) vs **estado vivido**: o ledger guarda o que
@@ -211,6 +254,7 @@ npm run continuity:access    # descriptor de acesso (JSON da retomada) · --json
 npm run validate:access      # confere o descriptor (roda no gate)
 npm run store -- …           # ledger: set/get/query/gate/session/export
 npm run validate:store       # confere o ledger (roda no gate)
+npm run agent -- <ação>      # GitOps/continuidade por API (--dry-run para espiar)
 ```
 
 Spec completa: [`.kiro/specs/17-continuity-gate.md`](.kiro/specs/17-continuity-gate.md)
