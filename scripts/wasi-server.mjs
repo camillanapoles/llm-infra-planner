@@ -12,6 +12,7 @@
  *
  * Endpoints:
  *   GET  /health, /api/health runtime + module status
+ *   GET  /api/access          continuity access descriptor (the JSON of the project)
  *   GET  /api/selftest        deterministic kernel checks (JSON)
  *   GET  /api/plan?...        weightsGB, kvGB, overheadGB, tps, hourlyUsd
  *   GET  /api/kv?...          layers, batch, seq, kvHeads, headDim, bytes, attn, mlaDim
@@ -130,7 +131,7 @@ function dashboardHtml(status) {
   </div>
 
   <p class="muted">API: <code>/health</code> · <code>/api/health</code> · <code>/api/selftest</code> ·
-  <code>/api/plan</code> · <code>/api/kv</code> · <code>/api/roofline</code> ·
+  <code>/api/access</code> · <code>/api/plan</code> · <code>/api/kv</code> · <code>/api/roofline</code> ·
   <code>/api/gpus</code> · <code>/api/latency</code> · <code>POST /api/compute</code></p>
 <script>
   async function run() {
@@ -160,6 +161,20 @@ const server = http.createServer(async (req, res) => {
       const status = runtimeStatus();
       status.status = status.module.available ? 'ready' : 'module-missing';
       return send(res, status.module.available ? 200 : 503, status);
+    }
+
+    // Continuity access descriptor — the JSON a new session reads to resume.
+    // Served by the WASI runtime so the state travels with the module.
+    if (pathname === '/api/access' || pathname === '/access.json') {
+      const file = path.join(root, 'public', 'access.json');
+      if (!fs.existsSync(file)) {
+        return send(res, 404, {
+          ok: false,
+          error: 'access descriptor missing',
+          hint: 'npm run continuity:sync (grava .kiro/state/access.json + public/access.json)',
+        });
+      }
+      return send(res, 200, JSON.parse(fs.readFileSync(file, 'utf8')));
     }
 
     if (pathname.startsWith('/wasm/')) {

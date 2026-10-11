@@ -70,6 +70,32 @@ O gate roda em **todo PR** contra `main`/`dev`/`staging`
 **ponto de retomada** + o roadmap. Merges na `main` consolidam o estado
 (`.github/workflows/continuity-sync.yml`).
 
+## O JSON de acesso (`.kiro/state/access.json`)
+
+É o primeiro arquivo que uma sessão nova deve ler — o briefing em formato de máquina.
+Gerado por `npm run continuity:sync`, versionado, **sem nenhum segredo** (a autenticação vem
+do ambiente: `gh auth`), validado por `npm run validate:access` em todo PR e servido pelo
+runtime WebAssembly em `/api/access`:
+
+```jsonc
+{
+  "coordinates": { "repo": "camillanapoles/llm-infra-planner", "pullRequest": { "number": 1, "url": "…" },
+                   "branches": { "working": "arena/…", "default": "main", "environments": ["dev", "staging"] } },
+  "runtime":     { "local": { "page": "http://localhost:5173", "wasi": "http://localhost:8787" },
+                   "artifact": { "build": "node scripts/build-pages-artifact.mjs …", "verify": "bash scripts/verify-pages-artifact.sh _site" } },
+  "deploy":      { "environments": { "main": { "url": "https://camillanapoles.github.io/llm-infra-planner/" }, … },
+                   "automatic": { "trigger": "push em main/dev/staging" } },
+  "continuity":  { "readOrder": ["…access.json", "…RESUME.md", "…STATE.md", "CONTINUITY.md"],
+                   "resumeCommands": ["git fetch origin && git reset --hard origin/<branch>", "npm ci", "npm run build:wasm", …],
+                   "nextTasks": [ { "id": "T-308", "blockedBy": ["merge do PR #1"] } ] },
+  "validation":  { "command": "npm run validate:access" }
+}
+```
+
+O validador morde: token vazado, campo de credencial, comando/arquivo/workflow inexistente,
+tarefa fora do roadmap e URL de outro site **reprovam**; descriptor atrás do HEAD **avisa**.
+Leia com `npm run continuity:access` (resumo) ou `--json` (cru).
+
 ## Branch nova, sem narração
 
 Criou a branch depois do merge? Rode `npm run continuity:start -- --auto` (ou simplesmente
@@ -132,6 +158,8 @@ npm run continuity:resume    # briefing de retomada (RESUME.md)
 npm run continuity:start     # cria/atualiza o handoff desta branch
 npm run continuity:check     # gate (mesmo do CI) · --json para máquina
 npm run continuity:sync      # mede invariantes e atualiza o estado · --fast, --pages
+npm run continuity:access    # descriptor de acesso (JSON da retomada) · --json
+npm run validate:access      # confere o descriptor (roda no gate)
 ```
 
 Spec completa: [`.kiro/specs/17-continuity-gate.md`](.kiro/specs/17-continuity-gate.md)

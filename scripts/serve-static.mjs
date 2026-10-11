@@ -7,6 +7,9 @@
  *   npm run build && npm run serve                    # serves ./dist
  *   node scripts/serve-static.mjs _site --port 8080   # serves the Pages artifact
  *   node scripts/serve-static.mjs _site/dev           # serves one environment
+ *   node scripts/serve-static.mjs _site --base /llm-infra-planner/
+ *                                                     # mirrors the real Pages URL
+ *                                                     # shape (base + /staging/ + /dev/)
  *
  * Behaviour:
  *   - SPA fallback: unknown paths without an extension → index.html (200)
@@ -25,6 +28,9 @@ const portArg = args.indexOf('--port');
 const PORT = Number(portArg >= 0 ? args[portArg + 1] : process.env.PORT ?? 4173);
 const HOST = process.env.HOST ?? '0.0.0.0';
 const WASI_TARGET = process.env.WASI_PROXY_TARGET ?? 'http://127.0.0.1:8787';
+const baseArg = args.indexOf('--base');
+/** Project path of the real site, e.g. `/llm-infra-planner/`. Empty = serve at the root. */
+const BASE = baseArg >= 0 ? `/${args[baseArg + 1].replace(/^\/+|\/+$/g, '')}/`.replace('//', '/') : '';
 const rootDir = path.resolve(root, dirArg);
 
 if (!fs.existsSync(rootDir)) {
@@ -80,11 +86,27 @@ async function proxyToWasi(req, res, pathname) {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
-  const pathname = decodeURIComponent(url.pathname);
+  let pathname = decodeURIComponent(url.pathname);
 
   if (pathname.startsWith('/api/')) {
     void proxyToWasi(req, res, pathname);
     return;
+  }
+
+  // With --base the server mirrors the published URL shape: everything lives
+  // under the project path, exactly like GitHub Pages serves it.
+  if (BASE) {
+    if (pathname === '/' || pathname === BASE.slice(0, -1)) {
+      res.writeHead(302, { location: BASE });
+      res.end();
+      return;
+    }
+    if (!pathname.startsWith(BASE)) {
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end(`not found — this artifact is served under ${BASE}\n`);
+      return;
+    }
+    pathname = `/${pathname.slice(BASE.length)}`;
   }
 
   const mount = mountFor(pathname);
@@ -114,6 +136,6 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`\n  LLMcalc static server → http://${HOST}:${PORT}`);
   console.log(`  root   : ${path.relative(root, rootDir) || '.'}`);
-  console.log(`  mounts : ${mounts.map(m => `${m || '/'}`).join('  ')}`);
+  console.log(`  mounts : ${mounts.map(m => `${BASE}${m.replace(/^\//, '')}`).join('  ')}`);
   console.log(`  /api/* → ${WASI_TARGET}\n`);
 });

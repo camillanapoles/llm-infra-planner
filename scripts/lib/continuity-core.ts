@@ -170,6 +170,7 @@ export const POLICY_FILE = `${STATE_DIR}/policy.json`;
 export const STATE_FILE = `${STATE_DIR}/project-state.json`;
 export const STATE_MD_FILE = `${STATE_DIR}/STATE.md`;
 export const RESUME_FILE = `${STATE_DIR}/RESUME.md`;
+export const ACCESS_FILE = `${STATE_DIR}/access.json`;
 export const HANDOFF_DIR = `${STATE_DIR}/branches`;
 
 export function readJson<T>(file: string, root = process.cwd()): T | null {
@@ -831,4 +832,248 @@ export function renderResumeMd(input: {
   lines.push(`Roadmap completo: \`${ROADMAP_FILE}\` · política do gate: \`${POLICY_FILE}\` · fases abertas: ${roadmap.phases.filter(p => p.status !== 'done').map(p => p.id).join(', ') || '—'}`);
   lines.push('');
   return `${lines.join('\n')}\n`;
+}
+
+// ─── Access descriptor (the JSON a new session reads first) ──────────────────
+//
+// One machine-readable object per project: where the repo lives, which branch is
+// the working one, how to reach the runtime, what is deployed where, which
+// commands resume the work and what still blocks it.
+//
+// It carries **no credentials**. Access here means coordinates + commands; the
+// authentication comes from the environment (`gh auth`), never from a file that
+// is committed next to the code (policy guardrail: "sem segredos versionados").
+
+export interface AccessDescriptor {
+  schema: 1;
+  kind: 'project-access-descriptor';
+  project: string;
+  generatedAt: string;
+  provenance: { headSha: string; branch: string; baseBranch: string; generatedBy: string; sources: string[] };
+  credentials: { policy: string; auth: string; check: string; never: string[] };
+  coordinates: {
+    repo: string;
+    remote: string;
+    siteOrigin: string;
+    branches: { working: string; default: string; environments: string[] };
+    pullRequest: { number: number; url: string } | null;
+  };
+  runtime: {
+    local: { page: string; wasi: string; commands: string[]; endpoints: string[] };
+    artifact: { build: string; verify: string; serve: string };
+  };
+  deploy: {
+    provider: string;
+    environments: Record<string, { url: string; base: string; source: string }>;
+    dispatch: { requires: string; commands: string[] };
+    automatic: { trigger: string; workflow: string };
+  };
+  continuity: {
+    gate: string;
+    sync: string;
+    resume: string;
+    handoff: string;
+    readOrder: string[];
+    resumeCommands: string[];
+    nextTasks: { id: string; title: string; blockedBy: string[] }[];
+    blockers: string[];
+  };
+  validation: { command: string; checks: string[] };
+}
+
+const SECRET_PATTERNS: RegExp[] = [
+  /\bgh[pousr]_[A-Za-z0-9]{16,}/,
+  /\bgithub_pat_[A-Za-z0-9_]{20,}/,
+  /\bAKIA[0-9A-Z]{16}\b/,
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
+  /\bxox[baprs]-[A-Za-z0-9-]{10,}/,
+  /\bglpat-[A-Za-z0-9_-]{16,}/,
+];
+const SECRET_KEY = /token|secret|password|passwd|api[_-]?key|credential|bearer/i;
+
+/** Every string in the object, with the path that leads to it (for honest messages). */
+function walkStrings(value: unknown, prefix = ''): { path: string; value: string }[] {
+  if (typeof value === 'string') return [{ path: prefix || '(root)', value }];
+  if (Array.isArray(value)) return value.flatMap((item, i) => walkStrings(item, `${prefix}[${i}]`));
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, item]) => walkStrings(item, prefix ? `${prefix}.${key}` : key));
+  }
+  return [];
+}
+
+export function buildAccessDescriptor(input: {
+  roadmap: Roadmap;
+  policy: Policy;
+  state: ProjectState;
+  handoff: Handoff | null;
+  coordinates: AccessDescriptor['coordinates'];
+  generatedAt?: string;
+  generatedBy?: string;
+  localPorts?: { page: number; wasi: number };
+}): AccessDescriptor {
+  const { roadmap, policy, state, handoff, coordinates } = input;
+  const page = input.localPorts?.page ?? 5173;
+  const wasi = input.localPorts?.wasi ?? 8787;
+  const [owner] = coordinates.repo.split('/');
+  const environments = policy.protectedBranches.filter(branch => branch !== policy.baseBranch);
+
+  return {
+    schema: 1,
+    kind: 'project-access-descriptor',
+    project: roadmap.project,
+    generatedAt: input.generatedAt ?? new Date().toISOString(),
+    provenance: {
+      headSha: state.invariants.commit ?? state.headSha,
+      branch: state.branch,
+      baseBranch: policy.baseBranch,
+      generatedBy: input.generatedBy ?? 'npm run continuity:sync',
+      sources: [ROADMAP_FILE, POLICY_FILE, STATE_FILE, handoffPath(state.branch)],
+    },
+    credentials: {
+      policy: 'este arquivo é versionado e público — nenhum segredo mora aqui',
+      auth: 'a autenticação vem do ambiente (gh CLI já autenticado); o arquivo só descreve coordenadas e comandos',
+      check: 'gh auth status',
+      never: ['tokens', 'chaves privadas', 'senhas', 'cookies de sessão'],
+    },
+    coordinates: { ...coordinates, siteOrigin: `https://${owner}.github.io` },
+    runtime: {
+      local: {
+        page: `http://localhost:${page}`,
+        wasi: `http://localhost:${wasi}`,
+        commands: ['npm run stack'],
+        endpoints: ['/api/access', '/api/health', '/api/selftest', '/api/plan?...', '/api/kv?...', '/api/roofline?...', '/api/gpus?...', '/api/latency?...', 'POST /api/compute'],
+      },
+      artifact: {
+        build: 'node scripts/build-pages-artifact.mjs --env all --out _site',
+        verify: 'bash scripts/verify-pages-artifact.sh _site',
+        serve: `node scripts/serve-static.mjs _site --base /${coordinates.repo.split('/')[1]}/`,
+      },
+    },
+    deploy: {
+      provider: 'github-pages',
+      environments: Object.fromEntries([
+        [policy.baseBranch, { url: `${`https://${owner}.github.io`}/${coordinates.repo.split('/')[1]}/`, base: `/${coordinates.repo.split('/')[1]}/`, source: policy.baseBranch }],
+        ...environments.map(env => [
+          env,
+          { url: `${`https://${owner}.github.io`}/${coordinates.repo.split('/')[1]}/${env}/`, base: `/${coordinates.repo.split('/')[1]}/${env}/`, source: env },
+        ]),
+      ]),
+      dispatch: {
+        requires: 'workflow_dispatch só existe na branch default — o workflow precisa estar na main',
+        commands: [
+          'gh workflow run bootstrap-repo.yml -f protect_main=true',
+          `gh workflow run deploy-pages.yml -f ref=${state.branch} -f environments=${environments.join(',') || 'dev'}`,
+        ],
+      },
+      automatic: {
+        trigger: `push em ${[policy.baseBranch, ...environments].join('/')}`,
+        workflow: '.github/workflows/deploy-pages.yml',
+      },
+    },
+    continuity: {
+      gate: 'npm run continuity:check',
+      sync: 'npm run continuity:sync',
+      resume: 'npm run continuity:resume',
+      handoff: handoffPath(state.branch),
+      readOrder: ['.kiro/state/access.json', RESUME_FILE, STATE_MD_FILE, 'CONTINUITY.md'],
+      resumeCommands: [
+        `git fetch origin && git reset --hard origin/${state.branch}`,
+        'npm ci',
+        'npm run build:wasm',
+        'npm run continuity:status',
+        'npm run stack',
+      ],
+      nextTasks: state.nextTasks.map(task => ({ id: task.id, title: task.title, blockedBy: task.blockedBy })),
+      blockers: handoff?.resumePoint.blockedBy ?? [],
+    },
+    validation: {
+      command: 'npm run validate:access',
+      checks: ['sem segredos', 'comandos existem no repo', 'tarefas batem com o roadmap', 'sha/branch batem com o HEAD'],
+    },
+  };
+}
+
+export function validateAccessDescriptor(
+  descriptor: unknown,
+  ctx: { scripts: string[]; exists: (relativePath: string) => boolean; headSha: string; branch: string; roadmap: Roadmap },
+): Finding[] {
+  const findings: Finding[] = [];
+  const requiredTop = ['schema', 'kind', 'project', 'generatedAt', 'provenance', 'credentials', 'coordinates', 'runtime', 'deploy', 'continuity', 'validation'];
+  if (!descriptor || typeof descriptor !== 'object') {
+    return [{ level: 'error', code: 'access-shape', message: 'descriptor de acesso não é um objeto JSON' }];
+  }
+  const access = descriptor as AccessDescriptor;
+  for (const key of requiredTop) {
+    if (!(key in (access as unknown as Record<string, unknown>))) {
+      findings.push({ level: 'error', code: 'access-shape', message: `descriptor de acesso sem o campo obrigatório "${key}"` });
+    }
+  }
+  if (access.schema !== 1) findings.push({ level: 'error', code: 'access-schema', message: `schema inesperado: ${String(access.schema)} (esperado 1)` });
+  if (access.kind !== 'project-access-descriptor') findings.push({ level: 'error', code: 'access-kind', message: `kind inesperado: ${String(access.kind)}` });
+
+  // 1. no secrets — the descriptor is committed and public
+  for (const { path: at, value } of walkStrings(descriptor)) {
+    if (SECRET_PATTERNS.some(pattern => pattern.test(value))) {
+      findings.push({ level: 'error', code: 'access-secret', message: `valor com cara de segredo em ${at}`, hint: 'descreva o acesso por comando/coordenada; credencial vem do ambiente' });
+    }
+    if (SECRET_KEY.test(at.split('.').pop() ?? '') && value.trim() && !at.startsWith('credentials.never')) {
+      findings.push({ level: 'error', code: 'access-secret-key', message: `campo "${at}" parece guardar credencial`, hint: 'remova o campo — o JSON nunca carrega segredo' });
+    }
+  }
+
+  // 2. every command must exist in the repository
+  const commands = [
+    ...(access.continuity?.resumeCommands ?? []),
+    ...(access.runtime?.local?.commands ?? []),
+    ...(access.runtime?.artifact ? Object.values(access.runtime.artifact) : []),
+    ...(access.deploy?.dispatch?.commands ?? []),
+    ...(access.continuity ? [access.continuity.gate, access.continuity.sync, access.continuity.resume] : []),
+    ...(access.validation?.command ? [access.validation.command] : []),
+  ].filter((command): command is string => typeof command === 'string' && command.length > 0);
+
+  for (const command of commands) {
+    for (const [, script] of command.matchAll(/npm run ([a-z0-9:_-]+)/gi)) {
+      if (!ctx.scripts.includes(script)) {
+        findings.push({ level: 'error', code: 'access-script-missing', message: `comando cita "npm run ${script}", que não existe em package.json` });
+      }
+    }
+    for (const [, file] of command.matchAll(/(?:node|npx tsx|bash) (scripts\/[A-Za-z0-9._/-]+)/g)) {
+      if (!ctx.exists(file)) {
+        findings.push({ level: 'error', code: 'access-file-missing', message: `comando cita ${file}, que não existe no repositório` });
+      }
+    }
+    for (const [, workflow] of command.matchAll(/gh workflow run ([A-Za-z0-9._-]+\.ya?ml)/g)) {
+      if (!ctx.exists(`.github/workflows/${workflow}`)) {
+        findings.push({ level: 'error', code: 'access-workflow-missing', message: `comando cita o workflow ${workflow}, que não existe em .github/workflows/` });
+      }
+    }
+  }
+
+  // 3. consistency with the repository it describes
+  const index = taskIndex(ctx.roadmap);
+  const detached = !ctx.branch || ctx.branch === 'HEAD';
+  if (access.provenance && !detached && access.provenance.branch !== ctx.branch) {
+    findings.push({ level: 'warn', code: 'access-branch-stale', message: `descriptor gerado na branch "${access.provenance.branch}", HEAD atual em "${ctx.branch}"`, hint: 'rode `npm run continuity:sync`' });
+  }
+  if (access.provenance && access.provenance.headSha !== ctx.headSha) {
+    findings.push({ level: 'warn', code: 'access-sha-stale', message: `descriptor aponta para ${String(access.provenance.headSha).slice(0, 7)}, HEAD em ${ctx.headSha.slice(0, 7)}`, hint: 'rode `npm run continuity:sync`' });
+  }
+  for (const task of access.continuity?.nextTasks ?? []) {
+    const known = index.get(task.id);
+    if (!known) findings.push({ level: 'error', code: 'access-unknown-task', message: `descriptor lista a tarefa ${task.id}, que não existe no roadmap` });
+    else if (known.status === 'done') findings.push({ level: 'warn', code: 'access-stale-next', message: `${task.id} já está done mas continua listada como próxima`, hint: 'rode `npm run continuity:sync`' });
+  }
+  for (const handle of Object.values(access.deploy?.environments ?? {})) {
+    if (typeof handle?.url === 'string' && !handle.url.startsWith(`${access.coordinates?.siteOrigin ?? ''}/${access.coordinates?.repo?.split('/')[1] ?? ''}`)) {
+      findings.push({ level: 'error', code: 'access-url-mismatch', message: `URL de ambiente fora do site do projeto: ${handle.url}` });
+    }
+    if (typeof handle?.base === 'string' && !handle.base.startsWith(`/${access.coordinates?.repo?.split('/')[1] ?? ''}/`)) {
+      findings.push({ level: 'error', code: 'access-base-mismatch', message: `base path fora do projeto: ${handle.base}` });
+    }
+  }
+
+  if (!findings.some(finding => finding.level === 'error')) {
+    findings.push({ level: 'info', code: 'access-ok', message: `descriptor de acesso válido (${commands.length} comandos conferidos, ${(access.continuity?.nextTasks ?? []).length} próximas tarefas)` });
+  }
+  return findings;
 }

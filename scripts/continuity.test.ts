@@ -8,6 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  buildAccessDescriptor,
   buildState,
   checkPhaseDiscipline,
   checkScope,
@@ -21,6 +22,7 @@ import {
   renderResumeMd,
   renderStateMd,
   slugifyBranch,
+  validateAccessDescriptor,
   validateHandoff,
   validateRoadmap,
   type Handoff,
@@ -383,6 +385,114 @@ describe('progress and next tasks', () => {
     finished.phases[1].tasks[0].status = 'done';
     const publish = computeNextTasks(finished, 5).find(task => task.id === 'T-3');
     expect(publish?.blockedBy).toEqual([]);
+  });
+});
+
+// ─── Access descriptor ───────────────────────────────────────────────────────
+// The JSON a new session reads first: coordinates + commands + resume point, and
+// never a credential. `validate:access` guards it in CI.
+
+const accessInput = () => {
+  const state = buildState({ roadmap, policy, branch: 'arena/x', headSha: 'abc1234', generatedAt: '2026-01-02T00:00:00.000Z' });
+  return {
+    roadmap,
+    policy,
+    state,
+    handoff: handoff(),
+    coordinates: {
+      repo: 'owner/proj',
+      remote: 'https://github.com/owner/proj.git',
+      siteOrigin: '',
+      branches: { working: 'arena/x', default: 'main', environments: ['dev', 'staging'] },
+      pullRequest: { number: 7, url: 'https://github.com/owner/proj/pull/7' },
+    },
+    generatedAt: '2026-01-02T00:00:00.000Z',
+    generatedBy: 'test',
+  };
+};
+
+const validateCtx = () => ({
+  scripts: ['continuity:sync', 'continuity:check', 'continuity:resume', 'continuity:status', 'build:wasm', 'stack', 'validate:access'],
+  exists: (relative: string) => !relative.includes('missing'),
+  headSha: 'abc1234',
+  branch: 'arena/x',
+  roadmap,
+});
+
+describe('buildAccessDescriptor', () => {
+  it('describes coordinates, deploy targets and the resume point', () => {
+    const access = buildAccessDescriptor(accessInput());
+    expect(access.kind).toBe('project-access-descriptor');
+    expect(access.coordinates.repo).toBe('owner/proj');
+    expect(access.coordinates.siteOrigin).toBe('https://owner.github.io');
+    expect(access.deploy.environments.main.url).toBe('https://owner.github.io/proj/');
+    expect(access.deploy.environments.dev.url).toBe('https://owner.github.io/proj/dev/');
+    expect(access.deploy.environments.dev.base).toBe('/proj/dev/');
+    expect(access.provenance.branch).toBe('arena/x');
+    expect(access.continuity.handoff).toBe('.kiro/state/branches/arena-x.json');
+    expect(access.continuity.nextTasks.map(task => task.id)).toEqual(['T-2', 'T-3', 'T-4']);
+  });
+
+  it('carries no credential-shaped field', () => {
+    const access = buildAccessDescriptor(accessInput());
+    const flattened = JSON.stringify(access);
+    expect(/gh[pousr]_|github_pat_|-----BEGIN/.test(flattened)).toBe(false);
+    expect(Object.keys(access.credentials)).toEqual(['policy', 'auth', 'check', 'never']);
+  });
+});
+
+describe('validateAccessDescriptor', () => {
+  it('accepts the descriptor the project generates', () => {
+    const findings = validateAccessDescriptor(buildAccessDescriptor(accessInput()), validateCtx());
+    expect(findings.filter(f => f.level === 'error')).toEqual([]);
+    expect(findings.map(f => f.code)).toContain('access-ok');
+  });
+
+  it('rejects a leaked secret, wherever it hides', () => {
+    const access = structuredClone(buildAccessDescriptor(accessInput()));
+    (access.coordinates as unknown as Record<string, unknown>).token = 'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    expect(validateAccessDescriptor(access, validateCtx()).map(f => f.code)).toContain('access-secret');
+
+    const sneaky = structuredClone(buildAccessDescriptor(accessInput()));
+    (sneaky.runtime as unknown as Record<string, unknown>).apiKey = 'algo';
+    expect(validateAccessDescriptor(sneaky, validateCtx()).map(f => f.code)).toContain('access-secret-key');
+  });
+
+  it('rejects commands and workflows that do not exist', () => {
+    const access = structuredClone(buildAccessDescriptor(accessInput()));
+    access.continuity.resumeCommands.push('npm run nao-existe');
+    access.runtime.artifact.build = 'node scripts/missing-build.mjs';
+    access.deploy.dispatch.commands.push('gh workflow run missing.yml');
+    const codes = validateAccessDescriptor(access, validateCtx()).map(f => f.code);
+    expect(codes).toContain('access-script-missing');
+    expect(codes).toContain('access-file-missing');
+    expect(codes).toContain('access-workflow-missing');
+  });
+
+  it('rejects next tasks the roadmap does not know', () => {
+    const access = structuredClone(buildAccessDescriptor(accessInput()));
+    access.continuity.nextTasks.push({ id: 'T-999', title: 'fantasma', blockedBy: [] });
+    expect(validateAccessDescriptor(access, validateCtx()).map(f => f.code)).toContain('access-unknown-task');
+  });
+
+  it('rejects environment URLs outside the project site', () => {
+    const access = structuredClone(buildAccessDescriptor(accessInput()));
+    access.deploy.environments.dev.url = 'https://exemplo.com/outro/';
+    expect(validateAccessDescriptor(access, validateCtx()).map(f => f.code)).toContain('access-url-mismatch');
+  });
+
+  it('warns (never blocks) when the descriptor is older than the HEAD', () => {
+    const access = buildAccessDescriptor(accessInput());
+    const findings = validateAccessDescriptor(access, { ...validateCtx(), headSha: 'def5678', branch: 'outra' });
+    const codes = findings.map(f => f.code);
+    expect(codes).toContain('access-sha-stale');
+    expect(codes).toContain('access-branch-stale');
+    expect(findings.filter(f => f.level === 'error')).toEqual([]);
+  });
+
+  it('stays quiet about the branch when HEAD is detached (CI checkout)', () => {
+    const findings = validateAccessDescriptor(buildAccessDescriptor(accessInput()), { ...validateCtx(), branch: 'HEAD' });
+    expect(findings.map(f => f.code)).not.toContain('access-branch-stale');
   });
 });
 

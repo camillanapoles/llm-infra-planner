@@ -24,7 +24,7 @@ measures objective invariants and writes the state that the next session resumes
 - `roadmap.json` describes phases (with `exitCriteria`) and tasks with `id`, `title`, `status`, `paths` (escopo), `verify` (aceite), `dependsOn`, optional `spec`, `evidence`.
 - `policy.json` declares `baseBranch`, `protectedBranches`, `statePaths`, `sharedPaths`, `kernelPaths`, `scopes` (spec → paths) e o nome da label de bypass.
 - `validateRoadmap()` rejeita: ids duplicados, status inválido, dependência inexistente, auto-dependência; e avisa `done` sem `evidence`.
-- Roadmap validation and phase rules are unit-tested (`scripts/continuity.test.ts`, 37 testes).
+- Roadmap validation and phase rules are unit-tested (`scripts/continuity.test.ts`, 46 testes).
 
 ### Requirement 2: Every branch declares what it delivers (handoff)
 **User Story:** As a reviewer, I want each branch to state its scope and resume point before I review the code.
@@ -94,6 +94,16 @@ measures objective invariants and writes the state that the next session resumes
 - Every tier is unit-tested, including: numbers that are not task ids falling back to the resume point, blocked-first-task resolution, accented titles, and environment branches.
 - `npm run continuity:start -- --auto` on an environment branch creates no handoff (there is nothing to scope).
 
+### Requirement 9: The project ships an access descriptor (the JSON a new session reads first)
+**User Story:** As a new session — human or agent — I want one JSON per project that tells me where the code lives, how to reach the runtime, what is published where and which commands resume the work, without reading the whole history.
+
+**Acceptance Criteria:**
+- `npm run continuity:sync` writes `.kiro/state/access.json` + `public/access.json` with: `provenance` (headSha/branch/sources), `coordinates` (repo, remote, branches, PR), `runtime` (local page/WASI + endpoints, artifact build/verify/serve), `deploy` (per-environment URL/base/source, dispatch commands, automatic trigger), `continuity` (readOrder, resumeCommands, nextTasks, blockers) e `validation`.
+- O descriptor **não carrega credencial nenhuma** (arquivo versionado e público): `credentials` documenta a política, e autenticação vem do ambiente (`gh auth`).
+- O runtime WASI serve o descriptor em **`/api/access`** (e `/access.json`), então o estado viaja com o módulo wasm; a página o alcança por `/api/*`.
+- `npm run validate:access` reprova: valor com cara de segredo, campo de credencial, `npm run`/`scripts/*`/workflow citado que não existe, tarefa que não está no roadmap, URL/base fora do site do projeto; e **avisa** (sem bloquear) quando o descriptor está atrás do HEAD ou quando o HEAD está destacado (checkout de CI).
+- O gate bloqueante roda `npm run validate:access` em todo PR; o núcleo é testado com casos positivos e negativos (token/senha/comando/script/workflow/tarefa/URL).
+
 ## Usage
 
 ```bash
@@ -104,6 +114,8 @@ npm run continuity:check -- --json              # relatório para máquinas
 npm run continuity:sync                         # mede invariantes e atualiza o estado
 npm run continuity:sync -- --fast --pages       # só o barato + artefato de Pages
 npm run continuity:resume                       # briefing de retomada
+npm run continuity:access                       # descriptor de acesso (--json para o cru)
+npm run validate:access                         # confere o descriptor (roda no gate)
 ```
 
 ## Files
@@ -112,12 +124,14 @@ npm run continuity:resume                       # briefing de retomada
 .kiro/state/roadmap.json            fases, tarefas, escopo, dependências (fonte)
 .kiro/state/policy.json             regras do gate, specs, paths compartilhados
 .kiro/state/branches/<slug>.json    handoff por branch (auto-criado pelo CI)
+.kiro/state/access.json             descriptor de acesso (coordenadas + comandos, sem segredos)
 .kiro/state/project-state.json      estado derivado + invariantes + gates
 .kiro/state/STATE.md / RESUME.md    visões legíveis (geradas)
 public/state.json                   estado publicado com a página
 scripts/lib/continuity-core.ts      lógica pura (validação, escopo, progresso, render)
 scripts/continuity.ts               CLI: status · check · start · sync · resume
-scripts/continuity.test.ts          37 testes do núcleo do gate
+scripts/continuity.test.ts          46 testes do núcleo do gate
+scripts/validate-access.ts          valida o descriptor (sem segredos, comandos vivos, tarefas reais)
 scripts/validate-workflows.py       detecta chave duplicada em workflow (falha silenciosa do GitHub)
 .github/workflows/continuity-gate.yml   gate bloqueante em PRs + comentário de retomada
 .github/workflows/continuity-sync.yml   consolidação do estado na main

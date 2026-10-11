@@ -31,7 +31,9 @@
     "continuity:start": "tsx scripts/continuity.ts start",
     "continuity:resume": "tsx scripts/continuity.ts resume",
     "validate:workflows": "python3 scripts/validate-workflows.py",
-    "lint:changed": "{ git diff --name-only --diff-filter=ACMR origin/main...HEAD -- '*.ts' '*.tsx'; git diff --name-only --diff-filter=ACMR -- '*.ts' '*.tsx'; } | sort -u | xargs -r npx eslint --no-warn-ignored"
+    "lint:changed": "{ git diff --name-only --diff-filter=ACMR origin/main...HEAD -- '*.ts' '*.tsx'; git diff --name-only --diff-filter=ACMR -- '*.ts' '*.tsx'; } | sort -u | xargs -r npx eslint --no-warn-ignored",
+    "continuity:access": "tsx scripts/continuity.ts access",
+    "validate:access": "tsx scripts/validate-access.ts"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",

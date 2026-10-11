@@ -1,15 +1,15 @@
 # Estado do projeto — LLMcalc
 
-> Gerado automaticamente por `npm run continuity:sync` em 2026-10-07T18:06:13.155Z (branch `arena/fe62ce6d-llm-infra-planner` @ `44cdf0a`).
+> Gerado automaticamente por `npm run continuity:sync` em 2026-10-11T18:20:35.368Z (branch `arena/fe62ce6d-llm-infra-planner` @ `70a3363`).
 > Não edite à mão: a fonte são `.kiro/state/roadmap.json`, `policy.json` e os handoffs em `.kiro/state/branches/`.
 
-**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 15/29 tarefas (52%)
+**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 16/30 tarefas (53%)
 
 | fase | nome | status | tarefas | aberto |
 |---|---|---|---|---|
 | ✓ P1 | Kernel de cálculo e base de dados | done | 4/4 (100%) | — |
 | ✓ P2 | Experiência da página | done | 4/4 (100%) | — |
-| ▶ P3 | WebAssembly e entrega multi-ambiente | in_progress | 7/8 (88%) | T-308 |
+| ▶ P3 | WebAssembly e entrega multi-ambiente | in_progress | 8/9 (89%) | T-308 |
 | · P4 | Qualidade contínua | todo | 0/5 (0%) | T-401, T-402, T-403, T-404, T-405 |
 | · P5 | Dados vivos | todo | 0/3 (0%) | T-501, T-502, T-503 |
 | · P6 | Runtime WASM avançado | todo | 0/3 (0%) | T-601, T-602, T-603 |

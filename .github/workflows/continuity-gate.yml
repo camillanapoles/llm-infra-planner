@@ -111,6 +111,11 @@ jobs:
           git push origin "HEAD:${BRANCH}" || echo "::warning::não foi possível commitar o handoff (branch protegida?)"
 
       # ── 2. the gate itself ──────────────────────────────────────────────────
+      # O descriptor de acesso é o JSON que a próxima sessão lê primeiro:
+      # se ele citar comando/arquivo/tarefa que não existe, o PR não passa.
+      - name: Validate the access descriptor
+        run: npm run validate:access
+
       - name: Run continuity gate
         id: gate
         env:

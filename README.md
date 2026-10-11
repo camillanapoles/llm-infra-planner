@@ -319,6 +319,10 @@ npm run continuity:resume     # briefing de retomada para a próxima sessão
 - **Gate:** `.github/workflows/continuity-gate.yml` reprova PR fora do escopo, com
   tarefa inexistente, com roadmap desatualizado ou com mudança no núcleo wasm/TS
   que não foi revalidada. A label `scope:allow` libera expansão intencional.
+- **JSON de acesso:** [`.kiro/state/access.json`](.kiro/state/access.json) — coordenadas (repo,
+  branch, PR), runtime local, URLs de deploy por ambiente, comandos de retomada e próximas
+  tarefas; **sem segredos por design**, validado por `npm run validate:access` no gate e
+  servido pelo runtime wasm em `/api/access`. Resumo: `npm run continuity:access`.
 - **Consolidação:** `.github/workflows/continuity-sync.yml` mede os invariantes
   (wasm:verify, testes, build, lint, docker, artefato de Pages) no merge para a
   `main` e publica o estado — que a página mostra em `/runtime`.

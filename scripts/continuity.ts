@@ -15,8 +15,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   RESUME_FILE,
+  ACCESS_FILE,
   STATE_FILE,
   STATE_MD_FILE,
+  buildAccessDescriptor,
   buildState,
   checkPhaseDiscipline,
   checkScope,
@@ -189,6 +191,42 @@ function collectMetrics(options: { fast: boolean; pages: boolean }): { metrics: 
   return { metrics, gates };
 }
 
+/** `owner/name` do remoto origin (vazio se não houver remoto). */
+function repoSlug(): string {
+  const remote = git('remote get-url origin');
+  const match = /github\.com[:/]([^/]+\/[^/.]+)(?:\.git)?$/.exec(remote);
+  return match ? match[1] : '';
+}
+
+/** Coordenadas do projeto para o descriptor de acesso — nunca credenciais. */
+function projectCoordinates(branch: string, policy: ReturnType<typeof loadPolicy>) {
+  const repo = repoSlug();
+  const environments = policy.protectedBranches.filter(name => name !== policy.baseBranch);
+
+  // PR da sessão, quando houver: contexto do Actions primeiro, depois o gh (best-effort).
+  let pullRequest: { number: number; url: string } | null = null;
+  const fromCI = /^refs\/pull\/(\d+)\//.exec(process.env.GITHUB_REF ?? '')?.[1];
+  if (fromCI && repo) {
+    pullRequest = { number: Number(fromCI), url: `https://github.com/${repo}/pull/${fromCI}` };
+  } else if (repo) {
+    try {
+      const raw = execFileSync('gh', ['pr', 'view', '--json', 'number,url'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 8_000 });
+      const parsed = JSON.parse(raw) as { number: number; url: string };
+      if (parsed?.number) pullRequest = { number: parsed.number, url: parsed.url };
+    } catch {
+      pullRequest = null; // sem PR aberto (ex.: rodando na main) — não é erro
+    }
+  }
+
+  return {
+    repo,
+    remote: git('remote get-url origin') || `https://github.com/${repo}.git`,
+    siteOrigin: '',
+    branches: { working: branch, default: policy.baseBranch, environments },
+    pullRequest,
+  };
+}
+
 async function cmdSync(): Promise<number> {
   const fast = has('--fast');
   const pages = has('--pages');
@@ -222,7 +260,19 @@ async function cmdSync(): Promise<number> {
         invariants: state.invariants,
       }, null, 2)}\n`,
     );
+    // Descriptor de acesso: o JSON que uma sessão nova (humana ou agente) lê primeiro.
+    const access = buildAccessDescriptor({
+      roadmap,
+      policy,
+      state,
+      handoff,
+      coordinates: projectCoordinates(branch, policy),
+      generatedAt: state.generatedAt,
+    });
+    writeJson(ACCESS_FILE, access, root);
+    fs.writeFileSync(path.join(root, 'public', 'access.json'), `${JSON.stringify(access, null, 2)}\n`);
     process.stdout.write(`${C.green}✓${C.reset} estado atualizado: ${STATE_FILE}, ${STATE_MD_FILE}, ${RESUME_FILE}, public/state.json\n`);
+    process.stdout.write(`${C.green}✓${C.reset} descriptor de acesso: ${ACCESS_FILE} + public/access.json (servido em /api/access)\n`);
   }
 
   process.stdout.write(`\n${C.bold}Estado do projeto${C.reset} — fase ${state.currentPhase} (${state.overall.percent}% · ${state.overall.done}/${state.overall.total})\n`);
@@ -484,6 +534,35 @@ function cmdStatus(): number {
   return 0;
 }
 
+// ─── command: access ─────────────────────────────────────────────────────────
+
+function cmdAccess(): number {
+  const file = path.join(root, ACCESS_FILE);
+  if (!fs.existsSync(file)) {
+    process.stderr.write(`${C.red}✗${C.reset} ${ACCESS_FILE} não existe — rode \`npm run continuity:sync\`\n`);
+    return 1;
+  }
+  const access = JSON.parse(fs.readFileSync(file, 'utf8')) as ReturnType<typeof buildAccessDescriptor>;
+  if (has('--json')) {
+    process.stdout.write(`${JSON.stringify(access, null, 2)}\n`);
+    return 0;
+  }
+  process.stdout.write(`\n${C.bold}Descriptor de acesso${C.reset} ${C.dim}(${ACCESS_FILE} · ${access.generatedAt})\n\n`);
+  process.stdout.write(`  repositório   ${access.coordinates.repo}\n`);
+  process.stdout.write(`  branch        ${access.coordinates.branches.working} ${C.dim}(default ${access.coordinates.branches.default} · ambientes ${access.coordinates.branches.environments.join(', ') || '—'})${C.reset}\n`);
+  process.stdout.write(`  PR            ${access.coordinates.pullRequest ? `#${access.coordinates.pullRequest.number} ${access.coordinates.pullRequest.url}` : '—'}\n`);
+  process.stdout.write(`  credenciais   ${C.dim}${access.credentials.policy}${C.reset}\n`);
+  process.stdout.write(`  runtime       ${access.runtime.local.page} (página) · ${access.runtime.local.wasi} (WASI, ${access.runtime.local.endpoints[0]})\n`);
+  for (const [env, handle] of Object.entries(access.deploy.environments)) {
+    process.stdout.write(`  deploy ${env.padEnd(8)}${handle.url}\n`);
+  }
+  process.stdout.write(`  retomada      ${access.continuity.readOrder.join(' → ')}\n`);
+  process.stdout.write(`  próximas      ${access.continuity.nextTasks.map(task => task.id).join(', ') || '—'}\n`);
+  if (access.continuity.blockers.length) process.stdout.write(`  ${C.yellow}bloqueios   ${access.continuity.blockers.join('; ')}${C.reset}\n`);
+  process.stdout.write(`\n${C.dim}valide com \`npm run validate:access\`; JSON cru: \`npm run continuity:access -- --json\`${C.reset}\n\n`);
+  return 0;
+}
+
 // ─── main ────────────────────────────────────────────────────────────────────
 
 const COMMANDS: Record<string, () => number | Promise<number>> = {
@@ -492,6 +571,7 @@ const COMMANDS: Record<string, () => number | Promise<number>> = {
   start: cmdStart,
   resume: cmdResume,
   sync: cmdSync,
+  access: cmdAccess,
 };
 
 async function main(): Promise<void> {
@@ -504,6 +584,7 @@ ${C.bold}continuity${C.reset} — estado, escopo e retomada do projeto
   npm run continuity:check [--base main] [--json]  GATE de continuidade
   npm run continuity:start [--task T-xxx] [--auto]  cria o handoff da branch
   npm run continuity:resume                 briefing de retomada
+  npm run continuity:access [--json]        descriptor de acesso (o JSON da retomada)
 
 Arquivos: .kiro/state/{roadmap,policy,project-state}.json · STATE.md · RESUME.md · branches/<slug>.json
 `);

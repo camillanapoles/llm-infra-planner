@@ -9,7 +9,8 @@
   "statePaths": [
     ".kiro/state/**",
     "CONTINUITY.md",
-    "public/state.json"
+    "public/state.json",
+    "public/access.json"
   ],
   "sharedPaths": [
     "README.md",
@@ -96,7 +97,8 @@
       "CONTINUITY.md",
       "scripts/validate-workflows.py",
       ".github/workflows/ci.yml",
-      "package.json"
+      "package.json",
+      "scripts/validate-access.ts"
     ]
   },
   "resume": {

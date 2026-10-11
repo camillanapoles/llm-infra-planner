@@ -283,6 +283,22 @@
           ],
           "verify": "gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml",
           "notes": "Depende do merge do PR #1 na main (os workflows precisam existir na branch default)."
+        },
+        {
+          "id": "T-309",
+          "title": "Descriptor de acesso por projeto: um JSON que descreve como retomar e publicar",
+          "status": "done",
+          "spec": "17-continuity-gate",
+          "paths": [
+            ".kiro/state/access.json",
+            "public/access.json",
+            "scripts/validate-access.ts",
+            "scripts/wasi-server.mjs",
+            "scripts/serve-static.mjs"
+          ],
+          "verify": "npm run validate:access",
+          "evidence": "gerado pelo continuity:sync e servido pelo runtime WASI em /api/access; validador com 7 testes negativos (token vazado, senha, comando/script/workflow inexistente, tarefa fora do roadmap, URL de outro site) todos detectados",
+          "notes": "Sem credenciais por design (guardrail: sem segredos versionados)."
         }
       ]
     },
