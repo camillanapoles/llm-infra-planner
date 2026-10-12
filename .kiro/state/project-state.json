@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-12T00:06:27.292Z",
+  "generatedAt": "2026-10-12T00:09:01.484Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "66c32b8c531f6c91e03d978392a09c88f98b45e1",
+  "headSha": "bc3ef183aa20ceab9943b6376040366e744b9eee",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -143,51 +143,62 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-12T00:05:52.242Z",
+    "generatedAt": "2026-10-12T00:08:05.311Z",
     "stale": false,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "testsPassed": 358,
+    "testsPassed": 361,
     "testFiles": 24,
     "buildOk": true,
     "bundleKb": 701.89,
     "lintProblems": 0,
     "lintErrors": 0,
     "lintWarnings": 0,
-    "commit": "66c32b8c531f6c91e03d978392a09c88f98b45e1"
+    "pagesEnvs": [
+      "production",
+      "staging",
+      "dev"
+    ],
+    "commit": "bc3ef183aa20ceab9943b6376040366e744b9eee"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-12T00:05:52.242Z"
+      "ranAt": "2026-10-12T00:08:05.311Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-12T00:05:52.242Z"
+      "ranAt": "2026-10-12T00:08:05.311Z"
     },
     {
       "id": "tests",
       "ok": true,
-      "detail": "358 testes / 24 arquivos",
-      "ranAt": "2026-10-12T00:05:52.242Z"
+      "detail": "361 testes / 24 arquivos",
+      "ranAt": "2026-10-12T00:08:05.311Z"
     },
     {
       "id": "build",
       "ok": true,
       "detail": "bundle principal 701.89 kB",
-      "ranAt": "2026-10-12T00:05:52.242Z"
+      "ranAt": "2026-10-12T00:08:05.311Z"
     },
     {
       "id": "lint",
       "ok": true,
       "detail": "0 erros / 0 avisos",
-      "ranAt": "2026-10-12T00:05:52.242Z"
+      "ranAt": "2026-10-12T00:08:05.311Z"
+    },
+    {
+      "id": "pages-artifact",
+      "ok": true,
+      "detail": "3/3 ambientes",
+      "ranAt": "2026-10-12T00:08:05.311Z"
     }
   ],
   "resume": {
