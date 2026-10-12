@@ -240,9 +240,11 @@ function actionAudit(args: AgentArgs): number {
   if (!snapshot) throw new Error(`${SNAPSHOT_FILE} não existe — rode \`npm run continuity:sync\` (ou \`npm run store -- export\`)`);
   const report = summarizeAudit(snapshot, headSha(), args.limit);
   emit(renderAuditMd(report), args, report);
-  // Reprova quando a última execução de algum gate falhou (ou o snapshot está atrás do HEAD);
-  // histórico de falhas já corrigidas fica visível no relatório sem derrubar o comando.
-  return report.gates.ok && !report.stale ? 0 : 1;
+  // Reprova quando a última execução de algum gate falhou. Histórico de falhas já
+  // corrigidas aparece no relatório sem derrubar o comando, e snapshot atrás do HEAD
+  // é aviso: o estado é regenerado a cada sync (o CI consolida no main), então usar
+  // defasagem como erro faria todo commit recém-feito reprovar a auditoria.
+  return report.gates.ok ? 0 : 1;
 }
 
 function actionCheck(args: AgentArgs): number {

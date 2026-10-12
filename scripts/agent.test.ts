@@ -68,7 +68,7 @@ describe('summarizeAudit', () => {
     expect(report.gates.failing[0].id).toBe('lint@2');
     expect(report.lastSession?.resume_point).toBe('falta o merge');
     expect(report.lastSession?.blockers).toEqual(['T-308 depende do merge']);
-    expect(report.stale).toBe(true); // abc1234 ≠ fff9999
+    expect(report.stale).toBe(true); // abc1234 ≠ fff9999 — aviso no relatório, não reprovação
   });
 
   it('judges by the latest run of each gate, not by history', () => {
