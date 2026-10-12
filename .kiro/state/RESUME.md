@@ -1,11 +1,11 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-12T00:00:54.580Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-12T00:06:27.292Z.
 
 ## Onde estamos
 
 - Fase **P3 — WebAssembly e entrega multi-ambiente**, 61% do roadmap (20/33 tarefas).
-- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `8679f28`.
+- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `66c32b8`.
 - Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104, T-402, T-406; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
 - Resumo do handoff: Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).
 - Próximos passos já registrados nesta branch:
@@ -27,11 +27,11 @@
 ## Últimos commits
 
 ```
+66c32b8 chore(state): ledger and gates after the quality pass
 8679f28 chore(continuity): declare the quality scope in the roadmap and handoff
 ea0c752 fix(quality): zero lint findings, and a validator that matches the catalog
 5c2fa4b feat(agent): GitOps actions by API, with no personal credential anywhere
 f3c622d fix(store): keep the session note in kv so sync cannot overwrite it
-a1af5b3 fix(store): render object lists by identifier, not [object Object]
 ```
 
 ## Guardrails (não negociáveis)

@@ -27,7 +27,28 @@ import {
   validateRoadmap,
   type Handoff,
   type Policy,
+  type Roadmap,  buildAccessDescriptor,
+  buildState,
+  checkPhaseDiscipline,
+  checkScope,
+  computeNextTasks,
+  computeOverall,
+  computePhaseProgress,
+  evaluateKernelFreshness,
+  globToRegExp,
+  inferScope,
+  matchGlob,
+  renderResumeMd,
+  renderStateMd,
+  slugifyBranch,
+  validateAccessDescriptor,
+  validateHandoff,
+  validateRoadmap,
+  type Handoff,
+  type Policy,
   type Roadmap,
+  parseLintSummary,
+
 } from './lib/continuity-core.js';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -92,6 +113,23 @@ const handoff = (overrides: Partial<Handoff> = {}): Handoff => ({
 });
 
 // ─── Glob matching ───────────────────────────────────────────────────────────
+
+describe('parseLintSummary', () => {
+  it('treats an empty output as zero, not as unknown', () => {
+    // ESLint não imprime nada quando não há problemas
+    expect(parseLintSummary('')).toEqual({ problems: 0, errors: 0, warnings: 0 });
+  });
+
+  it('parses the summary ESLint prints when there are findings', () => {
+    expect(parseLintSummary('\n✖ 24 problems (19 errors, 5 warnings)\n'))
+      .toEqual({ problems: 24, errors: 19, warnings: 5 });
+  });
+
+  it('parses the singular form', () => {
+    expect(parseLintSummary('✖ 1 problem (1 error, 0 warnings)'))
+      .toEqual({ problems: 1, errors: 1, warnings: 0 });
+  });
+});
 
 describe('glob matching', () => {
   it('matches directory trees with **', () => {

@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-12T00:00:54.580Z",
+  "generatedAt": "2026-10-12T00:06:27.292Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "8679f28c941820d1bca4f355c730f366be047fcf",
+  "headSha": "66c32b8c531f6c91e03d978392a09c88f98b45e1",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -143,7 +143,7 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-11T23:59:53.350Z",
+    "generatedAt": "2026-10-12T00:05:52.242Z",
     "stale": false,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
@@ -153,49 +153,41 @@
     "testFiles": 24,
     "buildOk": true,
     "bundleKb": 701.89,
-    "pagesEnvs": [
-      "production",
-      "staging",
-      "dev"
-    ],
-    "commit": "8679f28c941820d1bca4f355c730f366be047fcf"
+    "lintProblems": 0,
+    "lintErrors": 0,
+    "lintWarnings": 0,
+    "commit": "66c32b8c531f6c91e03d978392a09c88f98b45e1"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-11T23:59:53.350Z"
+      "ranAt": "2026-10-12T00:05:52.242Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-11T23:59:53.350Z"
+      "ranAt": "2026-10-12T00:05:52.242Z"
     },
     {
       "id": "tests",
       "ok": true,
       "detail": "358 testes / 24 arquivos",
-      "ranAt": "2026-10-11T23:59:53.350Z"
+      "ranAt": "2026-10-12T00:05:52.242Z"
     },
     {
       "id": "build",
       "ok": true,
       "detail": "bundle principal 701.89 kB",
-      "ranAt": "2026-10-11T23:59:53.350Z"
+      "ranAt": "2026-10-12T00:05:52.242Z"
     },
     {
       "id": "lint",
       "ok": true,
-      "detail": "? erros / ? avisos",
-      "ranAt": "2026-10-11T23:59:53.350Z"
-    },
-    {
-      "id": "pages-artifact",
-      "ok": true,
-      "detail": "3/3 ambientes",
-      "ranAt": "2026-10-11T23:59:53.350Z"
+      "detail": "0 erros / 0 avisos",
+      "ranAt": "2026-10-12T00:05:52.242Z"
     }
   ],
   "resume": {

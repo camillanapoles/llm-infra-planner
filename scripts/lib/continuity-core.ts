@@ -560,6 +560,23 @@ export interface InferredScope {
  *                       scope does not apply to them;
  *   4. `none`         — nothing matched and the roadmap has no open task left.
  */
+export interface LintSummary {
+  problems: number;
+  errors: number;
+  warnings: number;
+}
+
+/**
+ * Lê o resumo do ESLint. Ausência de problemas significa saída vazia, então o
+ * silêncio vale zeros — nunca `undefined`, que num gate vira "?" no relatório e
+ * (pior) contagem zero por acidente quando o lint morreu sem imprimir nada.
+ */
+export function parseLintSummary(output: string): LintSummary {
+  const match = /(\d+) problems? \((\d+) errors?, (\d+) warnings?\)/.exec(output);
+  if (!match) return { problems: 0, errors: 0, warnings: 0 };
+  return { problems: Number(match[1]), errors: Number(match[2]), warnings: Number(match[3]) };
+}
+
 export function inferScope(branch: string, roadmap: Roadmap, policy: Policy): InferredScope {
   const haystack = normalize(branch);
   const tasks = flattenTasks(roadmap);

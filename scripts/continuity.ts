@@ -40,6 +40,7 @@ import {
   checkPhaseDiscipline,
   checkScope,
   computeNextTasks,
+  parseLintSummary,
   inferScope,
   evaluateKernelFreshness,
   flattenTasks,
@@ -185,16 +186,15 @@ function collectMetrics(options: { fast: boolean; pages: boolean }): { metrics: 
     gates.push({ id: 'build', ok: build.ok, detail: build.ok ? `bundle principal ${metrics.bundleKb ?? '?'} kB` : 'falhou', ranAt: now });
 
     const lint = run('lint', 'npm run lint');
-    const lintMatch = /(\d+) problems? \((\d+) errors?, (\d+) warnings?\)/.exec(lint.output);
-    if (lintMatch) {
-      metrics.lintProblems = Number(lintMatch[1]);
-      metrics.lintErrors = Number(lintMatch[2]);
-      metrics.lintWarnings = Number(lintMatch[3]);
-    }
+    const lintSummary = parseLintSummary(lint.output);
+    metrics.lintProblems = lintSummary.problems;
+    metrics.lintErrors = lintSummary.errors;
+    metrics.lintWarnings = lintSummary.warnings;
     gates.push({
+      // Processo OK E zero erros: um lint que morre sem imprimir resumo não é verde.
       id: 'lint',
-      ok: (metrics.lintErrors ?? 0) === 0,
-      detail: `${metrics.lintErrors ?? '?'} erros / ${metrics.lintWarnings ?? '?'} avisos`,
+      ok: lint.ok && lintSummary.errors === 0,
+      detail: lint.ok ? `${lintSummary.errors} erros / ${lintSummary.warnings} avisos` : 'falhou',
       ranAt: now,
     });
   }
