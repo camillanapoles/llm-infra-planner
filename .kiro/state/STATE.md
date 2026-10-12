@@ -1,16 +1,16 @@
 # Estado do projeto — LLMcalc
 
-> Gerado automaticamente por `npm run continuity:sync` em 2026-10-11T23:57:46.195Z (branch `arena/fe62ce6d-llm-infra-planner` @ `ea0c752`).
+> Gerado automaticamente por `npm run continuity:sync` em 2026-10-12T00:00:54.580Z (branch `arena/fe62ce6d-llm-infra-planner` @ `8679f28`).
 > Não edite à mão: a fonte são `.kiro/state/roadmap.json`, `policy.json` e os handoffs em `.kiro/state/branches/`.
 
-**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 18/32 tarefas (56%)
+**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 20/33 tarefas (61%)
 
 | fase | nome | status | tarefas | aberto |
 |---|---|---|---|---|
 | ✓ P1 | Kernel de cálculo e base de dados | done | 4/4 (100%) | — |
 | ✓ P2 | Experiência da página | done | 4/4 (100%) | — |
 | ▶ P3 | WebAssembly e entrega multi-ambiente | in_progress | 10/11 (91%) | T-308 |
-| · P4 | Qualidade contínua | todo | 0/5 (0%) | T-401, T-402, T-403, T-404, T-405 |
+| · P4 | Qualidade contínua | todo | 2/6 (33%) | T-401, T-403, T-404, T-405 |
 | · P5 | Dados vivos | todo | 0/3 (0%) | T-501, T-502, T-503 |
 | · P6 | Runtime WASM avançado | todo | 0/3 (0%) | T-601, T-602, T-603 |
 | · P7 | Publicação e comunidade | todo | 0/2 (0%) | T-701, T-702 |
@@ -21,9 +21,9 @@
 |---|---|---|---|---|
 | `T-308` | Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs) | P3 | — | `gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml` |
 | `T-401` | Suíte e2e Playwright (rotas, share URL, paridade wasm visível) | P4 | — | `npm run test:e2e` |
-| `T-402` | Zerar o lint legado (20 erros / 5 avisos herdados) | P4 | — | `npm run lint` |
 | `T-403` | Code-splitting do bundle (chunk principal ~700 kB) | P4 | — | `npm run build` |
 | `T-404` | Cobertura de testes do store e das rotas | P4 | — | `npm test` |
+| `T-405` | Auditoria de acessibilidade (foco, ARIA das abas, contraste) | P4 | — | `npm run test:e2e` |
 
 ## Invariantes medidas
 

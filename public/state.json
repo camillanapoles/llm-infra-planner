@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-11T23:57:46.195Z",
+  "generatedAt": "2026-10-12T00:00:54.580Z",
   "phase": "P3",
   "phaseName": "WebAssembly e entrega multi-ambiente",
-  "percent": 56,
-  "done": 18,
-  "total": 32,
+  "percent": 61,
+  "done": 20,
+  "total": 33,
   "next": [
     {
       "id": "T-308",
@@ -17,13 +17,13 @@
       "blockedBy": []
     },
     {
-      "id": "T-402",
-      "title": "Zerar o lint legado (20 erros / 5 avisos herdados)",
+      "id": "T-403",
+      "title": "Code-splitting do bundle (chunk principal ~700 kB)",
       "blockedBy": []
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-11T23:56:45.767Z",
+    "generatedAt": "2026-10-11T23:59:53.350Z",
     "stale": false,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
@@ -38,6 +38,6 @@
       "staging",
       "dev"
     ],
-    "commit": "ea0c7524a35017e78095ba9688ee4dcdaaf1339c"
+    "commit": "8679f28c941820d1bca4f355c730f366be047fcf"
   }
 }

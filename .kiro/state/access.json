@@ -2,9 +2,9 @@
   "schema": 1,
   "kind": "project-access-descriptor",
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-11T23:57:46.195Z",
+  "generatedAt": "2026-10-12T00:00:54.580Z",
   "provenance": {
-    "headSha": "ea0c7524a35017e78095ba9688ee4dcdaaf1339c",
+    "headSha": "8679f28c941820d1bca4f355c730f366be047fcf",
     "branch": "arena/fe62ce6d-llm-infra-planner",
     "baseBranch": "main",
     "generatedBy": "npm run continuity:sync",
@@ -181,11 +181,6 @@
         "blockedBy": []
       },
       {
-        "id": "T-402",
-        "title": "Zerar o lint legado (20 erros / 5 avisos herdados)",
-        "blockedBy": []
-      },
-      {
         "id": "T-403",
         "title": "Code-splitting do bundle (chunk principal ~700 kB)",
         "blockedBy": []
@@ -193,6 +188,11 @@
       {
         "id": "T-404",
         "title": "Cobertura de testes do store e das rotas",
+        "blockedBy": []
+      },
+      {
+        "id": "T-405",
+        "title": "Auditoria de acessibilidade (foco, ARIA das abas, contraste)",
         "blockedBy": []
       }
     ],

@@ -1,12 +1,12 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-11T23:57:46.195Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-12T00:00:54.580Z.
 
 ## Onde estamos
 
-- Fase **P3 — WebAssembly e entrega multi-ambiente**, 56% do roadmap (18/32 tarefas).
-- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `ea0c752`.
-- Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
+- Fase **P3 — WebAssembly e entrega multi-ambiente**, 61% do roadmap (20/33 tarefas).
+- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `8679f28`.
+- Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104, T-402, T-406; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
 - Resumo do handoff: Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).
 - Próximos passos já registrados nesta branch:
   - T-307: rodar `npm run continuity:check` e `npm run continuity:sync` (gate verde)
@@ -20,18 +20,18 @@
 |---|---|---|---|---|---|
 | 1 | `T-308` | Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs) | P3 | — | `gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml` |
 | 2 | `T-401` | Suíte e2e Playwright (rotas, share URL, paridade wasm visível) | P4 | — | `npm run test:e2e` |
-| 3 | `T-402` | Zerar o lint legado (20 erros / 5 avisos herdados) | P4 | — | `npm run lint` |
-| 4 | `T-403` | Code-splitting do bundle (chunk principal ~700 kB) | P4 | — | `npm run build` |
-| 5 | `T-404` | Cobertura de testes do store e das rotas | P4 | — | `npm test` |
+| 3 | `T-403` | Code-splitting do bundle (chunk principal ~700 kB) | P4 | — | `npm run build` |
+| 4 | `T-404` | Cobertura de testes do store e das rotas | P4 | — | `npm test` |
+| 5 | `T-405` | Auditoria de acessibilidade (foco, ARIA das abas, contraste) | P4 | — | `npm run test:e2e` |
 
 ## Últimos commits
 
 ```
+8679f28 chore(continuity): declare the quality scope in the roadmap and handoff
 ea0c752 fix(quality): zero lint findings, and a validator that matches the catalog
 5c2fa4b feat(agent): GitOps actions by API, with no personal credential anywhere
 f3c622d fix(store): keep the session note in kv so sync cannot overwrite it
 a1af5b3 fix(store): render object lists by identifier, not [object Object]
-4c1a5bf fix(ci): run on Node 22 and keep the ledger runtime-aware
 ```
 
 ## Guardrails (não negociáveis)
