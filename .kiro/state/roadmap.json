@@ -282,7 +282,7 @@
             ".kiro/state/**"
           ],
           "verify": "gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml",
-          "notes": "Depende do merge do PR #1 na main (os workflows precisam existir na branch default)."
+          "notes": "BLOQUEIO EXTERNO: publicar exige habilitar Pages uma vez em Settings → Pages → Source: \"GitHub Actions\". O token do workflow e a identidade desta sessão recebem \"Resource not accessible by integration\" (403) ao tentar criar o site pela API. Com Pages habilitado, o deploy (run do push em main) publica os três ambientes; dev/staging já existem e os três builds passam. Alternativa sem clicar na UI: dar \"Administration: write\" ao GitHub App e a sessão habilita Pages pela API (POST /pages) — hoje o App também recebe 403 ali."
         },
         {
           "id": "T-309",
@@ -347,6 +347,18 @@
           "verify": "npm test && npm run --silent verify:all",
           "notes": "Achados do primeiro deploy real: (1) inputs null em push → todos os passos acionáveis pulados com job verde; (2) placeholder sem kernel/base path → assemble recusa o artefato e produção não publica.",
           "evidence": "9bb7629: npm test && npm run --silent verify:all → 0 (pipeline 2026-10-13T19:28:53.694Z)"
+        },
+        {
+          "id": "T-412",
+          "title": "Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push)",
+          "status": "todo",
+          "paths": [
+            ".github/workflows/docker.yml",
+            "docker/**",
+            "Dockerfile"
+          ],
+          "verify": "gh run list --workflow=docker.yml --limit 1 --json conclusion -q \".[0].conclusion\"",
+          "notes": "CAUSA REPRODUZIDA E CORRIGIDA: o passo afirmava saúde com `grep -q '\"ok\":true'`, mas o runtime responde JSON formatado (`\"ok\": true`) — o padrão nunca casava, então o smoke test ficava vermelho com o produto saudável (reproduzido subindo o runtime no sandbox: /health, /api/selftest e /api/plan respondem certo). Corrigido: padrão tolerante a espaços nas duas checagens do docker.yml, docker-build.mjs com parse de JSON e contabilizando falha, e scripts/wasi-smoke.test.ts (3 testes) subindo o runtime e usando o padrão extraído do workflow. VERIFICAÇÃO PENDENTE: a próxima run do docker.yml em main. Se ela ainda falhar, a causa é o pull do GHCR (`docker run ghcr.io/...-wasi:<tag>`), que nenhuma máquina daqui consegue exercitar."
         }
       ]
     },

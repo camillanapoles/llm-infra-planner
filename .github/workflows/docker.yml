@@ -159,7 +159,10 @@ jobs:
           done
           test "$UPSTREAM_SEEN" = "1" || { docker logs wasi-test; exit 1; }
           echo "── wasi /api/selftest ──"
-          curl -sf http://127.0.0.1:8787/api/selftest | tee /dev/stderr | grep -q '"ok":true'
+          # Tolera JSON formatado: o runtime emite `"ok": true` (com espaço), e o
+          # `grep -q '"ok":true'` original nunca casava — o passo ficava vermelho com
+          # o produto funcionando (reproduzido localmente em scripts/wasi-smoke.test.ts).
+          curl -sf http://127.0.0.1:8787/api/selftest | tee /dev/stderr | grep -qE '"ok"[[:space:]]*:[[:space:]]*true'
 
           docker run -d --name page-test --network llmcalc-test -p 3000:80 \
             --env WASI_UPSTREAM=wasi-test:8787 \
@@ -172,7 +175,7 @@ jobs:
           echo "── wasm mime type ──"
           curl -sfI http://127.0.0.1:3000/wasm/llmcalc-kernel.wasm | grep -i 'content-type: application/wasm'
           echo "── /api/selftest through nginx ──"
-          curl -sf http://127.0.0.1:3000/api/selftest | tee /dev/stderr | grep -q '"ok":true'
+          curl -sf http://127.0.0.1:3000/api/selftest | tee /dev/stderr | grep -qE '"ok"[[:space:]]*:[[:space:]]*true'
           echo "── /api/plan through nginx ──"
           curl -sf "http://127.0.0.1:3000/api/plan?weightsGB=16&kvGB=0.54&overheadGB=0.5&tps=1500&hourlyUsd=2.49"
 

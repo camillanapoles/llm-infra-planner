@@ -84,7 +84,7 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Push directly or open a PR (protected main)
+      - name: Publish state — direct push, else PR, else run artifact
         id: publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -93,6 +93,18 @@ jobs:
           set -uo pipefail
           if [ "$CHANGED" != "true" ]; then exit 0; fi
 
+          # 1) Direct push — the default path, and the only one with no owner
+          #    setting in the way. Works whenever `main` is not protected.
+          if git push origin HEAD:main > /tmp/direct.log 2>&1; then
+            echo "✓ estado publicado direto na main"
+            echo "published=direct" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "── push direto para a main recusado ──"; sed 's/^/  /' /tmp/direct.log
+
+          # 2) Protected main → branch + PR. Errors are surfaced on purpose:
+          #    hiding them (as this step used to) left orphan branches behind
+          #    while the log claimed the state was safe in the run artifact.
           BRANCH="chore/continuity-state-$(date +%Y%m%d-%H%M)"
           git checkout -b "$BRANCH"
           git push origin "$BRANCH"
@@ -101,18 +113,37 @@ jobs:
                --title "chore(continuity): sync project state" \
                --body "Atualização automática do estado do projeto (.kiro/state + public/state.json).
 
-          Gerado por \`continuity-sync\`. Veja \`.kiro/state/RESUME.md\` para o ponto de retomada.
-          O merge é automático quando a \`main\` não exige revisão." 2>/dev/null; then
+          Gerado por \`continuity-sync\`. Veja \`.kiro/state/RESUME.md\` para o ponto de retomada." \
+               > /tmp/pr.log 2>&1; then
             PR=$(gh pr view "$BRANCH" --json number --jq .number)
             echo "pr=$PR" >> "$GITHUB_OUTPUT"
-            if gh pr merge "$PR" --squash --auto --delete-branch 2>/dev/null; then
-              echo "✓ PR #$PR aberto com auto-merge"
+            echo "published=pr" >> "$GITHUB_OUTPUT"
+            # `--auto` needs "Allow auto-merge" enabled on the repository, so try
+            # a plain merge first and fall back to auto-merge.
+            if gh pr merge "$PR" --squash --delete-branch > /tmp/merge.log 2>&1; then
+              echo "✓ PR #$PR mergeado (squash)"
+            elif gh pr merge "$PR" --squash --auto --delete-branch > /tmp/merge2.log 2>&1; then
+              echo "✓ PR #$PR criado com auto-merge"
             else
-              echo "::notice::PR #$PR aberto — a main exige revisão para mergear"
+              echo "::notice::PR #$PR aberto — a main exige revisão para mergear; estado no branch $BRANCH"
             fi
           else
-            echo "::warning::não foi possível abrir PR — estado atualizado apenas no artefato da run"
+            echo "published=branch" >> "$GITHUB_OUTPUT"
+            echo "::warning::gh pr create falhou — estado publicado no branch $BRANCH e no artefato desta run"
+            sed 's/^/  /' /tmp/pr.log
           fi
+
+      # The state is never only in the job summary: whichever path above ran, the
+      # snapshot is downloadable from the run.
+      - name: Upload state artifact
+        if: always() && steps.commit.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: continuity-state-${{ github.sha }}
+          path: |
+            .kiro/state
+            public/state.json
+          retention-days: 30
 
       - name: Summary
         run: |
@@ -124,4 +155,8 @@ jobs:
             if [ -n "${{ steps.publish.outputs.pr }}" ]; then
               echo "Estado publicado via PR #${{ steps.publish.outputs.pr }}."
             fi
+            case "${{ steps.publish.outputs.published }}" in
+              direct) echo "Estado publicado com push direto na main." ;;
+              branch) echo "Estado publicado no branch e no artefato desta run (a main recusou o push direto e o PR não pôde ser aberto)." ;;
+            esac
           } >> "$GITHUB_STEP_SUMMARY"

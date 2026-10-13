@@ -1,15 +1,15 @@
 # Estado do projeto — LLMcalc
 
-> Gerado automaticamente por `npm run continuity:sync` em 2026-10-13T19:38:47.193Z (branch `arena/fe62ce6d-llm-infra-planner` @ `32699c8`).
+> Gerado automaticamente por `npm run continuity:sync` em 2026-10-13T19:49:08.769Z (branch `arena/fe62ce6d-llm-infra-planner` @ `830cffb`).
 > Não edite à mão: a fonte são `.kiro/state/roadmap.json`, `policy.json` e os handoffs em `.kiro/state/branches/`.
 
-**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 25/38 tarefas (66%)
+**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 25/39 tarefas (64%)
 
 | fase | nome | status | tarefas | aberto |
 |---|---|---|---|---|
 | ✓ P1 | Kernel de cálculo e base de dados | done | 4/4 (100%) | — |
 | ✓ P2 | Experiência da página | done | 4/4 (100%) | — |
-| ▶ P3 | WebAssembly e entrega multi-ambiente | in_progress | 11/12 (92%) | T-308 |
+| ▶ P3 | WebAssembly e entrega multi-ambiente | in_progress | 11/13 (85%) | T-308, T-412 |
 | · P4 | Qualidade contínua | todo | 6/10 (60%) | T-401, T-403, T-404, T-405 |
 | · P5 | Dados vivos | todo | 0/3 (0%) | T-501, T-502, T-503 |
 | · P6 | Runtime WASM avançado | todo | 0/3 (0%) | T-601, T-602, T-603 |
@@ -20,22 +20,20 @@
 | tarefa | título | fase | bloqueio | verificação |
 |---|---|---|---|---|
 | `T-308` | Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs) | P3 | — | `gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml` |
+| `T-412` | Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push) | P3 | — | `gh run list --workflow=docker.yml --limit 1 --json conclusion -q ".[0].conclusion"` |
 | `T-401` | Suíte e2e Playwright (rotas, share URL, paridade wasm visível) | P4 | — | `npm run test:e2e` |
 | `T-403` | Code-splitting do bundle (chunk principal ~700 kB) | P4 | — | `npm run build` |
 | `T-404` | Cobertura de testes do store e das rotas | P4 | — | `npm test` |
-| `T-405` | Auditoria de acessibilidade (foco, ARIA das abas, contraste) | P4 | — | `npm run test:e2e` |
 
 ## Invariantes medidas
 
 | métrica | valor |
 |---|---|
-| testes passando | 389 em 26 arquivos |
 | kernel wasm (browser) | 2057 bytes |
 | módulo WASI | 5728 bytes |
 | verificações wasm | 16 |
-| build | ok (chunk 701.89 kB) |
-| lint | 0 erros / 0 avisos |
 | validações docker | 16 |
+| _coleta_ | parcial (`--fast`) |
 
 ## Gates
 
@@ -43,7 +41,4 @@
 |---|---|---|
 | `wasm-verify` | ✓ | 16 verificações ok |
 | `docker-static` | ✓ | 16 validações estáticas |
-| `tests` | ✓ | 389 testes / 26 arquivos |
-| `build` | ✓ | bundle principal 701.89 kB |
-| `lint` | ✓ | 0 erros / 0 avisos |
 

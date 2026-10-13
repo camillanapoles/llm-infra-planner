@@ -88,3 +88,14 @@ docker-compose.yaml                app :3000 · app-staging :3001 · app-dev :30
 scripts/docker-build.mjs           static validation + docker build/compose/smoke
 .github/workflows/docker.yml       buildx → GHCR + network smoke test
 ```
+
+## Nota de implementação — a asserção de saúde do smoke test
+
+O smoke test das imagens afirma saúde olhando o corpo do JSON: `grep -qE '"ok"[[:space:]]*:[[:space:]]*true'`.
+O padrão aceita JSON formatado porque é assim que o runtime responde (`"ok": true`, com espaço) —
+o `grep -q '"ok":true'` anterior **nunca casava** e deixava o passo vermelho com o serviço saudável
+(reproduzido localmente subindo o runtime: `/health`, `/api/selftest` e `/api/plan` respondem certo).
+`scripts/wasi-smoke.test.ts` sobe o runtime de verdade num porto livre e o interroga **com o padrão
+extraído do próprio workflow**, para que a asserção do CI e a saída do runtime não divirjam de novo.
+`scripts/docker-build.mjs` parou de usar substring (`includes('"ok":true')`) e passou a fazer parse do
+JSON — e a **contar** a falha, que antes só aparecia como ✗ no log sem reprovar nada.

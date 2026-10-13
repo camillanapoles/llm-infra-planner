@@ -231,9 +231,30 @@ jobs:
       - name: Verify layout (fails the deploy rather than publishing a broken site)
         run: bash scripts/verify-pages-artifact.sh _site
 
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true   # turns Pages on with the Actions source if needed
+      # Criar o site de Pages exige admin do repositório, e o `GITHUB_TOKEN` do runner
+      # nunca tem isso — `configure-pages@v5 enablement: true` falha com "Resource not
+      # accessible by integration" (403). Este passo transforma essa falha crua numa
+      # instrução acionável; 200 (habilitado) e respostas que não decidem (403/erro de
+      # rede) seguem para o `configure-pages`, que continua sendo a autoridade.
+      - name: Check that Pages is enabled
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          code=$(curl -s -o /tmp/pages.json -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" || echo 000)
+          echo "GET /pages → HTTP $code"
+          if [ "$code" = "200" ]; then
+            echo "✓ Pages habilitado: $(jq -r '.html_url' /tmp/pages.json)"
+            exit 0
+          fi
+          if [ "$code" = "404" ]; then
+            echo "::error title=Pages não está habilitado::Publique o site uma vez em Settings → Pages → Build and deployment → Source: \"GitHub Actions\". Criar o site pela API exige admin do repositório e o GITHUB_TOKEN do workflow não tem essa permissão. Com Pages habilitado, este deploy publica os três ambientes sem nenhuma outra mudança."
+            exit 1
+          fi
+          echo "::notice::não deu para confirmar o estado de Pages (HTTP $code) — segue para o configure-pages"
 
       - uses: actions/upload-pages-artifact@v3
         with:

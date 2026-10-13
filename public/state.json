@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-13T19:38:47.193Z",
+  "generatedAt": "2026-10-13T19:49:08.769Z",
   "phase": "P3",
   "phaseName": "WebAssembly e entrega multi-ambiente",
-  "percent": 66,
+  "percent": 64,
   "done": 25,
-  "total": 38,
+  "total": 39,
   "next": [
     {
       "id": "T-308",
@@ -12,30 +12,23 @@
       "blockedBy": []
     },
     {
-      "id": "T-401",
-      "title": "Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
+      "id": "T-412",
+      "title": "Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push)",
       "blockedBy": []
     },
     {
-      "id": "T-403",
-      "title": "Code-splitting do bundle (chunk principal ~700 kB)",
+      "id": "T-401",
+      "title": "Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
       "blockedBy": []
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-13T19:38:12.700Z",
-    "stale": false,
+    "generatedAt": "2026-10-13T19:49:08.484Z",
+    "stale": true,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "testsPassed": 389,
-    "testFiles": 26,
-    "buildOk": true,
-    "bundleKb": 701.89,
-    "lintProblems": 0,
-    "lintErrors": 0,
-    "lintWarnings": 0,
-    "commit": "32699c8728e118e249bb37b577afb099c64d7ad8"
+    "commit": "830cffb83dc8c857da3535547c9359d8a5dcea29"
   }
 }
