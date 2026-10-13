@@ -2,17 +2,17 @@
   "schema": 1,
   "kind": "project-access-descriptor",
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-13T19:31:51.344Z",
+  "generatedAt": "2026-10-13T19:35:31.802Z",
   "provenance": {
-    "headSha": "9bb76291c06c2a695d8da5e3d0c7fbc5455bea2a",
-    "branch": "arena/fe62ce6d-llm-infra-planner",
+    "headSha": "f1fdf5105dd0e398397ef61925e1e8e2ccea5c2a",
+    "branch": "",
     "baseBranch": "main",
     "generatedBy": "npm run continuity:sync",
     "sources": [
       ".kiro/state/roadmap.json",
       ".kiro/state/policy.json",
       ".kiro/state/project-state.json",
-      ".kiro/state/branches/arena-fe62ce6d-llm-infra-planner.json"
+      ".kiro/state/branches/.json"
     ]
   },
   "credentials": {
@@ -28,20 +28,17 @@
   },
   "coordinates": {
     "repo": "camillanapoles/llm-infra-planner",
-    "remote": "https://github.com/camillanapoles/llm-infra-planner.git",
+    "remote": "https://github.com/camillanapoles/llm-infra-planner",
     "siteOrigin": "https://camillanapoles.github.io",
     "branches": {
-      "working": "arena/fe62ce6d-llm-infra-planner",
+      "working": "",
       "default": "main",
       "environments": [
         "dev",
         "staging"
       ]
     },
-    "pullRequest": {
-      "number": 1,
-      "url": "https://github.com/camillanapoles/llm-infra-planner/pull/1"
-    }
+    "pullRequest": null
   },
   "runtime": {
     "local": {
@@ -91,7 +88,7 @@
       "requires": "workflow_dispatch só existe na branch default — o workflow precisa estar na main",
       "commands": [
         "gh workflow run bootstrap-repo.yml -f protect_main=true",
-        "gh workflow run deploy-pages.yml -f ref=arena/fe62ce6d-llm-infra-planner -f environments=dev,staging"
+        "gh workflow run deploy-pages.yml -f ref= -f environments=dev,staging"
       ]
     },
     "automatic": {
@@ -126,7 +123,7 @@
     "store": {
       "file": ".kiro/state/continuity.db",
       "snapshot": ".kiro/state/store.json",
-      "driver": "sqlite",
+      "driver": "json",
       "collections": [
         "sessions",
         "kv",
@@ -155,7 +152,7 @@
     "gate": "npm run continuity:check",
     "sync": "npm run continuity:sync",
     "resume": "npm run continuity:resume",
-    "handoff": ".kiro/state/branches/arena-fe62ce6d-llm-infra-planner.json",
+    "handoff": ".kiro/state/branches/.json",
     "readOrder": [
       ".kiro/state/access.json",
       ".kiro/state/RESUME.md",
@@ -163,7 +160,7 @@
       "CONTINUITY.md"
     ],
     "resumeCommands": [
-      "git fetch origin && git reset --hard origin/arena/fe62ce6d-llm-infra-planner",
+      "git fetch origin && git reset --hard origin/",
       "npm ci",
       "npm run build:wasm",
       "npm run continuity:status",
@@ -196,9 +193,7 @@
         "blockedBy": []
       }
     ],
-    "blockers": [
-      "T-308 depende do merge do PR #1 (workflows precisam existir na branch default)"
-    ]
+    "blockers": []
   },
   "validation": {
     "command": "npm run validate:access",
