@@ -3,7 +3,7 @@
   "branch": "arena/fe62ce6d-llm-infra-planner",
   "base": "main",
   "createdAt": "2026-10-07T17:44:39.281Z",
-  "updatedAt": "2026-10-13T14:38:20.026Z",
+  "updatedAt": "2026-10-13T18:15:08.416Z",
   "status": "in_progress",
   "scope": {
     "specs": [
@@ -28,7 +28,8 @@
       "T-406",
       "T-407",
       "T-408",
-      "T-409"
+      "T-409",
+      "T-410"
     ],
     "paths": [
       "wasm/kernel.ts",
@@ -106,7 +107,8 @@
       "scripts/lib/result.ts",
       ".github/workflows/pipeline.yml",
       "PIPELINE.md",
-      ".kiro/specs/18-gate-driven-pipeline.md"
+      ".kiro/specs/18-gate-driven-pipeline.md",
+      ".github/workflows/agent.yml"
     ]
   },
   "resumePoint": {
@@ -155,6 +157,11 @@
       "at": "2026-10-13T14:38:20.026Z",
       "event": "scope-updated",
       "note": "tasks=[T-409] specs=[]"
+    },
+    {
+      "at": "2026-10-13T18:15:08.416Z",
+      "event": "scope-updated",
+      "note": "tasks=[T-410] specs=[]"
     }
   ]
 }

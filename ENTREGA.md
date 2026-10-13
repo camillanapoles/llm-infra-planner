@@ -224,6 +224,8 @@ gate no ledger (`gates=<id>@<timestamp>`, `ok`, `detail`), e `agent audit` lê e
 | Capacidade | Hoje (branch) | Depois do merge (branch default) |
 |---|---|---|
 | CI + gate de continuidade em PR (este PR inclusive) | ✅ rodando (5/5) | ✅ |
+| **Pipeline gate-driven por `push`/PR** (`pipeline.yml`) | ✅ **roda** — cada push executa o gate de saúde e publica a próxima issue indexada no PR | ✅ |
+| **Diretiva no commit** (`[pipeline] complete T-xxx`) | ✅ é o dispatch pré-merge | ✅ |
 | Deploy Pages automático por push nas branches | ⏸ aguarda merge + bootstrap | ✅ |
 | `gh workflow run agent.yml …` (dispatch) | ❌ **404** — o GitHub só despacha workflow presente na default | ✅ |
 | `bootstrap-repo.yml` criando `dev`/`staging` | ⏸ idem | ✅ (dispara por push dos workflows) |

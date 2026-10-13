@@ -479,6 +479,22 @@
           "verify": "npm test && npm run lint",
           "notes": "Gatilho verifica issues abertas + CI com erro + testes; enquanto não positivo o veredito é continuidade (exit 1). Toda ação responde o mesmo JSON (id, mensagem, anexos, status, próxima issue, exitCode).",
           "evidence": "c4fea86: npm test && npm run lint → 0 (pipeline 2026-10-13T14:33:19.959Z)"
+        },
+        {
+          "id": "T-410",
+          "title": "Continuidade por gatilhos: push/PR como dispatch pré-merge e identidade de bot (GitHub App)",
+          "status": "in_progress",
+          "crossPhase": true,
+          "paths": [
+            ".github/workflows/pipeline.yml",
+            ".github/workflows/agent.yml",
+            ".kiro/state/**",
+            "PIPELINE.md",
+            "ENTREGA.md",
+            "README.md"
+          ],
+          "verify": "npm run validate:workflows && npm run verify:all",
+          "notes": "Matriz de gatilhos pré/pós-merge (push, pull_request, workflow_call rodam sem merge; dispatch/schedule/workflow_run exigem a default) + diretiva [pipeline]<tarefa> no commit + análise App×OAuth e passos de habilitação."
         }
       ]
     },

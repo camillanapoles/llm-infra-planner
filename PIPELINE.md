@@ -210,12 +210,109 @@ No GitHub Actions: **Actions → Pipeline (gate-driven) → Run workflow**
 
 ---
 
-## 7. Limites e decisões (para não vender o que não é)
+## 7. Como o progresso continua — gatilhos, GitHub App e OAuth
+
+### 7.1 A matriz: o que já roda hoje e o que depende do merge
+
+Nem todo gatilho do Actions funciona em branch que não é a default. A divisão é
+exata (e está comentada no topo do workflow):
+
+| Gatilho | Pré-merge (esta branch) | Pós-merge (default) | Para que serve |
+|---|---|---|---|
+| `push` | ✅ roda | ✅ | **é o dispatch de hoje**: cada push roda o gate de saúde |
+| `pull_request` | ✅ roda | ✅ | veredito por PR, sem precisar de label |
+| `workflow_call` | ✅ roda | ✅ | outro workflow encadeia o gate (`ci.yml`, `continuity-gate.yml`…) |
+| `workflow_dispatch` | ❌ 404 | ✅ | dispatch manual/por API |
+| `schedule` (cron) | ❌ | ✅ | heartbeat diário (07:23 UTC) |
+| `workflow_run` | ❌ | ✅ | roda sozinho ao fim de CI/Continuity gate |
+| `repository_dispatch` | ❌ | ✅ | eventos externos |
+
+**Enquanto não houver merge, o dispatch é um `git push`** — e a rota aceita uma
+diretiva ancorada no início da linha da mensagem do commit, escolhendo a tarefa do
+blueprint sem precisar de `workflow_dispatch`:
+
+```bash
+git commit --allow-empty -m "[pipeline] complete T-401"   # testa + entrega + próxima
+git commit --allow-empty -m "[pipeline] next"             # reconstrói a instrução
+git push
+```
+
+A rota é endurecida de propósito: a diretiva só vale **no começo de uma linha** e a
+tarefa só entra no formato `T-123`. Assim um exemplo citado no corpo do commit
+(“…use a diretiva…” ) **não** vira rota, e `[pipeline] complete 123` falha com erro
+tipo 2 em vez de adivinhar.
+
+### 7.2 O laço: quem reinicia o ciclo
+
+```
+   push/PR ──▶ gate de saúde ──▶ não positivo ──▶ instrução da próxima issue ──▶ (executa) ──▶ push/PR ──▶ …
+                     │
+                     └─ positivo ──▶ READY (o produto está pronto para release)
+```
+
+Detalhe que decide a arquitetura: **push feito com o `GITHUB_TOKEN` do runner NÃO
+dispara outros workflows** (é o que impede recursão infinita). Ou seja:
+
+- **Sem App** (hoje): o laço é reiniciado por (a) push/PR de quem trabalha, (b) cron
+  diário no main (pós-merge), (c) dispatch manual/por API. Os commits de estado do
+  próprio pipeline usam `[skip ci]` e não criam tempestade.
+- **Com App**: o push do bot passa a **disparar** CI e pipeline — o ciclo passa a se
+  auto-alimentar sem ninguém empurrar. É a diferença entre "automação que roda quando
+  alguém mexe" e "automação que continua sozinha".
+
+### 7.3 GitHub App × OAuth — qual identidade para continuar o progresso
+
+| | **GitHub App** (recomendado) | **OAuth App** | `GITHUB_TOKEN` (hoje) |
+|---|---|---|---|
+| Identidade | bot do App (não é pessoa) | **você** (age como usuário) | o próprio run |
+| Token | instalação, ~1 h, por run | do usuário + refresh | efêmero, morre no fim do run |
+| Escopo | fino, por permissão | amplo (`repo`, `workflow`…) | do repositório |
+| Sobrevive à saída da pessoa? | ✅ (instalação) | ❌ (morre com o usuário) | n/a |
+| Dispara workflows a partir de push | ✅ | ✅ | ❌ |
+| Serve para | **automação de CI/CD** | login interativo de terceiros | o ciclo dentro de um run |
+
+OAuth existe para *delegar a identidade de uma pessoa* a uma aplicação interativa —
+o oposto do que se quer num bot: mistura identidade humana com automação, expira com
+a pessoa e exige escopos largos. Para continuidade, o primitivo certo é **App**.
+
+### 7.4 Como habilitar a App (passo a passo, do lado do dono do repo)
+
+1. `github.com/settings/apps` → **New GitHub App** (owner: sua conta/org).
+2. Webhook: **desmarcar** (não precisamos; quem reage é o Actions).
+3. Permissões do repositório: **Contents** `Read and write` (commits/branches) ·
+   **Actions** `Read and write` (dispatch) · **Pull requests** `Read and write`
+   (comentar/abrir PR) · **Issues** `Read and write` · **Metadata** `Read-only` (obrigatória).
+4. “Where can this App be installed”: **Only on this account** → Create → anote o
+   **App ID** → **Generate a private key** (`.pem`).
+5. **Install App** → selecione este repositório.
+6. No repositório: *Settings → Secrets and variables → Actions* → **New secret**
+   `APP_ID` (número) e `APP_PRIVATE_KEY` (o `.pem` inteiro).
+7. Nada mais muda: o workflow `agent.yml` já chama `actions/create-github-app-token`
+   quando `APP_ID` existe e cai para o `GITHUB_TOKEN` quando não existe.
+
+> A chave privada vive **só no cofre do Actions**. Este repositório, o ledger e o
+> agente nunca a leem, e ela não entra em chat, arquivo versionado ou log. (Um PAT
+> resolveria parecido, mas com identidade pessoal e escopo amplo — por isso é
+> recusado aqui: nenhuma credencial pessoal, em lugar nenhum.)
+
+### 7.5 O que a App destrava, concretamente
+
+| Capacidade | Sem App | Com App |
+|---|---|---|
+| Rodar o gate a cada push/PR | ✅ | ✅ |
+| Comentar a próxima issue no PR | ✅ | ✅ |
+| Dispatch manual (`workflow run`) | só pós-merge | pós-merge |
+| Push do bot dispara CI/pipeline | ❌ | ✅ **fecha o laço** |
+| Identidade estável do bot nos commits/comentários | `github-actions[bot]` | `<app>[bot]`, com permissões declaradas |
+| Auditoria de quem agiu | ator do run | instalação do App, por run |
+
+## 8. Limites e decisões (para não vender o que não é)
 
 - **Issues do GitHub desabilitadas** → a fila é o roadmap. Habilitar troca a fonte
   automaticamente; a leitura usa `hasIssuesEnabled`.
-- **`workflow_run`/`dispatch` só funcionam com o workflow na branch default** —
-  como todo o resto desta entrega, depende do merge do PR #1.
+- **`workflow_run`/`dispatch`/`schedule` só funcionam com o workflow na branch default** —
+  por isso o `push`/`pull_request`/`workflow_call` existem: são o caminho que funciona **agora**
+  (ver §7.1). Nada aqui está esperando o merge para rodar; só o *dispatch por API* espera.
 - **Execuções em andamento não bloqueiam** o gate (senão ele esperaria a si mesmo).
 - **O gate de saúde não substitui o CI**: ele responde "o projeto está pronto?" e o
   CI responde "este código está correto?". Um dá o veredito do produto, o outro do commit.
