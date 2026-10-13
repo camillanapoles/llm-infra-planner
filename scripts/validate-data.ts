@@ -10,8 +10,16 @@ import * as path from "node:path";
 
 // ─── Types (mirrored from src/lib/formulas/types.ts) ────────────────
 
-const VALID_VENDORS = ["nvidia", "amd", "apple", "intel", "google-tpu"] as const;
-const VALID_CATEGORIES = ["consumer", "workstation", "datacenter", "apple-silicon", "tpu"] as const;
+// Espelha a união `GPUSpec["vendor"]` em src/lib/formulas/types.ts — se um vendor
+// novo entrar no tipo e não aqui, o catálogo legítimo passa a ser reprovado.
+const VALID_VENDORS = [
+  "nvidia", "amd", "apple", "intel", "google-tpu",
+  "aws", "huawei", "cerebras", "groq", "sambanova", "tenstorrent", "qualcomm",
+] as const;
+// Também espelha o tipo: `GPUSpec["category"]` já inclui edge e wafer-scale.
+const VALID_CATEGORIES = [
+  "consumer", "workstation", "datacenter", "apple-silicon", "tpu", "edge", "wafer-scale",
+] as const;
 const VALID_ATTENTION_TYPES = ["mha", "gqa", "mqa", "mla"] as const;
 const VALID_POSITIONAL_EMBEDDINGS = ["rope", "alibi", "yarn", "learned"] as const;
 const VALID_FORM_FACTORS = ["pcie", "sxm", "oam", "integrated", "mxm"] as const;
@@ -86,9 +94,12 @@ function validateGPU(entry: Record<string, unknown>, index: number): void {
   if (!isNumber(entry.memoryGB)) addError(file, index, id, "missing or invalid 'memoryGB' (number)");
   if (!isNumber(entry.memoryBandwidthGBs)) addError(file, index, id, "missing or invalid 'memoryBandwidthGBs' (number)");
 
-  // memoryGB range check [1, 1024]
-  if (isNumber(entry.memoryGB) && (entry.memoryGB < 1 || entry.memoryGB > 1024)) {
-    addError(file, index, id, `'memoryGB' value ${entry.memoryGB} is outside valid range [1, 1024]`);
+  // Faixa de sanidade da memória, deliberadamente larga: aceleradores de SRAM
+  // on-chip têm centenas de MB (Groq LPU = 0,23 GB) e sistemas rack-scale somam
+  // dezenas de TB (GB300 NVL72 = 20.736 GB). O limite existe para pegar erro de
+  // unidade (8 em vez de 80, 1e6 por engano), não para opinar sobre o hardware.
+  if (isNumber(entry.memoryGB) && (entry.memoryGB < 0.1 || entry.memoryGB > 65536)) {
+    addError(file, index, id, `'memoryGB' value ${entry.memoryGB} is outside valid range [0.1, 65536]`);
   }
 
   // flops sub-fields

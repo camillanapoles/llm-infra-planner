@@ -1,0 +1,350 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline gate-driven — o blueprint (BPMN) como workflow.
+#
+#   evento de início ──▶ [ROTA] ──▶ [GATE: health]  ──▶ gateway
+#                                                       ├─ não positivo ──▶ [instruction: constrói a próxima issue]
+#                                                       ├─ positivo     ──▶ [ready: pronto para release]
+#                                                       └─ erro tipo 2  ──▶ ✖ job vermelho (o fluxo PARA)
+#   rota "complete T-xxx" ──────▶ [TESTA + ENTREGA] ──▶ sucesso: done + próxima indexada
+#                                                       falha:   erro tipo 1, log anexado, MESMA issue volta
+#
+# ── MATRIZ DE GATILHOS (o que roda ANTES e DEPOIS do merge na default) ───────
+#
+#   GATILHO                PRÉ-MERGE (nesta branch)   PÓS-MERGE (default)
+#   push                   ✔ roda                     ✔ roda
+#   pull_request           ✔ roda                     ✔ roda
+#   workflow_call          ✔ roda (encadeado)         ✔ roda
+#   workflow_dispatch      ✖ 404 do GitHub            ✔
+#   schedule (cron)        ✖                          ✔ (cron só na default)
+#   workflow_run           ✖                          ✔ (idem)
+#   repository_dispatch    ✖                          ✔ (idem)
+#
+#   Ou seja: **antes do merge o dispatch é `git push`** — e uma diretiva na
+#   mensagem do commit escolhe a tarefa do blueprint sem precisar de dispatch:
+#
+#       git commit --allow-empty -m "[pipeline] complete T-401"
+#       git commit --allow-empty -m "[pipeline] next"
+#
+#   (o `--allow-empty` deixa repetir a diretiva sem mexer em arquivo; o push
+#   seguinte já é o gatilho.)
+#
+# Toda tarefa responde o MESMO objeto JSON (id, mensagem, anexos, status, próxima
+# issue, exitCode 0/1/2) — ver scripts/lib/result.ts e PIPELINE.md.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Pipeline (gate-driven)
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'Tarefa do blueprint'
+        type: choice
+        default: health
+        options: [health, next, complete]
+      task:
+        description: 'Issue (T-xxx) — usado só por stage=complete'
+        required: false
+        default: ''
+        type: string
+      tests:
+        description: 'Modo da verificação de testes no gate de saúde'
+        type: choice
+        default: run
+        options: [run, skip]
+  # Deixa outro workflow (ci.yml, continuity-gate.yml…) encadear o gate —
+  # workflow_call roda a partir da branch, sem depender da default.
+  workflow_call:
+    inputs:
+      stage:
+        type: string
+        default: health
+      task:
+        type: string
+        default: ''
+  # Sem `paths-ignore` de propósito: um commit VAZIO não tem paths, e o filtro
+  # engoliria justamente a diretiva `[pipeline] …` usada como dispatch pré-merge
+  # (visto na prática: o push não gerou run nenhum). O laço é evitado por outro
+  # caminho — os commits de estado carregam `[skip ci]`.
+  push:
+  pull_request:
+  schedule:
+    - cron: '23 7 * * *' # diário (default branch): o gatilho confere sem ninguém pedir
+  workflow_run:
+    workflows: [CI, Continuity gate]
+    types: [completed]
+
+permissions:
+  contents: write # commitar estado no main
+  actions: read # ler as execuções de CI (o "CI com erro?" do gatilho)
+  issues: read # ler issues abertas quando habilitadas
+  pull-requests: write # publicar a instrução como comentário no PR
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ── NÓ 0 — ROTA: qual tarefa do blueprint executar ─────────────────────────
+  route:
+    name: 'Rota'
+    runs-on: ubuntu-latest
+    outputs:
+      stage: ${{ steps.route.outputs.stage }}
+      task: ${{ steps.route.outputs.task }}
+    steps:
+      - name: Decide the stage (dispatch input · commit directive · default)
+        id: route
+        env:
+          DISPATCH_STAGE: ${{ github.event.inputs.stage }}
+          CALL_STAGE: ${{ inputs.stage }}
+          DISPATCH_TASK: ${{ github.event.inputs.task }}
+          CALL_TASK: ${{ inputs.task }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          stage="${DISPATCH_STAGE:-${CALL_STAGE:-}}"
+          task="${DISPATCH_TASK:-${CALL_TASK:-}}"
+          # Diretiva no commit, ANCORADA no início da linha — assim um exemplo citado
+          # no corpo da mensagem ("...a diretiva [pipeline] complete T-xxx...") não vira rota.
+          if [ -z "$stage" ] && [ -n "$MESSAGE" ]; then
+            directive=$(printf '%s\n' "$MESSAGE" | grep -oE '^\[pipeline\][^[:cntrl:]]*' | head -1 || true)
+            if [ -n "$directive" ]; then
+              set -- $directive
+              stage="${2:-health}"
+              task="${3:-}"
+            fi
+          fi
+          # tarefa só entra no formato T-123; qualquer outra coisa é ausência de tarefa
+          printf '%s' "$task" | grep -qE '^T-[0-9]+$' || task=""
+          case "$stage" in complete|next|health) ;; *) stage=health ;; esac
+          [ -n "$stage" ] || stage=health
+          echo "stage=$stage" >> "$GITHUB_OUTPUT"
+          echo "task=$task" >> "$GITHUB_OUTPUT"
+          echo "rota: stage=$stage · task=${task:-—} (evento: ${{ github.event_name }})"
+
+  # ── NÓ 1 — GATE: o gatilho de saúde ────────────────────────────────────────
+  gate:
+    name: 'Gate: issues · CI · testes'
+    needs: route
+    if: needs.route.outputs.stage != 'complete'
+    runs-on: ubuntu-latest
+    outputs:
+      verdict: ${{ steps.health.outputs.verdict }}
+      exit: ${{ steps.health.outputs.exit }}
+      next: ${{ steps.health.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # O exit code do pipeline É o veredito: 0 positivo · 1 continuidade · 2 estrutural.
+      # Capturamos sem derrubar o job — quem decide o desfecho são os gates abaixo.
+      - name: Run health gate
+        id: health
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TESTS="${{ github.event.inputs.tests }}"; TESTS="${TESTS:-run}"
+          set +e
+          npm run --silent pipeline -- health --tests="$TESTS" --emit --record --summary --text \
+            --branch "${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}" > health.json
+          code=$?
+          set -e
+
+          # Ler o contrato é um passo do gate: se o JSON não vier, o gate NÃO passa
+          # (um verdict vazio pularia os dois gateways em silêncio — foi o que aconteceu
+          # quando o banner do npm entrou no arquivo e o erro ficou mascarado no $(...)).
+          verdict=$(node -e "process.stdout.write(String(require('./health.json').status))" 2>/dev/null || true)
+          next=$(node -e "process.stdout.write(String(require('./health.json').nextIssue?.id ?? ''))" 2>/dev/null || true)
+          case "$verdict" in
+            success|continuity|error) ;;
+            *) echo "✖ health.json ausente ou fora do contrato (verdict='$verdict') — o gate não passa"; exit 1 ;;
+          esac
+
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Resposta do gate (contrato JSON)"
+            echo
+            echo "- verdict: \`$verdict\` · exit: \`$code\` · próxima issue: \`${next:-(nenhuma)}\`"
+            echo
+            echo '```json'
+            cat health.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "── resposta do pipeline (contrato JSON) ──"
+          cat health.json
+
+      - name: Publish artifact (JSON + anexos)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-health-${{ github.run_id }}
+          path: |
+            health.json
+            .kiro/state/pipeline/**
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Erro tipo 2 = estrutural: o fluxo PARA e pede conserto (job vermelho).
+      - name: Stop on structural error (type 2)
+        if: steps.health.outputs.exit == '2'
+        run: |
+          echo "✖ erro tipo 2 — o pipeline não tem como executar (ver health.json)"
+          exit 1
+
+  # ── NÓ 2a — GATEWAY "não positivo": constrói a próxima issue indexada ──────
+  instruction:
+    name: 'Continuidade: instrução da próxima issue'
+    needs: [route, gate]
+    if: needs.gate.outputs.verdict == 'continuity'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the next issue (indexed)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          npm run --silent pipeline -- next --emit --summary --text
+          echo "exit=$?" >> "$GITHUB_STEP_SUMMARY"
+          set -e
+
+      - name: Publish artifact (instrução)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-next-issue-${{ github.run_id }}
+          path: .kiro/state/pipeline/next-*.md
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Comentário idempotente: substitui o anterior (marcador) em vez de empilhar.
+      - name: Publish the instruction on the open PR
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          PR=$(gh pr list --head "$BRANCH" --state open --json number -q '.[0].number')
+          if [ -z "$PR" ]; then echo "sem PR aberto para $BRANCH — nada a comentar"; exit 0; fi
+          NEXT="${{ needs.gate.outputs.next }}"
+          FILE=".kiro/state/pipeline/next-${NEXT}.md"
+          [ -f "$FILE" ] || { echo "sem arquivo de instrução"; exit 0; }
+          {
+            echo "<!-- pipeline-next-issue -->"
+            echo "🧭 **Continuidade** — o gate não é positivo: não há como declarar pronto com pendências."
+            echo
+            cat "$FILE"
+          } > comment.md
+          PREV=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            -q '.[] | select(.body | contains("<!-- pipeline-next-issue -->")) | .id' | tail -1)
+          if [ -n "$PREV" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$PREV" -f body="$(cat comment.md)" >/dev/null
+            echo "comentário atualizado (id $PREV)"
+          else
+            gh pr comment "$PR" --body-file comment.md
+          fi
+
+  # ── NÓ 2b — GATEWAY "positivo": nada pendente, pronto para release ─────────
+  ready:
+    name: 'Positivo: pronto para release'
+    needs: gate
+    if: needs.gate.outputs.verdict == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Declare ready
+        run: |
+          {
+            echo "## ✅ Gate positivo"
+            echo
+            echo "- nenhuma issue aberta"
+            echo "- nenhuma execução de CI com erro"
+            echo "- testes existem e passam · toda tarefa aberta tem instrução de teste"
+            echo
+            echo "O pipeline não tem próxima issue a construir: a fila está vazia e verificada."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ── NÓ 3 — TESTA + ENTREGA (rota stage=complete) ───────────────────────────
+  complete:
+    name: 'Testa e entrega a issue'
+    needs: route
+    if: needs.route.outputs.stage == 'complete'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Guard (a rota exige uma tarefa)
+        if: needs.route.outputs.task == ''
+        run: |
+          echo "✖ rota 'complete' sem tarefa — use dispatch (stage=complete, task=T-xxx) ou a diretiva [pipeline] complete T-xxx"
+          exit 2
+
+      - name: Complete (test → deliver → next issue)
+        id: complete
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          npm run --silent pipeline -- complete "${{ needs.route.outputs.task }}" --emit --summary --text > complete.json
+          code=$?
+          set -e
+          status=$(node -e "process.stdout.write(String(require('./complete.json').status))" 2>/dev/null || true)
+          case "$status" in success|continuity|error) ;; *) echo "✖ complete.json ausente ou fora do contrato (status='$status')"; exit 1 ;; esac
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          cat complete.json
+          if [ "$code" = "2" ]; then echo "✖ erro tipo 2 (estrutural)"; exit 1; fi
+          if [ "$code" = "1" ]; then
+            echo "::warning::erro tipo 1 — a issue NÃO foi entregue; log e continuidade estão no JSON"
+          fi
+
+      - name: Publish artifact (log + próxima issue)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-complete-${{ github.run_id }}
+          path: |
+            complete.json
+            .kiro/state/pipeline/**
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Commit state and artifacts on main
+        if: github.ref == 'refs/heads/main' && steps.complete.outputs.exit == '0'
+        run: |
+          git config user.name  "pipeline[bot]"
+          git config user.email "pipeline@users.noreply.github.com"
+          git add .kiro/state
+          if git diff --cached --quiet; then echo "estado já em dia"; exit 0; fi
+          git commit -m "chore(pipeline): entrega verificada [skip ci]"
+          git push origin HEAD:main

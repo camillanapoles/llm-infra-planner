@@ -82,7 +82,15 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
       const compute = () => {
         if (!triggerRef.current) return;
         const r = triggerRef.current.getBoundingClientRect();
-        setCoords({ top: r.bottom + window.scrollY + 4, left: r.left + window.scrollX, width: r.width });
+        // `align` posiciona o painel em relação ao gatilho; a largura mínima
+        // continua sendo a do gatilho (o conteúdo pode crescer a partir dela).
+        const measured = contentRef.current?.offsetWidth ?? r.width;
+        const left = align === 'center'
+          ? r.left + r.width / 2 - measured / 2
+          : align === 'end'
+            ? r.right - measured
+            : r.left;
+        setCoords({ top: r.bottom + window.scrollY + 4, left: left + window.scrollX, width: r.width });
       };
       compute();
       window.addEventListener('scroll', compute, true);
@@ -91,7 +99,7 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
         window.removeEventListener('scroll', compute, true);
         window.removeEventListener('resize', compute);
       };
-    }, [open, triggerRef]);
+    }, [open, triggerRef, align]);
 
     const mergedRef = React.useCallback(
       (node: HTMLDivElement | null) => {

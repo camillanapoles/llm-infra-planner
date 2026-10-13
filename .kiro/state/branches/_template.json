@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "branch": "<branch>",
+  "base": "main",
+  "createdAt": "<iso>",
+  "updatedAt": "<iso>",
+  "status": "in_progress",
+  "scope": {
+    "specs": [],
+    "tasks": [],
+    "paths": []
+  },
+  "resumePoint": {
+    "summary": "Descreva em 1–2 linhas onde o trabalho está e qual é o próximo passo concreto.",
+    "next": [
+      "próximo passo 1 (comando ou arquivo)",
+      "próximo passo 2"
+    ],
+    "blockedBy": []
+  },
+  "history": [
+    { "at": "<iso>", "event": "created", "note": "handoff inicial" }
+  ]
+}

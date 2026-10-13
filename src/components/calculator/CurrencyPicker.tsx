@@ -31,24 +31,13 @@ interface CurrencyPickerProps {
 }
 
 export function CurrencyPicker({ value, onChange }: CurrencyPickerProps) {
-  const [currency, setCurrency] = useState<SupportedCurrency>(() => {
-    if (value) return value;
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && (SUPPORTED_CURRENCIES as readonly string[]).includes(stored)) {
-      return stored as SupportedCurrency;
-    }
-    return "USD";
-  });
-
-  // Sync with external value prop
-  useEffect(() => {
-    if (value && value !== currency) setCurrency(value);
-  }, [value, currency]);
+  // Uma única fonte para preferência de moeda: o hook cuida de localStorage e da
+  // sincronização com o value externo (antes a lógica estava duplicada aqui).
+  const [currency, setCurrency] = useCurrency(value);
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const next = e.target.value as SupportedCurrency;
     setCurrency(next);
-    localStorage.setItem(STORAGE_KEY, next);
     onChange?.(next);
   }
 
@@ -84,15 +73,22 @@ export function CurrencyPicker({ value, onChange }: CurrencyPickerProps) {
 
 /**
  * Hook to read/write the persisted currency preference.
+ * `initial` (do prop `value`) tem precedência sobre o valor guardado; mudanças
+ * do prop são refletidas sem persistir (persistir é ato de quem escolhe).
  */
-export function useCurrency(): [SupportedCurrency, (c: SupportedCurrency) => void] {
+function useCurrency(initial?: SupportedCurrency): [SupportedCurrency, (c: SupportedCurrency) => void] {
   const [currency, setCurrencyState] = useState<SupportedCurrency>(() => {
+    if (initial) return initial;
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && (SUPPORTED_CURRENCIES as readonly string[]).includes(stored)) {
       return stored as SupportedCurrency;
     }
     return "USD";
   });
+
+  useEffect(() => {
+    if (initial && initial !== currency) setCurrencyState(initial);
+  }, [initial, currency]);
 
   function setCurrency(c: SupportedCurrency) {
     setCurrencyState(c);

@@ -3,6 +3,37 @@ import { ChevronDown, ChevronUp, Share2, ArrowLeftRight, Cpu } from 'lucide-reac
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/primitives/tabs';
 import { useCalculatorStore } from '@/store/calculator-store';
 import { useToast } from '@/components/feedback/Toast';
+import type {
+  ModelSpec, VRAMBreakdown as VRAMBreakdownResult, CostMetricsResult, CloudRecommendation, WorkloadMode,
+} from '@/lib/formulas/types';
+import type { CalculatorStore } from '@/store/calculator-store';
+import type { TrainingMethodId } from '@/lib/formulas/training-methods';
+
+// ── Tipos e constantes do painel avançado ─────────────────────────────────────
+/** Recomendação de GPU no formato que o painel consome (derivada do store). */
+type TopGpuFit = NonNullable<CalculatorStore['gpuRecommendations']>['allFits'][number];
+
+/** Snapshot de capacidade concorrente — o tipo do memo, nomeável para as props. */
+interface ConcurrencySnapshot {
+  prefillResult: ReturnType<typeof computePrefill>;
+  decodeResult: ReturnType<typeof computeDecode>;
+  concurrencyResult: ReturnType<typeof computeMaxConcurrentUsers>;
+  tpotAtCurrentUsers: number;
+  aggregateThroughput: number;
+  latencyCurve: ReturnType<typeof computeLatencyCurve>;
+  requestCost: ReturnType<typeof computeRequestCost>;
+  batchResult: ReturnType<typeof computeBatchMode>;
+  scalingRows: ReturnType<typeof computeScalingTable>;
+  usedVRAMGB: number;
+  hourlyCloudCost: number;
+  weightsGB: number;
+}
+
+/** Bytes por parâmetro de cada precisão (constante: fora do componente, fora das deps). */
+const PRECISION_BYTES: Record<string, number> = {
+  fp32: 4, fp16: 2, bf16: 2, fp8: 1, fp8_e4m3: 1, fp8_e5m2: 1,
+  int8: 1, int4: 0.5, nf4: 0.5,
+};
 
 // ── Input components ──────────────────────────────────────────────────────────
 import { ModelPicker } from '@/components/calculator/ModelPicker';
@@ -113,16 +144,32 @@ function AdvancedTabs({
   avgPromptTokens, avgOutputTokens, setAvgPromptTokens, setAvgOutputTokens,
   sloTTFTMs, sloTPOTMs, setSloTTFT, setSloTPOT, batchMode, setBatchMode,
 }: {
-  selectedModel: any; breakdown: any; topGPU: any; numGPUs: number;
-  setNumGPUs: (n: number) => void; modelGB: number; modelBytes: number;
-  bytesPerParam: number; isTrainingMode: boolean; mode: string;
-  costMetrics: any; cloudRecommendations: any; contextLength: number;
-  batchSize: number; concurrencyData: any; concurrentUsers: number;
-  setConcurrentUsers: (n: number) => void; avgPromptTokens: number;
-  avgOutputTokens: number; setAvgPromptTokens: (n: number) => void;
-  setAvgOutputTokens: (n: number) => void; sloTTFTMs: number;
-  sloTPOTMs: number; setSloTTFT: (n: number) => void;
-  setSloTPOT: (n: number) => void; batchMode: boolean;
+  selectedModel: ModelSpec;
+  breakdown: VRAMBreakdownResult | null;
+  topGPU: TopGpuFit | undefined;
+  numGPUs: number;
+  setNumGPUs: (n: number) => void;
+  modelGB: number;
+  modelBytes: number;
+  bytesPerParam: number;
+  isTrainingMode: boolean;
+  mode: WorkloadMode;
+  costMetrics: CostMetricsResult | null;
+  cloudRecommendations: CloudRecommendation[] | null;
+  contextLength: number;
+  batchSize: number;
+  concurrencyData: ConcurrencySnapshot | null;
+  concurrentUsers: number;
+  setConcurrentUsers: (n: number) => void;
+  avgPromptTokens: number;
+  avgOutputTokens: number;
+  setAvgPromptTokens: (n: number) => void;
+  setAvgOutputTokens: (n: number) => void;
+  sloTTFTMs: number;
+  sloTPOTMs: number;
+  setSloTTFT: (n: number) => void;
+  setSloTPOT: (n: number) => void;
+  batchMode: boolean;
   setBatchMode: (b: boolean) => void;
 }) {
   const [activeTab, setActiveTab] = React.useState('parallelism');
@@ -302,18 +349,14 @@ export function Home() {
   const topGPU = gpuRecommendations?.allFits.find(f => f.fitStatus !== 'red');
   const kvPrecisionLabel = kvPrecision.toUpperCase();
   const isTrainingMode = mode === 'train';
-  const isVLM = !!(selectedModel as any)?.architecture?.visionConfig;
+  const isVLM = Boolean(selectedModel?.architecture.visionConfig);
 
-  const PRECISION_BYTES: Record<string, number> = {
-    fp32: 4, fp16: 2, bf16: 2, fp8: 1, fp8_e4m3: 1, fp8_e5m2: 1,
-    int8: 1, int4: 0.5, nf4: 0.5,
-  };
   const bytesPerParam = PRECISION_BYTES[precision] ?? 2;
   const modelBytes = (selectedModel?.paramsTotal ?? 0) * bytesPerParam;
   const modelGB = modelBytes / 1e9;
 
   // ── Spec 10: Concurrent user capacity computations ──────────────────────────
-  const concurrencyData = React.useMemo(() => {
+  const concurrencyData = React.useMemo<ConcurrencySnapshot | null>(() => {
     if (!selectedModel || !topGPU) return null;
     const gpu = topGPU.gpu;
     const activeParams = selectedModel.paramsActive ?? selectedModel.paramsTotal;
@@ -504,7 +547,7 @@ export function Home() {
             ))}
           </div>
           <TrainingMethodPicker
-            value={trainingOptions.trainingMethodId as any ?? ''}
+            value={(trainingOptions.trainingMethodId ?? '') as TrainingMethodId | ''}
             onChange={(method) => setTrainingOptions({ trainingMethodId: method || undefined })}
           />
           <LoRAConfig

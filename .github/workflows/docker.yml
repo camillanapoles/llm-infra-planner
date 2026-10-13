@@ -1,0 +1,201 @@
+name: Deploy · Docker images
+
+# Builds the two container images and (on main/tags) publishes them to GHCR:
+#
+#   ghcr.io/<owner>/<repo>:latest   + :<sha>   ← main         (production)
+#   ghcr.io/<owner>/<repo>:staging  + :<sha>   ← staging
+#   ghcr.io/<owner>/<repo>:dev      + :<sha>   ← dev
+#   ghcr.io/<owner>/<repo>-wasi:{tag}          ← the WASI runtime host
+#
+# Images respect the per-environment build args (APP_ENV / BASE_PATH) and the
+# per-environment GitHub Environments created by bootstrap-repo.yml.
+#
+# Spec: .kiro/specs/14-deploy-docker.md
+
+on:
+  push:
+    branches: [main, staging, dev]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      push:
+        description: 'Push images to GHCR'
+        type: boolean
+        default: false
+      environment:
+        description: 'Build environment'
+        type: choice
+        default: dev
+        options: [production, staging, dev]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        env:
+          EVENT: ${{ github.event_name }}
+          BRANCH: ${{ github.ref_name }}
+          INPUT_ENV: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "push" ]; then
+            case "$BRANCH" in
+              main)    ENV=production ;;
+              staging) ENV=staging ;;
+              dev)     ENV=dev ;;
+              *)       ENV=production ;;
+            esac
+          else
+            ENV="${INPUT_ENV:-dev}"
+          fi
+          case "$ENV" in
+            production) BASE=/ ;          TAG=latest ;;
+            staging)    BASE=/staging/ ;  TAG=staging ;;
+            dev)        BASE=/dev/ ;      TAG=dev ;;
+          esac
+          echo "matrix={\"include\":[{\"env\":\"$ENV\",\"base\":\"$BASE\",\"tag\":\"$TAG\"}]}" >> "$GITHUB_OUTPUT"
+          echo "building $ENV (base $BASE, tag $TAG)"
+
+  build:
+    name: Image ${{ matrix.env }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    environment: ${{ matrix.env }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decide push vs load
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_PUSH: ${{ inputs.push }}
+        run: |
+          if [ "$EVENT" = "push" ] || [ "$INPUT_PUSH" = "true" ]; then
+            echo "push=true"  >> "$GITHUB_OUTPUT"
+            echo "load=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "push=false" >> "$GITHUB_OUTPUT"
+            echo "load=true"  >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ matrix.tag }}
+            type=sha,format=short
+            type=ref,event=tag
+
+      - name: Build page image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runner
+          build-args: |
+            APP_ENV=${{ matrix.env }}
+            BASE_PATH=${{ matrix.base }}
+            APP_VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
+          push: ${{ steps.mode.outputs.push == 'true' }}
+          load: ${{ steps.mode.outputs.load == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build WASI runtime image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: wasi
+          push: ${{ steps.mode.outputs.push == 'true' }}
+          load: ${{ steps.mode.outputs.load == 'true' }}
+          tags: |
+            ghcr.io/${{ github.repository }}-wasi:${{ matrix.tag }}
+            ghcr.io/${{ github.repository }}-wasi:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the images
+        run: |
+          set -euo pipefail
+          # User-defined network → docker's embedded DNS (127.0.0.11) is available,
+          # which is what nginx' `resolver` + `$wasi_upstream` variable needs.
+          docker network create llmcalc-test || true
+          UPSTREAM_SEEN=0
+
+          docker run -d --name wasi-test --network llmcalc-test -p 8787:8787 \
+            ghcr.io/${{ github.repository }}-wasi:${{ matrix.tag }}
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8787/health >/dev/null; then UPSTREAM_SEEN=1; break; fi
+            sleep 1
+          done
+          test "$UPSTREAM_SEEN" = "1" || { docker logs wasi-test; exit 1; }
+          echo "── wasi /api/selftest ──"
+          curl -sf http://127.0.0.1:8787/api/selftest | tee /dev/stderr | grep -q '"ok":true'
+
+          docker run -d --name page-test --network llmcalc-test -p 3000:80 \
+            --env WASI_UPSTREAM=wasi-test:8787 \
+            ghcr.io/${{ github.repository }}:${{ matrix.tag }}
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3000/health >/dev/null; then break; fi
+            sleep 1
+          done
+          echo "── page /health ──"; curl -sf http://127.0.0.1:3000/health
+          echo "── wasm mime type ──"
+          curl -sfI http://127.0.0.1:3000/wasm/llmcalc-kernel.wasm | grep -i 'content-type: application/wasm'
+          echo "── /api/selftest through nginx ──"
+          curl -sf http://127.0.0.1:3000/api/selftest | tee /dev/stderr | grep -q '"ok":true'
+          echo "── /api/plan through nginx ──"
+          curl -sf "http://127.0.0.1:3000/api/plan?weightsGB=16&kvGB=0.54&overheadGB=0.5&tps=1500&hourlyUsd=2.49"
+
+          docker rm -f page-test wasi-test
+          docker network rm llmcalc-test
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Container image — ${{ matrix.env }}"
+            echo ""
+            echo "| field | value |"
+            echo "|---|---|"
+            echo "| env | ${{ matrix.env }} |"
+            echo "| base path | ${{ matrix.base }} |"
+            echo "| tag | ${{ matrix.tag }} |"
+            echo "| commit | \`${{ github.sha }}\` |"
+            echo ""
+            echo "Pull & run:"
+            echo ""
+            echo '```bash'
+            echo "docker run -d -p 8787:8787 ghcr.io/${{ github.repository }}-wasi:${{ matrix.tag }}"
+            echo "docker run -d -p 3000:80 --env WASI_UPSTREAM=<host>:8787 ghcr.io/${{ github.repository }}:${{ matrix.tag }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

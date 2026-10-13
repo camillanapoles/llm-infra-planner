@@ -1,0 +1,592 @@
+/**
+ * Unit tests for the continuity core — the gate that keeps branches aligned with
+ * the project state. Spec: `.kiro/specs/17-continuity-gate.md`
+ *
+ * These tests are the reason the gate can be trusted: they prove the scope
+ * matching, the roadmap validation and the "next task" resolution behave as
+ * documented, using fixtures (never the real roadmap, which evolves).
+ */
+import { describe, expect, it } from 'vitest';
+import {
+  buildAccessDescriptor,
+  buildState,
+  checkPhaseDiscipline,
+  checkScope,
+  computeNextTasks,
+  computeOverall,
+  computePhaseProgress,
+  evaluateKernelFreshness,
+  globToRegExp,
+  inferScope,
+  matchGlob,
+  renderResumeMd,
+  renderStateMd,
+  slugifyBranch,
+  validateAccessDescriptor,
+  validateHandoff,
+  validateRoadmap,
+  type Handoff,
+  type Policy,
+  type Roadmap,  buildAccessDescriptor,
+  buildState,
+  checkPhaseDiscipline,
+  checkScope,
+  computeNextTasks,
+  computeOverall,
+  computePhaseProgress,
+  evaluateKernelFreshness,
+  globToRegExp,
+  inferScope,
+  matchGlob,
+  renderResumeMd,
+  renderStateMd,
+  slugifyBranch,
+  validateAccessDescriptor,
+  validateHandoff,
+  validateRoadmap,
+  type Handoff,
+  type Policy,
+  type Roadmap,
+  parseLintSummary,
+
+} from './lib/continuity-core.js';
+
+// ─── Fixtures ────────────────────────────────────────────────────────────────
+
+const roadmap: Roadmap = {
+  schema: 1,
+  project: 'Fixture',
+  version: '1.0.0',
+  updatedAt: '2026-01-01',
+  phases: [
+    {
+      id: 'P1',
+      name: 'Foundation',
+      goal: 'Fórmulas',
+      status: 'done',
+      tasks: [
+        { id: 'T-1', title: 'Formulas', status: 'done', evidence: 'src/lib/formulas', paths: ['src/lib/formulas/**'] },
+      ],
+    },
+    {
+      id: 'P2',
+      name: 'Wasm',
+      goal: 'Kernel',
+      status: 'in_progress',
+      tasks: [
+        { id: 'T-2', title: 'Kernel wasm', status: 'in_progress', spec: 'wasm-kernel', paths: ['wasm/**', 'src/wasm/**'], verify: 'npm run wasm:verify' },
+        { id: 'T-3', title: 'Publish', status: 'todo', dependsOn: ['T-2'], paths: ['.github/workflows/deploy-pages.yml'] },
+        { id: 'T-4', title: 'Experimental', status: 'in_progress', crossPhase: true, paths: ['experiments/**'] },
+      ],
+    },
+  ],
+};
+
+const policy: Policy = {
+  schema: 1,
+  baseBranch: 'main',
+  protectedBranches: ['main', 'dev', 'staging'],
+  statePaths: ['.kiro/state/**', 'public/state.json'],
+  sharedPaths: ['README.md', 'package.json', 'eslint.config.js'],
+  kernelPaths: ['wasm/**', 'src/lib/formulas/**', 'src/wasm/**'],
+  scopeAllowLabel: 'scope:allow',
+  gateName: 'continuity-gate',
+  maxStateAgeCommits: 200,
+  scopes: {
+    'wasm-kernel': ['wasm/kernel.ts', 'src/wasm/**', 'public/wasm/**'],
+    'wasi-runtime': ['wasm/service.ts', 'scripts/wasi-*.mjs'],
+  },
+  resume: { commands: ['npm ci'], guardrails: ['wasm ≡ typescript'] },
+};
+
+const handoff = (overrides: Partial<Handoff> = {}): Handoff => ({
+  schema: 1,
+  branch: 'feat/x',
+  base: 'main',
+  createdAt: '2026-01-01',
+  updatedAt: '2026-01-01',
+  status: 'in_progress',
+  scope: { specs: ['wasm-kernel'], tasks: ['T-2'], paths: ['wasm/**'] },
+  resumePoint: { summary: 'implementando o kernel', next: ['rodar wasm:verify'], blockedBy: [] },
+  history: [],
+  ...overrides,
+});
+
+// ─── Glob matching ───────────────────────────────────────────────────────────
+
+describe('parseLintSummary', () => {
+  it('treats an empty output as zero, not as unknown', () => {
+    // ESLint não imprime nada quando não há problemas
+    expect(parseLintSummary('')).toEqual({ problems: 0, errors: 0, warnings: 0 });
+  });
+
+  it('parses the summary ESLint prints when there are findings', () => {
+    expect(parseLintSummary('\n✖ 24 problems (19 errors, 5 warnings)\n'))
+      .toEqual({ problems: 24, errors: 19, warnings: 5 });
+  });
+
+  it('parses the singular form', () => {
+    expect(parseLintSummary('✖ 1 problem (1 error, 0 warnings)'))
+      .toEqual({ problems: 1, errors: 1, warnings: 0 });
+  });
+});
+
+describe('glob matching', () => {
+  it('matches directory trees with **', () => {
+    expect(matchGlob('src/wasm/kernel.ts', 'src/wasm/**')).toBe(true);
+    expect(matchGlob('src/wasm/deep/nested/file.ts', 'src/wasm/**')).toBe(true);
+    expect(matchGlob('src/other/file.ts', 'src/wasm/**')).toBe(false);
+  });
+
+  it('matches the directory entry itself for `dir/**`', () => {
+    expect(matchGlob('wasm', 'wasm/**')).toBe(true);
+  });
+
+  it('keeps * inside a single path segment', () => {
+    expect(matchGlob('scripts/wasi-run.mjs', 'scripts/wasi-*.mjs')).toBe(true);
+    expect(matchGlob('scripts/wasi-nested/x.mjs', 'scripts/wasi-*.mjs')).toBe(false);
+  });
+
+  it('handles `**/` in the middle and ? wildcard', () => {
+    expect(matchGlob('src/lib/formulas/vram.test.ts', 'src/**/*.test.ts')).toBe(true);
+    expect(matchGlob('a/b/c.ts', 'a/?/c.ts')).toBe(true);
+    expect(matchGlob('a/bb/c.ts', 'a/?/c.ts')).toBe(false);
+  });
+
+  it('escapes regex metacharacters from paths', () => {
+    expect(globToRegExp('a+b.ts').test('a+b.ts')).toBe(true);
+    expect(globToRegExp('a+b.ts').test('aab.ts')).toBe(false);
+  });
+});
+
+// ─── Scope enforcement ───────────────────────────────────────────────────────
+
+describe('checkScope', () => {
+  it('classifies in-scope, state and shared files', () => {
+    const result = checkScope(
+      ['wasm/kernel.ts', '.kiro/state/roadmap.json', 'README.md', 'src/pages/Home.tsx'],
+      handoff(),
+      policy,
+      roadmap,
+    );
+    expect(result.inScope).toContain('wasm/kernel.ts');
+    expect(result.state).toContain('.kiro/state/roadmap.json');
+    expect(result.shared).toContain('README.md');
+    expect(result.outOfScope).toEqual(['src/pages/Home.tsx']);
+  });
+
+  it('accepts paths contributed by the declared specs', () => {
+    const loose = handoff({ scope: { specs: ['wasi-runtime'], tasks: [], paths: [] } });
+    const result = checkScope(['scripts/wasi-server.mjs', 'wasm/service.ts'], loose, policy, roadmap);
+    expect(result.outOfScope).toEqual([]);
+    expect(result.inScope).toEqual(['scripts/wasi-server.mjs', 'wasm/service.ts']);
+  });
+
+  it('accepts paths contributed by the declared tasks of the roadmap', () => {
+    // T-3 declares only .github/workflows/deploy-pages.yml
+    const viaTask = handoff({ scope: { specs: [], tasks: ['T-3'], paths: [] } });
+    const result = checkScope(['.github/workflows/deploy-pages.yml', 'wasm/kernel.ts'], viaTask, policy, roadmap);
+    expect(result.inScope).toEqual(['.github/workflows/deploy-pages.yml']);
+    expect(result.outOfScope).toEqual(['wasm/kernel.ts']);
+  });
+});
+
+// ─── Scope inference for new branches ────────────────────────────────────────
+// This is the mechanism behind "automatic continuity": a branch created after a
+// merge derives its own scope from the roadmap, so it never fails as
+// `handoff-empty-scope` and never loses the place where the project stopped.
+
+describe('inferScope', () => {
+  it('recognises a task id written in any spelling', () => {
+    for (const branch of ['feat/t-2-something', 'feat/t2-something', 'feat/2-something']) {
+      const inferred = inferScope(branch, roadmap, policy);
+      expect(inferred.kind).toBe('explicit');
+      expect(inferred.tasks).toContain('T-2');
+      expect(inferred.paths).toContain('wasm/**');
+    }
+  });
+
+  it('does not turn an unrelated number into a task id', () => {
+    const inferred = inferScope('fix/999-deep-cleanup', roadmap, policy);
+    expect(inferred.kind).toBe('resume-point'); // 999 não é tarefa → herda o ponto de retomada
+    expect(inferred.reason).toContain('ponto de retomada');
+  });
+
+  it('recognises a word of the task title, accents included', () => {
+    const withAccents: Roadmap = {
+      ...roadmap,
+      phases: [...roadmap.phases.slice(0, 1), {
+        ...roadmap.phases[1],
+        tasks: [{ id: 'T-9', title: 'Auditoria de acessibilidade', status: 'todo', paths: ['src/a11y/**'] }],
+      }],
+    };
+    const inferred = inferScope('feat/acessibilidade-da-ui', withAccents, policy);
+    expect(inferred.kind).toBe('explicit');
+    expect(inferred.tasks).toEqual(['T-9']);
+  });
+
+  it('recognises a spec slug and pulls the tasks it still owes the roadmap', () => {
+    const inferred = inferScope('spike/wasi-runtime-hardening', roadmap, policy);
+    expect(inferred.kind).toBe('explicit');
+    expect(inferred.specs).toContain('wasi-runtime');
+    expect(inferred.paths).toContain('scripts/wasi-*.mjs');
+  });
+
+  it('inherits the resume point when the branch name says nothing', () => {
+    const inferred = inferScope('zzq-none', roadmap, policy);
+    expect(inferred.kind).toBe('resume-point');
+    expect(inferred.tasks).toEqual(['T-2']); // primeiro aberto em ordem de roadmap
+    expect(inferred.paths.length).toBeGreaterThan(0);
+    expect(inferred.reason).toContain('ponto de retomada');
+  });
+
+  it('prefers the first open task whose dependencies are satisfied', () => {
+    const dependent: Roadmap = {
+      ...roadmap,
+      phases: [...roadmap.phases.slice(0, 1), {
+        ...roadmap.phases[1],
+        tasks: [
+          { id: 'T-2', title: 'Primeiro', status: 'todo', dependsOn: ['T-8'], paths: ['wasm/**'] },
+          { id: 'T-8', title: 'Dependência', status: 'todo', paths: ['src/dep/**'] },
+          { id: 'T-5', title: 'Livre', status: 'todo', paths: ['src/livre/**'] },
+        ],
+      }],
+    };
+    // T-2 espera T-8 (aberto) → a branch retoma em T-8, não em T-2
+    expect(inferScope('zzq-none', dependent, policy).tasks).toEqual(['T-8']);
+    const allBlocked: Roadmap = {
+      ...dependent,
+      phases: [...dependent.phases.slice(0, 1), {
+        ...dependent.phases[1],
+        tasks: dependent.phases[1].tasks.map(task => ({ ...task, dependsOn: ['T-999'] })),
+      }],
+    };
+    // tudo bloqueado → ainda aponta para onde o projeto está (primeiro aberto)
+    expect(inferScope('zzq-none', allBlocked, policy).tasks).toEqual(['T-2']);
+  });
+
+  it('treats environment branches as promotions (no file scope)', () => {
+    for (const branch of ['dev', 'staging', 'main']) {
+      const inferred = inferScope(branch, roadmap, policy);
+      expect(inferred.kind).toBe('promotion');
+      expect(inferred.paths).toEqual([]);
+    }
+  });
+
+  it('reports `none` when the roadmap has nothing left to do', () => {
+    const finished: Roadmap = {
+      ...roadmap,
+      phases: roadmap.phases.map(phase => ({
+        ...phase,
+        tasks: phase.tasks.map(task => ({ ...task, status: 'done' as const, evidence: 'pronto' })),
+      })),
+    };
+    const inferred = inferScope('zzq-none', finished, policy);
+    expect(inferred.kind).toBe('none');
+    expect(inferred.tasks).toEqual([]);
+  });
+});
+
+// ─── Roadmap validation ──────────────────────────────────────────────────────
+
+describe('validateRoadmap', () => {
+  it('accepts a coherent roadmap', () => {
+    expect(validateRoadmap(roadmap).filter(f => f.level === 'error')).toEqual([]);
+  });
+
+  it('detects duplicate ids and unknown dependencies', () => {
+    const broken: Roadmap = structuredClone(roadmap);
+    broken.phases[1].tasks[1].id = 'T-2';
+    broken.phases[1].tasks[0].dependsOn = ['T-999'];
+    const codes = validateRoadmap(broken).map(f => f.code);
+    expect(codes).toContain('duplicate-task');
+    expect(codes).toContain('unknown-dependency');
+  });
+
+  it('requires evidence for done tasks', () => {
+    const broken: Roadmap = structuredClone(roadmap);
+    delete broken.phases[0].tasks[0].evidence;
+    expect(validateRoadmap(broken).map(f => f.code)).toContain('done-without-evidence');
+  });
+});
+
+describe('checkPhaseDiscipline', () => {
+  it('does not complain about tasks inside the current phase', () => {
+    expect(checkPhaseDiscipline(roadmap)).toEqual([]);
+  });
+
+  it('warns when a later phase advances while an earlier one is open', () => {
+    const jumping: Roadmap = structuredClone(roadmap);
+    jumping.phases.push({
+      id: 'P3',
+      name: 'Later',
+      goal: 'g',
+      status: 'in_progress',
+      tasks: [{ id: 'T-9', title: 'Jumped ahead', status: 'in_progress', paths: ['x/**'] }],
+    });
+    const findings = checkPhaseDiscipline(jumping);
+    expect(findings.map(f => f.code)).toContain('phase-out-of-order');
+    expect(findings[0].message).toContain('T-9');
+    expect(findings[0].hint).toContain('crossPhase');
+  });
+
+  it('respects the crossPhase escape hatch', () => {
+    const jumping: Roadmap = structuredClone(roadmap);
+    jumping.phases.push({
+      id: 'P3',
+      name: 'Later',
+      goal: 'g',
+      status: 'in_progress',
+      tasks: [{ id: 'T-9', title: 'Declared cross-phase', status: 'in_progress', crossPhase: true, paths: ['x/**'] }],
+    });
+    expect(checkPhaseDiscipline(jumping)).toEqual([]);
+  });
+});
+
+// ─── Handoff validation ──────────────────────────────────────────────────────
+
+describe('validateHandoff', () => {
+  it('accepts a complete handoff', () => {
+    expect(validateHandoff(handoff(), roadmap, policy)).toEqual([]);
+  });
+
+  it('rejects an empty scope and a missing resume point', () => {
+    const empty = handoff({ scope: { specs: [], tasks: [], paths: [] }, resumePoint: { summary: '', next: [], blockedBy: [] } });
+    const codes = validateHandoff(empty, roadmap, policy).map(f => f.code);
+    expect(codes).toContain('handoff-empty-scope');
+    expect(codes).toContain('handoff-no-resume-point');
+  });
+
+  it('rejects tasks that do not exist in the roadmap', () => {
+    const bogus = handoff({ scope: { specs: [], tasks: ['T-404'], paths: [] } });
+    expect(validateHandoff(bogus, roadmap, policy).map(f => f.code)).toContain('handoff-unknown-task');
+  });
+});
+
+// ─── Kernel freshness ────────────────────────────────────────────────────────
+
+describe('evaluateKernelFreshness', () => {
+  it('stays silent when the kernel was not touched', () => {
+    expect(evaluateKernelFreshness({ kernelTouched: [], kernelSinceState: [], stateUpdatedInDiff: false })).toEqual([]);
+  });
+
+  it('rejects a kernel change made after the last state sync', () => {
+    const findings = evaluateKernelFreshness({
+      kernelTouched: ['wasm/kernel.ts'],
+      kernelSinceState: ['wasm/kernel.ts', 'src/wasm/kernel.ts'],
+      stateUpdatedInDiff: false,
+    });
+    expect(findings[0].level).toBe('error');
+    expect(findings[0].code).toBe('kernel-stale-state');
+    expect(findings[0].hint).toContain('continuity:sync');
+  });
+
+  it('accepts the state being updated in the same diff (no circularity)', () => {
+    const findings = evaluateKernelFreshness({
+      kernelTouched: ['wasm/kernel.ts'],
+      kernelSinceState: ['wasm/kernel.ts'],
+      stateUpdatedInDiff: true,
+    });
+    expect(findings[0].level).toBe('info');
+    expect(findings[0].code).toBe('kernel-reverified');
+  });
+
+  it('informs when the kernel changed but nothing came after the sync', () => {
+    const findings = evaluateKernelFreshness({
+      kernelTouched: ['src/lib/formulas/vram.ts'],
+      kernelSinceState: [],
+      stateUpdatedInDiff: false,
+    });
+    expect(findings[0].code).toBe('kernel-touched');
+  });
+});
+
+// ─── Progress & next tasks ───────────────────────────────────────────────────
+
+describe('progress and next tasks', () => {
+  it('computes per-phase and overall progress', () => {
+    expect(computePhaseProgress(roadmap)[0]).toMatchObject({ id: 'P1', done: 1, total: 1, percent: 100 });
+    expect(computePhaseProgress(roadmap)[1]).toMatchObject({ id: 'P2', done: 0, total: 3, percent: 0 });
+    expect(computeOverall(roadmap)).toMatchObject({ done: 1, total: 4, percent: 25 });
+  });
+
+  it('reports blocked tasks with their open dependencies', () => {
+    const next = computeNextTasks(roadmap, 5);
+    const publish = next.find(task => task.id === 'T-3');
+    expect(publish?.blockedBy).toEqual(['T-2']);
+    const kernel = next.find(task => task.id === 'T-2');
+    expect(kernel?.blockedBy).toEqual([]);
+  });
+
+  it('does not list a task whose dependency is done', () => {
+    const finished: Roadmap = structuredClone(roadmap);
+    finished.phases[1].tasks[0].status = 'done';
+    const publish = computeNextTasks(finished, 5).find(task => task.id === 'T-3');
+    expect(publish?.blockedBy).toEqual([]);
+  });
+});
+
+// ─── Access descriptor ───────────────────────────────────────────────────────
+// The JSON a new session reads first: coordinates + commands + resume point, and
+// never a credential. `validate:access` guards it in CI.
+
+const accessInput = () => {
+  const state = buildState({ roadmap, policy, branch: 'arena/x', headSha: 'abc1234', generatedAt: '2026-01-02T00:00:00.000Z' });
+  return {
+    roadmap,
+    policy,
+    state,
+    handoff: handoff(),
+    coordinates: {
+      repo: 'owner/proj',
+      remote: 'https://github.com/owner/proj.git',
+      siteOrigin: '',
+      branches: { working: 'arena/x', default: 'main', environments: ['dev', 'staging'] },
+      pullRequest: { number: 7, url: 'https://github.com/owner/proj/pull/7' },
+    },
+    generatedAt: '2026-01-02T00:00:00.000Z',
+    generatedBy: 'test',
+  };
+};
+
+const validateCtx = () => ({
+  scripts: ['continuity:sync', 'continuity:check', 'continuity:resume', 'continuity:status', 'build:wasm', 'stack', 'validate:access', 'store', 'validate:store', 'agent'],
+  exists: (relative: string) => !relative.includes('missing'),
+  headSha: 'abc1234',
+  branch: 'arena/x',
+  roadmap,
+});
+
+describe('buildAccessDescriptor', () => {
+  it('describes coordinates, deploy targets and the resume point', () => {
+    const access = buildAccessDescriptor(accessInput());
+    expect(access.kind).toBe('project-access-descriptor');
+    expect(access.coordinates.repo).toBe('owner/proj');
+    expect(access.coordinates.siteOrigin).toBe('https://owner.github.io');
+    expect(access.deploy.environments.main.url).toBe('https://owner.github.io/proj/');
+    expect(access.deploy.environments.dev.url).toBe('https://owner.github.io/proj/dev/');
+    expect(access.deploy.environments.dev.base).toBe('/proj/dev/');
+    expect(access.provenance.branch).toBe('arena/x');
+    expect(access.continuity.handoff).toBe('.kiro/state/branches/arena-x.json');
+    expect(access.continuity.nextTasks.map(task => task.id)).toEqual(['T-2', 'T-3', 'T-4']);
+  });
+
+  it('carries no credential-shaped field', () => {
+    const access = buildAccessDescriptor(accessInput());
+    const flattened = JSON.stringify(access);
+    expect(/gh[pousr]_|github_pat_|-----BEGIN/.test(flattened)).toBe(false);
+    expect(Object.keys(access.credentials)).toEqual(['policy', 'auth', 'check', 'never']);
+  });
+});
+
+describe('validateAccessDescriptor', () => {
+  it('accepts the descriptor the project generates', () => {
+    const findings = validateAccessDescriptor(buildAccessDescriptor(accessInput()), validateCtx());
+    expect(findings.filter(f => f.level === 'error')).toEqual([]);
+    expect(findings.map(f => f.code)).toContain('access-ok');
+  });
+
+  it('rejects a leaked secret, wherever it hides', () => {
+    const access = structuredClone(buildAccessDescriptor(accessInput()));
+    (access.coordinates as unknown as Record<string, unknown>).token = 'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    expect(validateAccessDescriptor(access, validateCtx()).map(f => f.code)).toContain('access-secret');
+
+    const sneaky = structuredClone(buildAccessDescriptor(accessInput()));
+    (sneaky.runtime as unknown as Record<string, unknown>).apiKey = 'algo';
+    expect(validateAccessDescriptor(sneaky, validateCtx()).map(f => f.code)).toContain('access-secret-key');
+  });
+
+  it('rejects commands and workflows that do not exist', () => {
+    const access = structuredClone(buildAccessDescriptor(accessInput()));
+    access.continuity.resumeCommands.push('npm run nao-existe');
+    access.runtime.artifact.build = 'node scripts/missing-build.mjs';
+    access.deploy.dispatch.commands.push('gh workflow run missing.yml');
+    const codes = validateAccessDescriptor(access, validateCtx()).map(f => f.code);
+    expect(codes).toContain('access-script-missing');
+    expect(codes).toContain('access-file-missing');
+    expect(codes).toContain('access-workflow-missing');
+  });
+
+  it('rejects next tasks the roadmap does not know', () => {
+    const access = structuredClone(buildAccessDescriptor(accessInput()));
+    access.continuity.nextTasks.push({ id: 'T-999', title: 'fantasma', blockedBy: [] });
+    expect(validateAccessDescriptor(access, validateCtx()).map(f => f.code)).toContain('access-unknown-task');
+  });
+
+  it('rejects environment URLs outside the project site', () => {
+    const access = structuredClone(buildAccessDescriptor(accessInput()));
+    access.deploy.environments.dev.url = 'https://exemplo.com/outro/';
+    expect(validateAccessDescriptor(access, validateCtx()).map(f => f.code)).toContain('access-url-mismatch');
+  });
+
+  it('warns (never blocks) when the descriptor is older than the HEAD', () => {
+    const access = buildAccessDescriptor(accessInput());
+    const findings = validateAccessDescriptor(access, { ...validateCtx(), headSha: 'def5678', branch: 'outra' });
+    const codes = findings.map(f => f.code);
+    expect(codes).toContain('access-sha-stale');
+    expect(codes).toContain('access-branch-stale');
+    expect(findings.filter(f => f.level === 'error')).toEqual([]);
+  });
+
+  it('stays quiet about the branch when HEAD is detached (CI checkout)', () => {
+    const findings = validateAccessDescriptor(buildAccessDescriptor(accessInput()), { ...validateCtx(), branch: 'HEAD' });
+    expect(findings.map(f => f.code)).not.toContain('access-branch-stale');
+  });
+});
+
+// ─── State & rendering ───────────────────────────────────────────────────────
+
+describe('buildState / rendering', () => {
+  const state = buildState({
+    roadmap,
+    policy,
+    branch: 'feat/x',
+    headSha: 'abcdef1234567890',
+    metrics: { testsPassed: 259, testFiles: 21, wasmKernelBytes: 2057, wasiBytes: 5728, wasmChecks: 16, buildOk: true, bundleKb: 700, lintErrors: 20, lintWarnings: 5, dockerChecks: 16 },
+    gates: [{ id: 'wasm-verify', ok: true, detail: '16 verificações ok', ranAt: '2026-01-01' }],
+    generatedAt: '2026-01-02T03:04:05.000Z',
+  });
+
+  it('captures phase, progress, next tasks and invariants', () => {
+    expect(state.currentPhase).toBe('P2');
+    expect(state.overall).toMatchObject({ done: 1, total: 4, percent: 25 });
+    // roadmap order, with blockers flagged instead of hidden
+    expect(state.nextTasks.map(t => t.id)).toEqual(['T-2', 'T-3', 'T-4']);
+    expect(state.invariants.testsPassed).toBe(259);
+    expect(state.resume.commands).toEqual(['npm ci']);
+  });
+
+  it('renders STATE.md with phases, next tasks and gates', () => {
+    const md = renderStateMd(state);
+    expect(md).toContain('# Estado do projeto');
+    expect(md).toContain('| ✓ P1 | Foundation | done | 1/1 (100%) | — |');
+    expect(md).toContain('`T-2`');
+    expect(md).toContain('259 em 21 arquivos');
+    expect(md).toContain('| `wasm-verify` | ✓ |');
+  });
+
+  it('renders RESUME.md with the handoff, guardrails and commands', () => {
+    const md = renderResumeMd({ state, roadmap, handoff: handoff(), recentCommits: ['abc123 feat: x'] });
+    expect(md).toContain('# Ponto de retomada');
+    expect(md).toContain('implementando o kernel');
+    expect(md).toContain('npm ci');
+    expect(md).toContain('wasm ≡ typescript');
+    expect(md).toContain('abc123 feat: x');
+    expect(md).toContain('npm run continuity:start -- --task T-xxx');
+  });
+
+  it('renders a RESUME.md without a handoff (branch not started)', () => {
+    const md = renderResumeMd({ state, roadmap, handoff: null });
+    expect(md).toContain('Sem handoff para a branch atual');
+  });
+});
+
+// ─── Branch slug ─────────────────────────────────────────────────────────────
+
+describe('slugifyBranch', () => {
+  it('turns branch names into file-safe slugs', () => {
+    expect(slugifyBranch('arena/fe62ce6d-llm-infra-planner')).toBe('arena-fe62ce6d-llm-infra-planner');
+    expect(slugifyBranch('refs/heads/feat/Wasm KernEl')).toBe('feat-wasm-kernel');
+    expect(slugifyBranch('--weird--')).toBe('weird');
+  });
+});

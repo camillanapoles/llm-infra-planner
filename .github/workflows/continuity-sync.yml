@@ -1,0 +1,127 @@
+name: Continuity sync
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STATE CONSOLIDATION — measures the project's objective invariants (wasm
+# artifacts, tests, build, lint, docker config) and commits the derived state to
+# `main`: .kiro/state/project-state.json, STATE.md, RESUME.md and public/state.json.
+#
+# This is what makes "continue from where we stopped" true after a merge: the
+# state file records the verified commit, the current phase and the next tasks,
+# and the next branch is expected to start from it (the gate enforces that a
+# kernel change is re-verified after the last sync).
+#
+# Spec: .kiro/specs/17-continuity-gate.md
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 6 * * 1'      # Mondays 06:17 UTC — keeps the state fresh even on quiet weeks
+  workflow_dispatch:
+    inputs:
+      fast:
+        description: 'Skip tests/build/lint (only wasm + docker static checks)'
+        type: boolean
+        default: false
+      pages:
+        description: 'Also build the 3-environment Pages artifact'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: continuity-sync
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  sync:
+    name: Measure & consolidate state
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Sync project state
+        env:
+          FAST: ${{ inputs.fast }}
+          PAGES: ${{ inputs.pages }}
+        run: |
+          set -uo pipefail
+          FLAGS=""
+          [ "$FAST" = "true" ] && FLAGS="$FLAGS --fast"
+          [ "$PAGES" = "true" ] && FLAGS="$FLAGS --pages"
+          npx tsx scripts/continuity.ts sync $FLAGS || echo "::warning::um dos gates falhou — o estado registra o resultado real"
+          echo "── diff ──"
+          git status --short
+
+      - name: Commit state to main
+        id: commit
+        run: |
+          set -euo pipefail
+          git config user.name  "continuity-sync[bot]"
+          git config user.email "continuity-sync@users.noreply.github.com"
+          git add .kiro/state public/state.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "estado já estava atualizado"
+          else
+            git commit -m "chore(continuity): sync project state [skip ci]"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push directly or open a PR (protected main)
+        id: publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGED: ${{ steps.commit.outputs.changed }}
+        run: |
+          set -uo pipefail
+          if [ "$CHANGED" != "true" ]; then exit 0; fi
+
+          BRANCH="chore/continuity-state-$(date +%Y%m%d-%H%M)"
+          git checkout -b "$BRANCH"
+          git push origin "$BRANCH"
+
+          if gh pr create --base main --head "$BRANCH" \
+               --title "chore(continuity): sync project state" \
+               --body "Atualização automática do estado do projeto (.kiro/state + public/state.json).
+
+          Gerado por \`continuity-sync\`. Veja \`.kiro/state/RESUME.md\` para o ponto de retomada.
+          O merge é automático quando a \`main\` não exige revisão." 2>/dev/null; then
+            PR=$(gh pr view "$BRANCH" --json number --jq .number)
+            echo "pr=$PR" >> "$GITHUB_OUTPUT"
+            if gh pr merge "$PR" --squash --auto --delete-branch 2>/dev/null; then
+              echo "✓ PR #$PR aberto com auto-merge"
+            else
+              echo "::notice::PR #$PR aberto — a main exige revisão para mergear"
+            fi
+          else
+            echo "::warning::não foi possível abrir PR — estado atualizado apenas no artefato da run"
+          fi
+
+      - name: Summary
+        run: |
+          {
+            echo "### Continuity sync"
+            echo ""
+            cat .kiro/state/STATE.md
+            echo ""
+            if [ -n "${{ steps.publish.outputs.pr }}" ]; then
+              echo "Estado publicado via PR #${{ steps.publish.outputs.pr }}."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

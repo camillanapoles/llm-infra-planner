@@ -3,7 +3,7 @@
  * Mocks HF API responses and runs the full pipeline on 3 mock models.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { parseConfig, configToModelSpec } from "./lib/config-parser.js";
 import { detectArchitecture } from "./lib/arch-detector.js";
 import { validateModel } from "./lib/model-validator.js";

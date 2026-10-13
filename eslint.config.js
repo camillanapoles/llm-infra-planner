@@ -5,7 +5,17 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  {
+    ignores: [
+      'dist',
+      '_site',
+      // AssemblyScript sources are compiled by `asc`, not by tsc/eslint
+      'wasm/**',
+      // built wasm artifacts
+      'public/wasm/**',
+      'wasi/dist/**',
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
@@ -21,7 +31,23 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': [
         'warn',
-        { allowConstantExport: true },
+        {
+          allowConstantExport: true,
+          // `useToast` mora junto do provider de propósito: 7 arquivos importam
+          // o hook daqui. Componentes deste arquivo não participam do HMR.
+          allowExportNames: ['useToast'],
+        },
+      ],
+      // Convenção `_prefixo`: valor lido de propósito e descartado (ex.: cabeçalho
+      // binário lido só para avançar o offset). Documentado em CONTRIBUTING.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
       ],
       // Allow empty interfaces in primitive component files (extends pattern)
       '@typescript-eslint/no-empty-object-type': 'off',

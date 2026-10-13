@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-10-13T18:35:41.480Z",
+  "phase": "P3",
+  "phaseName": "WebAssembly e entrega multi-ambiente",
+  "percent": 65,
+  "done": 24,
+  "total": 37,
+  "next": [
+    {
+      "id": "T-308",
+      "title": "Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
+      "blockedBy": []
+    },
+    {
+      "id": "T-401",
+      "title": "Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
+      "blockedBy": []
+    },
+    {
+      "id": "T-403",
+      "title": "Code-splitting do bundle (chunk principal ~700 kB)",
+      "blockedBy": []
+    }
+  ],
+  "invariants": {
+    "generatedAt": "2026-10-13T18:35:10.907Z",
+    "stale": false,
+    "wasmKernelBytes": 2057,
+    "wasiBytes": 5728,
+    "wasmChecks": 16,
+    "dockerChecks": 16,
+    "testsPassed": 383,
+    "testFiles": 25,
+    "buildOk": true,
+    "bundleKb": 701.89,
+    "lintProblems": 0,
+    "lintErrors": 0,
+    "lintWarnings": 0,
+    "commit": "2612a730ffad7ea706e6338f8128da35dd761d8a"
+  }
+}

@@ -1,5 +1,35 @@
 # Contributing to LLMcalc
 
+---
+
+## Continuity workflow (obrigatório)
+
+This repository is state-driven: every branch declares its scope and every PR is
+gated by `.github/workflows/continuity-gate.yml`. See [`CONTINUITY.md`](CONTINUITY.md)
+for the full picture.
+
+```bash
+npm run continuity:status                  # where the project is / what is next
+npm run continuity:start -- --task T-xxx   # declare what this branch delivers
+npm run continuity:check                   # run the gate locally (same as CI)
+npm run continuity:sync                    # measure invariants, update the state
+```
+
+What the gate enforces on your PR:
+
+- the branch has a **scope handoff** (auto-created on first push if missing);
+- the diff stays inside the declared scope (+ shared/state paths) — otherwise the
+  PR is blocked with the offending files, unless it carries the `scope:allow` label;
+- declared tasks exist in `.kiro/state/roadmap.json`, and a `done` handoff means
+  the roadmap task is also `done` **with evidence**;
+- if the calculation kernel changed (`wasm/**`, `src/lib/formulas/**`, `src/wasm/**`)
+  it must be re-verified (`build:wasm` + `wasm:verify` + parity tests) and the state
+  synced afterwards — that is what `kernel-stale-state` means.
+
+Adding new work is part of the change: append the task to
+`.kiro/state/roadmap.json` (id, title, `paths`, `verify`, `dependsOn`) and commit it
+with the code.
+
 ## Adding New Models
 
 ### Quick Start
@@ -209,8 +239,11 @@ npm run validate
 
 This checks:
 - All required fields present
-- Sanity ranges (VRAM 1-1024 GB, params 1M-2T, etc.)
-- Type correctness
+- Sanity ranges — deliberately wide, meant to catch unit mistakes rather than
+  editorialize hardware (on-chip SRAM of a Groq LPU is 0.23 GB; a GB300 NVL72
+  rack sums 20,736 GB). The exact bounds live in `scripts/validate-data.ts`.
+- Enums mirror the app's own types (`GPUSpec` in `src/lib/formulas/types.ts`):
+  adding a vendor/category to the type without adding it here fails the catalog.
 
 ### 2. Run unit tests
 
@@ -218,9 +251,20 @@ This checks:
 npm test
 ```
 
-All 244 tests must pass.
+The whole suite must be green — no failing and no skipped-to-hide-a-failure tests.
 
-### 3. Build the app
+### 3. Lint
+
+```bash
+npm run lint
+```
+
+Must report `0 problems` (errors and warnings both). One convention that the
+lint config encodes: a parameter or variable that is intentionally unused gets a
+`_` prefix (`_modelId`), which documents the intent instead of silently breaking
+the build. See `eslint.config.js`.
+
+### 4. Build the app
 
 ```bash
 npm run build
@@ -228,7 +272,7 @@ npm run build
 
 Must complete with 0 TypeScript errors.
 
-### 4. Test locally
+### 5. Test locally
 
 ```bash
 npm run dev

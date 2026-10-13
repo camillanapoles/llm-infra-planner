@@ -82,6 +82,8 @@ export function computeTPOTAtBatch(
   concurrentUsers: number,
   gpuFlopsTFLOPS: number,
   paramsActive: number,
+  // Mantido na assinatura (chamadas passam posicionalmente e o valor já está em
+  // decodeResult): o regime de memória vem de tpotMs/computeSaturationBatch.
   _bytesPerParam: number,
 ): number {
   const { tpotMs, computeSaturationBatch } = decodeResult;

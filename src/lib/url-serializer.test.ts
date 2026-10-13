@@ -94,7 +94,9 @@ describe('Property 16: URL state round-trip', () => {
   it('serialize then parse produces equivalent state', () => {
     const precisionKeys = Object.keys(PRECISION_MAP);
     const kvKeys = Object.keys(KV_PRECISION_MAP);
-    const modes = ['inference', 'scale', 'finetune', 'train'] as const;
+    // Only canonical modes round-trip: legacy 'scale'/'finetune' are normalized to
+    // 'inference'/'train' by parseState() on purpose. See the legacy test below.
+    const modes = ['inference', 'train'] as const;
     const modelIds = MODEL_DB.map(m => m.id);
 
     fc.assert(
@@ -124,6 +126,35 @@ describe('Property 16: URL state round-trip', () => {
       ),
       { numRuns: 200 }
     );
+  });
+});
+
+// ─── Legacy mode aliases ─────────────────────────────────────────────────────
+// `scale` → `inference` and `finetune` → `train` are intentionally normalized
+// when parsing, so old shared URLs keep working after the mode merge.
+
+describe('Legacy workload-mode aliases', () => {
+  it('normalizes legacy modes on parse', () => {
+    expect(parseState('?mode=scale', MODEL_DB).mode).toBe('inference');
+    expect(parseState('?mode=finetune', MODEL_DB).mode).toBe('train');
+  });
+
+  it('keeps canonical modes untouched', () => {
+    expect(parseState('?mode=inference', MODEL_DB).mode).toBe('inference');
+    expect(parseState('?mode=train', MODEL_DB).mode).toBe('train');
+  });
+
+  it('never serializes a legacy mode for canonical state', () => {
+    const canonical: CalculatorState = {
+      model: MODEL_DB[0].id,
+      precision: 'fp16',
+      kvPrecision: 'fp16',
+      ctx: 4096,
+      batch: 1,
+      mode: 'train',
+    };
+    expect(serializeState(canonical)).toContain('mode=train');
+    expect(serializeState(canonical)).not.toContain('mode=finetune');
   });
 });
 

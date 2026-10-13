@@ -90,6 +90,9 @@ function resolveActiveConfig(raw: RawConfig): RawConfig {
 /**
  * Parses a HuggingFace config.json object into normalized architecture fields.
  * Returns null if required fields are missing.
+ *
+ * `_modelId` fica na assinatura por simetria com os demais parsers e para
+ * mensagens de diagnóstico em quem chama — o parsing em si não depende dele.
  */
 export function parseConfig(configJson: RawConfig, _modelId: string): ParsedConfig | null {
   const active = resolveActiveConfig(configJson);

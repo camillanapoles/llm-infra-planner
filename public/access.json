@@ -1,0 +1,212 @@
+{
+  "schema": 1,
+  "kind": "project-access-descriptor",
+  "project": "LLMcalc — LLM Infrastructure Calculator",
+  "generatedAt": "2026-10-13T18:35:41.480Z",
+  "provenance": {
+    "headSha": "2612a730ffad7ea706e6338f8128da35dd761d8a",
+    "branch": "arena/fe62ce6d-llm-infra-planner",
+    "baseBranch": "main",
+    "generatedBy": "npm run continuity:sync",
+    "sources": [
+      ".kiro/state/roadmap.json",
+      ".kiro/state/policy.json",
+      ".kiro/state/project-state.json",
+      ".kiro/state/branches/arena-fe62ce6d-llm-infra-planner.json"
+    ]
+  },
+  "credentials": {
+    "policy": "este arquivo é versionado e público — nenhum segredo mora aqui",
+    "auth": "a autenticação vem do ambiente (gh CLI já autenticado); o arquivo só descreve coordenadas e comandos",
+    "check": "gh auth status",
+    "never": [
+      "tokens",
+      "chaves privadas",
+      "senhas",
+      "cookies de sessão"
+    ]
+  },
+  "coordinates": {
+    "repo": "camillanapoles/llm-infra-planner",
+    "remote": "https://github.com/camillanapoles/llm-infra-planner.git",
+    "siteOrigin": "https://camillanapoles.github.io",
+    "branches": {
+      "working": "arena/fe62ce6d-llm-infra-planner",
+      "default": "main",
+      "environments": [
+        "dev",
+        "staging"
+      ]
+    },
+    "pullRequest": {
+      "number": 1,
+      "url": "https://github.com/camillanapoles/llm-infra-planner/pull/1"
+    }
+  },
+  "runtime": {
+    "local": {
+      "page": "http://localhost:5173",
+      "wasi": "http://localhost:8787",
+      "commands": [
+        "npm run stack"
+      ],
+      "endpoints": [
+        "/api/access",
+        "/api/health",
+        "/api/selftest",
+        "/api/plan?...",
+        "/api/kv?...",
+        "/api/roofline?...",
+        "/api/gpus?...",
+        "/api/latency?...",
+        "POST /api/compute"
+      ]
+    },
+    "artifact": {
+      "build": "node scripts/build-pages-artifact.mjs --env all --out _site",
+      "verify": "bash scripts/verify-pages-artifact.sh _site",
+      "serve": "node scripts/serve-static.mjs _site --base /llm-infra-planner/"
+    }
+  },
+  "deploy": {
+    "provider": "github-pages",
+    "environments": {
+      "main": {
+        "url": "https://camillanapoles.github.io/llm-infra-planner/",
+        "base": "/llm-infra-planner/",
+        "source": "main"
+      },
+      "dev": {
+        "url": "https://camillanapoles.github.io/llm-infra-planner/dev/",
+        "base": "/llm-infra-planner/dev/",
+        "source": "dev"
+      },
+      "staging": {
+        "url": "https://camillanapoles.github.io/llm-infra-planner/staging/",
+        "base": "/llm-infra-planner/staging/",
+        "source": "staging"
+      }
+    },
+    "dispatch": {
+      "requires": "workflow_dispatch só existe na branch default — o workflow precisa estar na main",
+      "commands": [
+        "gh workflow run bootstrap-repo.yml -f protect_main=true",
+        "gh workflow run deploy-pages.yml -f ref=arena/fe62ce6d-llm-infra-planner -f environments=dev,staging"
+      ]
+    },
+    "automatic": {
+      "trigger": "push em main/dev/staging",
+      "workflow": ".github/workflows/deploy-pages.yml"
+    }
+  },
+  "continuity": {
+    "agent": {
+      "workflow": ".github/workflows/agent.yml",
+      "actions": [
+        "status",
+        "audit",
+        "resume",
+        "check",
+        "deploy",
+        "bootstrap",
+        "sync"
+      ],
+      "commands": [
+        "gh workflow run agent.yml -f action=status",
+        "gh workflow run agent.yml -f action=audit",
+        "gh workflow run agent.yml -f action=resume -f pr=<n> -f post=true",
+        "gh workflow run agent.yml -f action=check -f base=main",
+        "gh workflow run agent.yml -f action=deploy -f ref=<branch> -f environments=dev,staging",
+        "gh workflow run agent.yml -f action=bootstrap -f protect_main=true",
+        "gh workflow run agent.yml -f action=sync"
+      ],
+      "identity": "GITHUB_TOKEN efêmero da run (nada guardado); GitHub App opcional via secrets APP_ID/APP_PRIVATE_KEY",
+      "note": "cada ação é auditável no summary da run e no ledger; --dry-run mostra os comandos sem tocar na API"
+    },
+    "store": {
+      "file": ".kiro/state/continuity.db",
+      "snapshot": ".kiro/state/store.json",
+      "driver": "sqlite",
+      "collections": [
+        "sessions",
+        "kv",
+        "events",
+        "gates",
+        "tasks",
+        "handoffs",
+        "artifacts"
+      ],
+      "cli": [
+        "npm run store -- set <chave> <valor…>  # objeto que a sessão seta",
+        "npm run store -- get <chave>           # …e recupera",
+        "npm run store -- query <coleção> --where \"status=done\" --order id:desc",
+        "npm run store -- gate <id> --ok false --detail \"…\"",
+        "npm run store -- session start|note|end",
+        "npm run store -- export | import"
+      ],
+      "api": [
+        "/api/store",
+        "/api/store/:collection?limit=&where=&order=",
+        "/api/store/:collection/:id",
+        "/api/session"
+      ],
+      "readOnly": "a API é somente leitura (a porta aparece em previews); escrita só pelo CLI"
+    },
+    "gate": "npm run continuity:check",
+    "sync": "npm run continuity:sync",
+    "resume": "npm run continuity:resume",
+    "handoff": ".kiro/state/branches/arena-fe62ce6d-llm-infra-planner.json",
+    "readOrder": [
+      ".kiro/state/access.json",
+      ".kiro/state/RESUME.md",
+      ".kiro/state/STATE.md",
+      "CONTINUITY.md"
+    ],
+    "resumeCommands": [
+      "git fetch origin && git reset --hard origin/arena/fe62ce6d-llm-infra-planner",
+      "npm ci",
+      "npm run build:wasm",
+      "npm run continuity:status",
+      "npm run stack"
+    ],
+    "nextTasks": [
+      {
+        "id": "T-308",
+        "title": "Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
+        "blockedBy": []
+      },
+      {
+        "id": "T-401",
+        "title": "Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
+        "blockedBy": []
+      },
+      {
+        "id": "T-403",
+        "title": "Code-splitting do bundle (chunk principal ~700 kB)",
+        "blockedBy": []
+      },
+      {
+        "id": "T-404",
+        "title": "Cobertura de testes do store e das rotas",
+        "blockedBy": []
+      },
+      {
+        "id": "T-405",
+        "title": "Auditoria de acessibilidade (foco, ARIA das abas, contraste)",
+        "blockedBy": []
+      }
+    ],
+    "blockers": [
+      "T-308 depende do merge do PR #1 (workflows precisam existir na branch default)"
+    ]
+  },
+  "validation": {
+    "command": "npm run validate:access",
+    "checks": [
+      "sem segredos",
+      "comandos existem no repo",
+      "tarefas batem com o roadmap",
+      "sha/branch batem com o HEAD"
+    ]
+  }
+}

@@ -45,4 +45,5 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = 'Button';
 
-export { Button, buttonVariants };
+// `buttonVariants` fica interno: nada o importa hoje (era export morto).
+export { Button };

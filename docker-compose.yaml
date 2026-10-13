@@ -1,13 +1,38 @@
+# ── LLMcalc — container stack ─────────────────────────────────────────────────
+# Three environments (production / staging / dev) + the WASI runtime host.
+#
+#   docker compose up -d                       # production page + wasi  → :3000
+#   docker compose --profile staging up -d     # + staging page          → :3001
+#   docker compose --profile dev up -d         # + dev page              → :3002
+#   docker compose up -d wasi                  # only the compute service → :8787
+#
+# Each page image is built from the same Dockerfile with different build args,
+# so a staging image differs from production only by base path + env badge.
+# See `.kiro/specs/14-deploy-docker.md`.
+
+name: llmcalc
+
 services:
+  # ── Static page (nginx) — production build ──────────────────────────────────
   app:
     build:
       context: .
       dockerfile: Dockerfile
       target: runner
-    image: llm-hardware-calculator:latest
-    container_name: llm-hardware-calculator
+      args:
+        APP_ENV: production
+        BASE_PATH: /
+        APP_VERSION: ${APP_VERSION:-0.0.0}
+        COMMIT: ${COMMIT:-local}
+    image: llmcalc:production
+    container_name: llmcalc-app
     ports:
       - "3000:80"
+    environment:
+      WASI_UPSTREAM: wasi:8787
+    depends_on:
+      wasi:
+        condition: service_healthy
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -38,3 +63,116 @@ services:
         reservations:
           cpus: "0.1"
           memory: 32M
+
+  # ── Static page — staging build (same image, /staging/ base path) ───────────
+  app-staging:
+    profiles: ["staging", "all"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+      args:
+        APP_ENV: staging
+        BASE_PATH: /staging/
+        APP_VERSION: ${APP_VERSION:-0.0.0}
+        COMMIT: ${COMMIT:-local}
+    image: llmcalc:staging
+    container_name: llmcalc-app-staging
+    ports:
+      - "3001:80"
+    environment:
+      WASI_UPSTREAM: wasi:8787
+    depends_on:
+      wasi:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Static page — dev build ─────────────────────────────────────────────────
+  app-dev:
+    profiles: ["dev", "all"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+      args:
+        APP_ENV: dev
+        BASE_PATH: /dev/
+        APP_VERSION: ${APP_VERSION:-0.0.0}
+        COMMIT: ${COMMIT:-local}
+    image: llmcalc:dev
+    container_name: llmcalc-app-dev
+    ports:
+      - "3002:80"
+    environment:
+      WASI_UPSTREAM: wasi:8787
+    depends_on:
+      wasi:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── WASI runtime host — executes /api/* inside the wasm module ──────────────
+  wasi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: wasi
+    image: llmcalc:wasi
+    container_name: llmcalc-wasi
+    ports:
+      - "8787:8787"
+    environment:
+      WASI_PORT: "8787"
+      WASI_HOST: "0.0.0.0"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          cpus: "0.05"
+          memory: 24M

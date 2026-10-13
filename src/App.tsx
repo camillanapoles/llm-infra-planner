@@ -9,13 +9,14 @@ import { Reverse } from '@/pages/Reverse';
 import { Models } from '@/pages/Models';
 import { Hardware } from '@/pages/Hardware';
 import { Guides } from '@/pages/Guides';
+import { Runtime } from '@/pages/Runtime';
 import { useCalculatorStore } from '@/store/calculator-store';
 import { useToast } from '@/components/feedback/Toast';
 import { useKeyboardShortcuts } from '@/lib/use-keyboard-shortcuts';
 
 function AppContent() {
   const location = useLocation();
-  const { getShareURL, addCompareConfig, compareConfigs } = useCalculatorStore();
+  const { getShareURL, addCompareConfig, compareConfigs, initEngine } = useCalculatorStore();
   const { showToast } = useToast();
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const [compareOpen, setCompareOpen] = React.useState(false);
@@ -30,6 +31,11 @@ function AppContent() {
       });
     }
   }, [location]);
+
+  // Load + verify the WebAssembly kernel once per page load
+  React.useEffect(() => {
+    void initEngine();
+  }, [initEngine]);
 
   useKeyboardShortcuts({
     onOpenModelSearch: () => document.dispatchEvent(new CustomEvent('llmcalc:open-model-search')),
@@ -80,6 +86,7 @@ function AppContent() {
           <Route path="/models" element={<Models />} />
           <Route path="/hardware" element={<Hardware />} />
           <Route path="/guides" element={<Guides />} />
+          <Route path="/runtime" element={<Runtime />} />
         </Routes>
       </PageShell>
 
