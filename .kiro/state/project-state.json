@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-13T18:35:41.480Z",
+  "generatedAt": "2026-10-13T19:31:51.344Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "2612a730ffad7ea706e6338f8128da35dd761d8a",
+  "headSha": "9bb76291c06c2a695d8da5e3d0c7fbc5455bea2a",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -30,9 +30,9 @@
       "id": "P3",
       "name": "WebAssembly e entrega multi-ambiente",
       "status": "in_progress",
-      "done": 10,
-      "total": 11,
-      "percent": 91,
+      "done": 11,
+      "total": 12,
+      "percent": 92,
       "open": [
         "T-308"
       ]
@@ -91,9 +91,9 @@
     }
   ],
   "overall": {
-    "done": 24,
-    "total": 37,
-    "percent": 65
+    "done": 25,
+    "total": 38,
+    "percent": 66
   },
   "nextTasks": [
     {
@@ -143,55 +143,55 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-13T18:35:10.907Z",
+    "generatedAt": "2026-10-13T19:31:18.057Z",
     "stale": false,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "testsPassed": 383,
-    "testFiles": 25,
+    "testsPassed": 389,
+    "testFiles": 26,
     "buildOk": true,
     "bundleKb": 701.89,
     "lintProblems": 0,
     "lintErrors": 0,
     "lintWarnings": 0,
-    "commit": "2612a730ffad7ea706e6338f8128da35dd761d8a"
+    "commit": "9bb76291c06c2a695d8da5e3d0c7fbc5455bea2a"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-13T18:35:10.907Z"
+      "ranAt": "2026-10-13T19:31:18.057Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-13T18:35:10.907Z"
+      "ranAt": "2026-10-13T19:31:18.057Z"
     },
     {
       "id": "tests",
       "ok": true,
-      "detail": "383 testes / 25 arquivos",
-      "ranAt": "2026-10-13T18:35:10.907Z"
+      "detail": "389 testes / 26 arquivos",
+      "ranAt": "2026-10-13T19:31:18.057Z"
     },
     {
       "id": "build",
       "ok": true,
       "detail": "bundle principal 701.89 kB",
-      "ranAt": "2026-10-13T18:35:10.907Z"
+      "ranAt": "2026-10-13T19:31:18.057Z"
     },
     {
       "id": "lint",
       "ok": true,
       "detail": "0 erros / 0 avisos",
-      "ranAt": "2026-10-13T18:35:10.907Z"
+      "ranAt": "2026-10-13T19:31:18.057Z"
     }
   ],
   "resume": {
-    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (65% do roadmap concluído)",
+    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (66% do roadmap concluído)",
     "next": [
       "T-308 Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
       "T-401 Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",

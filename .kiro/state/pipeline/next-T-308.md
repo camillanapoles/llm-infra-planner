@@ -1,6 +1,6 @@
 # Próxima issue — T-308
 
-> Gerado pelo pipeline gate-driven em 2026-10-13T18:33:07.290Z · branch `arena/fe62ce6d-llm-infra-planner` @ `2612a73` · veredito `task-complete`
+> Gerado pelo pipeline gate-driven em 2026-10-13T19:28:53.694Z · branch `arena/fe62ce6d-llm-infra-planner` @ `9bb7629` · veredito `task-complete`
 
 ## Instrução
 

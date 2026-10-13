@@ -71,6 +71,7 @@ check continuity:check npm run --silent continuity:check
 check deploy:docker    npm run --silent deploy:docker
 check build:pages      node scripts/build-pages-artifact.mjs --env all --out _site
 check pages:3-envs     test -f _site/index.html -a -f _site/staging/index.html -a -f _site/dev/index.html
+check pages:contract   bash scripts/verify-pages-artifact.sh _site
 
 # ── gates que dependem do estado consolidado ─────────────────────────────────
 if [ "$MODE" = "full" ]; then

@@ -94,3 +94,14 @@ scripts/verify-pages-artifact.sh   pre-publish check (3 envs, base paths, wasm p
 src/lib/env.ts                     VITE_APP_ENV / BASE_URL → env badge, runtime page
 vite.config.ts                     base = VITE_BASE_PATH
 ```
+
+## Notas de implementação (aprendidas em produção)
+
+- O contrato do artefato é verificado por `scripts/verify-pages-artifact.sh` e vale
+  **inclusive para o placeholder**: cada ambiente precisa de `index.html` e do seu
+  `wasm/llmcalc-kernel.wasm`. Um placeholder sem kernel derruba o deploy inteiro —
+  **produção incluída** — num repositório onde `dev`/`staging` ainda não existem.
+- O placeholder declara-se com `<meta name="llmcalc-placeholder" content="<env>">`; o
+  verificador aceita esse caso explicitamente (não há bundle, logo não há base path a
+  conferir) e mantém o rigor para páginas reais. Coberto por
+  `scripts/pages-artifact.test.ts`.

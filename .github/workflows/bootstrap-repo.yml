@@ -92,6 +92,47 @@ jobs:
         with:
           fetch-depth: 0
 
+      # ── 0. Opções: os defaults valem para push E para dispatch ───────────────
+      #
+      # Num evento `push`, `inputs.*` é **null** — e `null != false` é FALSO nas
+      # expressões do GitHub (null e false comparam como 0). As condições do tipo
+      # `if: inputs.create_branches != false` pulavam, portanto, TODOS os passos que
+      # fazem o trabalho: o job terminava verde sem criar branch, sem habilitar Pages
+      # e sem disparar deploy (o no-op silencioso visto no primeiro merge). Aqui os
+      # valores são resolvidos uma vez, explicitamente, e os passos passam a usar
+      # `steps.opts.outputs.*`.
+      - name: Resolve options (defaults apply to push and dispatch alike)
+        id: opts
+        env:
+          IN_CREATE_BRANCHES: ${{ inputs.create_branches }}
+          IN_ENABLE_PAGES: ${{ inputs.enable_pages }}
+          IN_DEPLOY: ${{ inputs.deploy }}
+          IN_DOCKER: ${{ inputs.docker }}
+          IN_PROTECT: ${{ inputs.protect_main }}
+          IN_ENVIRONMENTS: ${{ inputs.deploy_environments }}
+          IN_SOURCE_REF: ${{ inputs.source_ref }}
+          IN_BRANCH_SOURCE: ${{ inputs.branch_source }}
+        run: |
+          set -uo pipefail
+          # `${VAR:-}` nas chamadas: sob `set -u` uma variável NÃO definida derruba o
+          # passo (o Actions define as env vazias, mas um reuso do passo não precisa
+          # depender disso para funcionar).
+          norm() { # value, default — trata vazio e a string "null"
+            local v="${1:-}" def="$2"
+            if [ -z "$v" ] || [ "$v" = "null" ]; then printf '%s' "$def"; else printf '%s' "$v"; fi
+          }
+          {
+            echo "create_branches=$(norm "${IN_CREATE_BRANCHES:-}" true)"
+            echo "enable_pages=$(norm "${IN_ENABLE_PAGES:-}" true)"
+            echo "deploy=$(norm "${IN_DEPLOY:-}" true)"
+            echo "docker=$(norm "${IN_DOCKER:-}" false)"
+            echo "protect_main=$(norm "${IN_PROTECT:-}" false)"
+            echo "environments=$(norm "${IN_ENVIRONMENTS:-}" all)"
+            echo "source_ref=$(norm "${IN_SOURCE_REF:-}" '')"
+            echo "branch_source=$(norm "${IN_BRANCH_SOURCE:-}" '')"
+          } >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
       - name: Summary header
         run: |
           {
@@ -101,8 +142,9 @@ jobs:
             echo "|---|---|"
             echo "| trigger | \`${{ github.event_name }}\` |"
             echo "| default branch | \`$DEFAULT_BRANCH\` |"
-            echo "| source ref input | \`${{ inputs.source_ref || '—' }}\` |"
-            echo "| deploy | \`${{ inputs.deploy || 'true (default)' }}\` |"
+            echo "| create branches | \`${{ steps.opts.outputs.create_branches }}\` |"
+            echo "| enable pages | \`${{ steps.opts.outputs.enable_pages }}\` |"
+            echo "| deploy | \`${{ steps.opts.outputs.deploy }}\` (\`${{ steps.opts.outputs.environments }}\`) |"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -110,7 +152,7 @@ jobs:
       - name: Resolve source ref
         id: src
         env:
-          INPUT_REF: ${{ inputs.source_ref }}
+          INPUT_REF: ${{ steps.opts.outputs.source_ref }}
         run: |
           set -euo pipefail
           if [ -n "${INPUT_REF:-}" ]; then
@@ -131,7 +173,7 @@ jobs:
 
       # ── 2. Create / fast-forward dev + staging ──────────────────────────────
       - name: Create dev and staging branches
-        if: ${{ inputs.create_branches != false }}
+        if: steps.opts.outputs.create_branches == 'true'
         env:
           SHA: ${{ steps.src.outputs.sha }}
         run: |
@@ -177,7 +219,7 @@ jobs:
 
       # ── 4. GitHub Pages ────────────────────────────────────────────────────
       - name: Enable GitHub Pages (Actions source)
-        if: ${{ inputs.enable_pages != false }}
+        if: steps.opts.outputs.enable_pages == 'true'
         run: |
           set -uo pipefail
           if gh api "repos/$REPO/pages" >/dev/null 2>&1; then
@@ -194,7 +236,7 @@ jobs:
 
       # ── 4b. Optional: make the gates mandatory on main ─────────────────────
       - name: Require CI + continuity gate on main
-        if: ${{ inputs.protect_main == true }}
+        if: steps.opts.outputs.protect_main == 'true'
         run: |
           set -uo pipefail
           # Only ADDS required status checks; existing protection is preserved via PATCH.
@@ -216,17 +258,16 @@ jobs:
 
       # ── 5. Dispatch the deploys ────────────────────────────────────────────
       - name: Dispatch Pages deploy
-        if: ${{ inputs.deploy != false }}
+        if: steps.opts.outputs.deploy == 'true'
         env:
-          BRANCH_SOURCE: ${{ inputs.branch_source }}
-          ENVIRONMENTS: ${{ inputs.environments || 'all' }}
+          BRANCH_SOURCE: ${{ steps.opts.outputs.branch_source }}
+          ENVS: ${{ steps.opts.outputs.environments }}
           SOURCE_REF: ${{ steps.src.outputs.ref }}
         run: |
           set -uo pipefail
           # Prefer an explicit source for *building* (e.g. a feature branch), so a
           # branch can be published to dev/staging without touching it.
           REF="${BRANCH_SOURCE:-}"
-          ENVS="${{ inputs.deploy_environments || inputs.environments || 'all' }}"
           if gh workflow run deploy-pages.yml -f ref="$REF" -f environments="$ENVS"; then
             echo "✓ dispatched deploy-pages.yml (ref='${REF:-per-branch}', environments=$ENVS)"
           else
@@ -234,7 +275,7 @@ jobs:
           fi
 
       - name: Dispatch container workflow
-        if: ${{ inputs.docker == true }}
+        if: steps.opts.outputs.docker == 'true'
         run: |
           if gh workflow run docker.yml; then
             echo "✓ dispatched docker.yml"
