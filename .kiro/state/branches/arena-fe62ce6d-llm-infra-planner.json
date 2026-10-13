@@ -3,7 +3,7 @@
   "branch": "arena/fe62ce6d-llm-infra-planner",
   "base": "main",
   "createdAt": "2026-10-07T17:44:39.281Z",
-  "updatedAt": "2026-10-13T19:38:12.332Z",
+  "updatedAt": "2026-10-13T19:58:06.775Z",
   "status": "in_progress",
   "scope": {
     "specs": [
@@ -30,7 +30,8 @@
       "T-408",
       "T-409",
       "T-410",
-      "T-411"
+      "T-411",
+      "T-308"
     ],
     "paths": [
       "wasm/kernel.ts",
@@ -176,6 +177,11 @@
       "at": "2026-10-13T19:38:12.332Z",
       "event": "scope-updated",
       "note": "tasks=[T-411] specs=[]"
+    },
+    {
+      "at": "2026-10-13T19:58:06.775Z",
+      "event": "scope-updated",
+      "note": "tasks=[T-308] specs=[13-deploy-github-pages]"
     }
   ]
 }

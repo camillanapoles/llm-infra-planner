@@ -2,9 +2,9 @@
   "schema": 1,
   "kind": "project-access-descriptor",
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-13T19:49:08.769Z",
+  "generatedAt": "2026-10-13T19:58:29.612Z",
   "provenance": {
-    "headSha": "830cffb83dc8c857da3535547c9359d8a5dcea29",
+    "headSha": "a0ff23856248507a4f39e1c686ccca5282f0c9d1",
     "branch": "arena/fe62ce6d-llm-infra-planner",
     "baseBranch": "main",
     "generatedBy": "npm run continuity:sync",
@@ -39,8 +39,8 @@
       ]
     },
     "pullRequest": {
-      "number": 3,
-      "url": "https://github.com/camillanapoles/llm-infra-planner/pull/3"
+      "number": 4,
+      "url": "https://github.com/camillanapoles/llm-infra-planner/pull/4"
     }
   },
   "runtime": {
@@ -176,11 +176,6 @@
         "blockedBy": []
       },
       {
-        "id": "T-412",
-        "title": "Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push)",
-        "blockedBy": []
-      },
-      {
         "id": "T-401",
         "title": "Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
         "blockedBy": []
@@ -193,6 +188,11 @@
       {
         "id": "T-404",
         "title": "Cobertura de testes do store e das rotas",
+        "blockedBy": []
+      },
+      {
+        "id": "T-405",
+        "title": "Auditoria de acessibilidade (foco, ARIA das abas, contraste)",
         "blockedBy": []
       }
     ],

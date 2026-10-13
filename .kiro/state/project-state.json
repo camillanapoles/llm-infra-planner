@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-13T19:49:08.769Z",
+  "generatedAt": "2026-10-13T19:58:29.612Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "830cffb83dc8c857da3535547c9359d8a5dcea29",
+  "headSha": "a0ff23856248507a4f39e1c686ccca5282f0c9d1",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -30,12 +30,11 @@
       "id": "P3",
       "name": "WebAssembly e entrega multi-ambiente",
       "status": "in_progress",
-      "done": 11,
+      "done": 12,
       "total": 13,
-      "percent": 85,
+      "percent": 92,
       "open": [
-        "T-308",
-        "T-412"
+        "T-308"
       ]
     },
     {
@@ -92,9 +91,9 @@
     }
   ],
   "overall": {
-    "done": 25,
+    "done": 26,
     "total": 39,
-    "percent": 64
+    "percent": 67
   },
   "nextTasks": [
     {
@@ -106,15 +105,6 @@
       "verify": "gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml",
       "blockedBy": [],
       "notes": "BLOQUEIO EXTERNO: publicar exige habilitar Pages uma vez em Settings → Pages → Source: \"GitHub Actions\". O token do workflow e a identidade desta sessão recebem \"Resource not accessible by integration\" (403) ao tentar criar o site pela API. Com Pages habilitado, o deploy (run do push em main) publica os três ambientes; dev/staging já existem e os três builds passam. Alternativa sem clicar na UI: dar \"Administration: write\" ao GitHub App e a sessão habilita Pages pela API (POST /pages) — hoje o App também recebe 403 ali."
-    },
-    {
-      "id": "T-412",
-      "title": "Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push)",
-      "phase": "P3",
-      "phaseName": "WebAssembly e entrega multi-ambiente",
-      "verify": "gh run list --workflow=docker.yml --limit 1 --json conclusion -q \".[0].conclusion\"",
-      "blockedBy": [],
-      "notes": "CAUSA REPRODUZIDA E CORRIGIDA: o passo afirmava saúde com `grep -q '\"ok\":true'`, mas o runtime responde JSON formatado (`\"ok\": true`) — o padrão nunca casava, então o smoke test ficava vermelho com o produto saudável (reproduzido subindo o runtime no sandbox: /health, /api/selftest e /api/plan respondem certo). Corrigido: padrão tolerante a espaços nas duas checagens do docker.yml, docker-build.mjs com parse de JSON e contabilizando falha, e scripts/wasi-smoke.test.ts (3 testes) subindo o runtime e usando o padrão extraído do workflow. VERIFICAÇÃO PENDENTE: a próxima run do docker.yml em main. Se ela ainda falhar, a causa é o pull do GHCR (`docker run ghcr.io/...-wasi:<tag>`), que nenhuma máquina daqui consegue exercitar."
     },
     {
       "id": "T-401",
@@ -142,39 +132,47 @@
       "verify": "npm test",
       "blockedBy": [],
       "notes": "Store (recompute/URL/share) e páginas sem testes; Runtime.tsx já tem cobertura de render."
+    },
+    {
+      "id": "T-405",
+      "title": "Auditoria de acessibilidade (foco, ARIA das abas, contraste)",
+      "phase": "P4",
+      "phaseName": "Qualidade contínua",
+      "verify": "npm run test:e2e",
+      "blockedBy": []
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-13T19:49:08.484Z",
+    "generatedAt": "2026-10-13T19:58:29.339Z",
     "stale": true,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "commit": "830cffb83dc8c857da3535547c9359d8a5dcea29"
+    "commit": "a0ff23856248507a4f39e1c686ccca5282f0c9d1"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-13T19:49:08.484Z"
+      "ranAt": "2026-10-13T19:58:29.339Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-13T19:49:08.484Z"
+      "ranAt": "2026-10-13T19:58:29.339Z"
     }
   ],
   "resume": {
-    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (64% do roadmap concluído)",
+    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (67% do roadmap concluído)",
     "next": [
       "T-308 Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
-      "T-412 Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push)",
       "T-401 Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
       "T-403 Code-splitting do bundle (chunk principal ~700 kB)",
-      "T-404 Cobertura de testes do store e das rotas"
+      "T-404 Cobertura de testes do store e das rotas",
+      "T-405 Auditoria de acessibilidade (foco, ARIA das abas, contraste)"
     ],
     "commands": [
       "npm ci",

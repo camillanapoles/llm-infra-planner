@@ -269,9 +269,12 @@ defeitos reais — nenhum foi contornado com `--no-verify`, `continue-on-error` 
 
 ### 9.1 Depende de você (ação humana)
 
-1. **Merge do PR #1** — destrava: `workflow_dispatch` do agente e do deploy, criação de `dev`/`staging`,
-   cron de dados. Depois do merge: `gh workflow run bootstrap-repo.yml` e validar as URLs
-   (tarefa **T-308**).
+1. **Habilitar o Pages uma vez** — Settings → Pages → Build and deployment → Source: **"GitHub Actions"**.
+   É o único item que falta para o site publicar: `POST /pages` exige admin do repositório e nem o
+   `GITHUB_TOKEN` do runner nem a identidade desta sessão têm essa permissão (`Resource not accessible by
+   integration`, 403). Os três builds e o contrato do artefato **já passam**; com o Pages ligado, o deploy
+   publica os três ambientes sem nenhuma outra mudança e a **T-308** fecha. Alternativa sem UI: dar
+   "Administration: write" ao GitHub App, que aí a sessão habilita pela API.
 2. **Opcional:** definir `APP_ID` e `APP_PRIVATE_KEY` (secrets do repositório) para o agente usar a identidade
    do GitHub App em vez do token efêmero. Sem eles, tudo funciona com o `GITHUB_TOKEN`.
 3. **Opcional:** habilitar **branch protection** exigindo os checks `Build & test` e `State & scope`

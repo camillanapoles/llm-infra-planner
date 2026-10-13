@@ -1,12 +1,12 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-13T19:49:08.769Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-13T19:58:29.612Z.
 
 ## Onde estamos
 
-- Fase **P3 — WebAssembly e entrega multi-ambiente**, 64% do roadmap (25/39 tarefas).
-- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `830cffb`.
-- Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104, T-402, T-406, T-407, T-408, T-409, T-410, T-411; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
+- Fase **P3 — WebAssembly e entrega multi-ambiente**, 67% do roadmap (26/39 tarefas).
+- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `a0ff238`.
+- Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104, T-402, T-406, T-407, T-408, T-409, T-410, T-411, T-308; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
 - Resumo do handoff: Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).
 - Próximos passos já registrados nesta branch:
   - T-307: rodar `npm run continuity:check` e `npm run continuity:sync` (gate verde)
@@ -19,19 +19,19 @@
 | # | tarefa | título | fase | bloqueio | aceite |
 |---|---|---|---|---|---|
 | 1 | `T-308` | Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs) | P3 | — | `gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml` |
-| 2 | `T-412` | Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push) | P3 | — | `gh run list --workflow=docker.yml --limit 1 --json conclusion -q ".[0].conclusion"` |
-| 3 | `T-401` | Suíte e2e Playwright (rotas, share URL, paridade wasm visível) | P4 | — | `npm run test:e2e` |
-| 4 | `T-403` | Code-splitting do bundle (chunk principal ~700 kB) | P4 | — | `npm run build` |
-| 5 | `T-404` | Cobertura de testes do store e das rotas | P4 | — | `npm test` |
+| 2 | `T-401` | Suíte e2e Playwright (rotas, share URL, paridade wasm visível) | P4 | — | `npm run test:e2e` |
+| 3 | `T-403` | Code-splitting do bundle (chunk principal ~700 kB) | P4 | — | `npm run build` |
+| 4 | `T-404` | Cobertura de testes do store e das rotas | P4 | — | `npm test` |
+| 5 | `T-405` | Auditoria de acessibilidade (foco, ARIA das abas, contraste) | P4 | — | `npm run test:e2e` |
 
 ## Últimos commits
 
 ```
+a0ff238 fix(ci): pare de mentir no smoke test e na publicação do estado
 830cffb chore(state): post-merge findings — Pages enablement is the last manual step; docker smoke test tracked
 41babe0 fix(pages): upload the parent directory, or one environment overwrites the others
 32699c8 fix(deploy): the first post-merge deploy published nothing, and said it was fine
 9bb7629 fix(pipeline): the health gate records that it ran, not that the project is done
-2612a73 [pipeline] complete T-410
 ```
 
 ## Guardrails (não negociáveis)
