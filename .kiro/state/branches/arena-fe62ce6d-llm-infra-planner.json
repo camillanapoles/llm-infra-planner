@@ -3,7 +3,7 @@
   "branch": "arena/fe62ce6d-llm-infra-planner",
   "base": "main",
   "createdAt": "2026-10-07T17:44:39.281Z",
-  "updatedAt": "2026-10-13T19:26:38.595Z",
+  "updatedAt": "2026-10-13T19:38:12.332Z",
   "status": "in_progress",
   "scope": {
     "specs": [
@@ -169,6 +169,11 @@
     },
     {
       "at": "2026-10-13T19:26:38.595Z",
+      "event": "scope-updated",
+      "note": "tasks=[T-411] specs=[]"
+    },
+    {
+      "at": "2026-10-13T19:38:12.332Z",
       "event": "scope-updated",
       "note": "tasks=[T-411] specs=[]"
     }

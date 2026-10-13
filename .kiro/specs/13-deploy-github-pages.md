@@ -105,3 +105,8 @@ vite.config.ts                     base = VITE_BASE_PATH
   verificador aceita esse caso explicitamente (não há bundle, logo não há base path a
   conferir) e mantém o rigor para páginas reais. Coberto por
   `scripts/pages-artifact.test.ts`.
+- **`upload-artifact` envia o conteúdo do caminho, não o diretório.** Cada job da matriz
+  envia o diretório **pai** (`out/`), para que `dev/` e `staging/` cheguem com o nome
+  preservado; com o caminho do próprio ambiente, o download com `merge-multiple`
+  achatava tudo e o `index.html` de um ambiente sobrescrevia o dos outros — o artefato
+  era recusado na verificação antes de publicar qualquer coisa.
