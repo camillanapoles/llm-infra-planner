@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-13T19:43:40.400Z",
+  "generatedAt": "2026-10-13T19:49:08.769Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "41babe03978418d6000e703309ef85779ed640b3",
+  "headSha": "830cffb83dc8c857da3535547c9359d8a5dcea29",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -105,7 +105,7 @@
       "spec": "13-deploy-github-pages",
       "verify": "gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml",
       "blockedBy": [],
-      "notes": "BLOQUEIO EXTERNO: publicar exige habilitar Pages uma vez em Settings → Pages → Source: \"GitHub Actions\". O token do workflow e a identidade desta sessão recebem \"Resource not accessible by integration\" (403) ao tentar criar o site pela API. Com Pages habilitado, o deploy (run do push em main) publica os três ambientes; dev/staging já existem e os três builds passam."
+      "notes": "BLOQUEIO EXTERNO: publicar exige habilitar Pages uma vez em Settings → Pages → Source: \"GitHub Actions\". O token do workflow e a identidade desta sessão recebem \"Resource not accessible by integration\" (403) ao tentar criar o site pela API. Com Pages habilitado, o deploy (run do push em main) publica os três ambientes; dev/staging já existem e os três builds passam. Alternativa sem clicar na UI: dar \"Administration: write\" ao GitHub App e a sessão habilita Pages pela API (POST /pages) — hoje o App também recebe 403 ali."
     },
     {
       "id": "T-412",
@@ -114,7 +114,7 @@
       "phaseName": "WebAssembly e entrega multi-ambiente",
       "verify": "gh run list --workflow=docker.yml --limit 1 --json conclusion -q \".[0].conclusion\"",
       "blockedBy": [],
-      "notes": "No evento push o modo é push=true/load=false: as imagens vão para o GHCR e o smoke test as executa por `docker run ghcr.io/...:<tag>`. O passo falha (run 38456757553, \"Image production :: Smoke test the images :: failure\"). Sem docker no sandbox e com o host de logs fora do allowlist, o próximo passo é ler o log do passo no run (ele imprime `docker logs wasi-test` antes de sair) ou rodar o smoke test localmente com as imagens carregadas (load=true)."
+      "notes": "CAUSA REPRODUZIDA E CORRIGIDA: o passo afirmava saúde com `grep -q '\"ok\":true'`, mas o runtime responde JSON formatado (`\"ok\": true`) — o padrão nunca casava, então o smoke test ficava vermelho com o produto saudável (reproduzido subindo o runtime no sandbox: /health, /api/selftest e /api/plan respondem certo). Corrigido: padrão tolerante a espaços nas duas checagens do docker.yml, docker-build.mjs com parse de JSON e contabilizando falha, e scripts/wasi-smoke.test.ts (3 testes) subindo o runtime e usando o padrão extraído do workflow. VERIFICAÇÃO PENDENTE: a próxima run do docker.yml em main. Se ela ainda falhar, a causa é o pull do GHCR (`docker run ghcr.io/...-wasi:<tag>`), que nenhuma máquina daqui consegue exercitar."
     },
     {
       "id": "T-401",
@@ -145,26 +145,26 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-13T19:43:40.115Z",
+    "generatedAt": "2026-10-13T19:49:08.484Z",
     "stale": true,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "commit": "41babe03978418d6000e703309ef85779ed640b3"
+    "commit": "830cffb83dc8c857da3535547c9359d8a5dcea29"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-13T19:43:40.115Z"
+      "ranAt": "2026-10-13T19:49:08.484Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-13T19:43:40.115Z"
+      "ranAt": "2026-10-13T19:49:08.484Z"
     }
   ],
   "resume": {

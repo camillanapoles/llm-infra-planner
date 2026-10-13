@@ -155,7 +155,17 @@ if (up) {
   smokeTest(3000, 'production page');
   smokeTest(8787, 'wasi runtime');
   const api = spawnSync('sh', ['-c', 'wget -qO- "http://127.0.0.1:3000/api/selftest"'], { encoding: 'utf8' });
-  console.log(`  ${api.stdout.includes('"ok":true') ? '✓' : '✗'} /api/selftest through nginx`);
+  // Parse de JSON, não substring: o runtime responde formatado (`"ok": true`), então
+  // `includes('"ok":true')` marcava ✗ num serviço saudável — e nem contava falha.
+  const apiOk = (() => {
+    try {
+      return JSON.parse(api.stdout).ok === true;
+    } catch {
+      return false;
+    }
+  })();
+  if (!apiOk) failures += 1;
+  console.log(`  ${apiOk ? '✓' : '✗'} /api/selftest through nginx`);
 }
 
 console.log(`\n${failures === 0 ? '✓' : '✗'} docker verification finished${failures ? ` — ${failures} static check(s) failed` : ''}\n`);

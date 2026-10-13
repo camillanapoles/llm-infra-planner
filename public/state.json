@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T19:43:40.400Z",
+  "generatedAt": "2026-10-13T19:49:08.769Z",
   "phase": "P3",
   "phaseName": "WebAssembly e entrega multi-ambiente",
   "percent": 64,
@@ -23,12 +23,12 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-13T19:43:40.115Z",
+    "generatedAt": "2026-10-13T19:49:08.484Z",
     "stale": true,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "commit": "41babe03978418d6000e703309ef85779ed640b3"
+    "commit": "830cffb83dc8c857da3535547c9359d8a5dcea29"
   }
 }

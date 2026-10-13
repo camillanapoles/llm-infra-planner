@@ -168,3 +168,22 @@ scripts/validate-workflows.py       detecta chave duplicada em workflow (falha s
 .github/workflows/continuity-sync.yml   consolidação do estado na main
 CONTINUITY.md                       porta de entrada para humanos
 ```
+
+## Nota de implementação — como o estado chega na `main`
+
+O `continuity-sync` publica o estado consolidado em três degraus, do mais simples ao
+mais frágil, e **nunca em silêncio**:
+
+1. **push direto na `main`** — caminho padrão; funciona quando a `main` não é protegida
+   e não depende de nenhuma configuração do repositório.
+2. **branch + PR** — quando o push direto é recusado (hook de proteção). O merge tenta
+   `--squash` e só então `--auto` (`--auto` exige "Allow auto-merge" ligado no repositório,
+   que é `false` neste por padrão).
+3. **branch + artefato** — se o `gh pr create` falhar (o `GITHUB_TOKEN` só abre PR se
+   "Allow GitHub Actions to create and approve pull requests" estiver ligado), o erro do
+   `gh` é **impresso** e a run guarda `.kiro/state` + `public/state.json` como artefato.
+
+Antes disso o passo escondia o erro (`2>/dev/null`), anunciava o estado "no artefato da run"
+sem artefato algum, e acumulava branches órfãos. `scripts/continuity-publish.test.ts` roda o
+bloco real do workflow (extraído da YAML por indentação) num repositório de verdade, com
+remote real e um `gh` de mentira que pode recusar, cobrindo os degraus e o caso "sem mudança".
