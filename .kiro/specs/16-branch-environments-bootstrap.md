@@ -74,3 +74,14 @@ gh api repos/{owner}/{repo}/branches --jq '.[].name'
 .github/workflows/docker.yml           references the same environments (GHCR)
 README.md                              one-time setup section
 ```
+
+## Notas de implementação (aprendidas em produção)
+
+- **`inputs.*` é `null` em eventos que não são `workflow_dispatch`** — e, nas expressões
+  do GitHub, `null` compara igual a `false`. Condições como `if: inputs.create_branches
+  != false` são, portanto, **falsas** num push: os passos que fazem o trabalho são
+  pulados e o job termina **verde** (no-op silencioso). O workflow resolve as opções uma
+  vez, em `steps.opts.outputs.*`, e as condições comparam contra `'true'`.
+- O bootstrap roda automaticamente quando este arquivo (ou `deploy-pages.yml` /
+  `docker.yml`) chega à `main` — é o caminho que cria `dev`/`staging` sem ninguém
+  dispatchar nada.

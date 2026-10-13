@@ -12,8 +12,15 @@ REPO_BASE="${PAGES_BASE:-/llm-infra-planner/}"
 for env in "" "staging/" "dev/"; do
   page="$DIR/${env}index.html"
   [ -f "$page" ] || { echo "✗ missing $page"; exit 1; }
-  grep -q "${REPO_BASE}${env}assets/" "$page" \
-    || { echo "✗ base path mismatch in ${env:-root} (expected ${REPO_BASE}${env}assets/)"; exit 1; }
+  # Placeholder declarado (branch ainda não criada — spec 13) é aceito explicitamente:
+  # ele não tem bundle, então não há base path a conferir. O que NÃO se aceita é uma
+  # página real apontando para o base path errado (deep links quebrariam).
+  if grep -q 'name="llmcalc-placeholder"' "$page"; then
+    echo "· ${env:-root} is a declared placeholder (its branch does not exist yet)"
+  else
+    grep -q "${REPO_BASE}${env}assets/" "$page" \
+      || { echo "✗ base path mismatch in ${env:-root} (expected ${REPO_BASE}${env}assets/)"; exit 1; }
+  fi
 done
 
 [ -f "$DIR/wasm/llmcalc-kernel.wasm" ] || { echo "✗ wasm kernel missing from the artifact"; exit 1; }

@@ -330,6 +330,23 @@
           "verify": "npm run validate:workflows && npx vitest run scripts/agent.test.ts && npm run agent -- audit",
           "evidence": "agent.yml (workflow_dispatch com 7 ações) + CLI npm run agent; identidade = GITHUB_TOKEN efêmero, com GitHub App opcional via secrets APP_ID/APP_PRIVATE_KEY; 11 testes das partes puras; --dry-run imprime os comandos/API sem executar; ações registradas no summary da run e no ledger",
           "notes": "Ações: status, audit, resume, check, deploy, bootstrap, sync. O ref de deploy é validado. Nada de segredo em argv, arquivo ou no store."
+        },
+        {
+          "id": "T-411",
+          "title": "Primeiro deploy pós-merge: bootstrap sem no-op e placeholder conforme o contrato do artefato",
+          "status": "done",
+          "paths": [
+            ".github/workflows/bootstrap-repo.yml",
+            ".github/workflows/deploy-pages.yml",
+            "scripts/verify-pages-artifact.sh",
+            "scripts/pages-artifact.test.ts",
+            "scripts/verify-all.sh",
+            ".kiro/specs/**",
+            "ENTREGA.md"
+          ],
+          "verify": "npm test && npm run --silent verify:all",
+          "notes": "Achados do primeiro deploy real: (1) inputs null em push → todos os passos acionáveis pulados com job verde; (2) placeholder sem kernel/base path → assemble recusa o artefato e produção não publica.",
+          "evidence": "9bb7629: npm test && npm run --silent verify:all → 0 (pipeline 2026-10-13T19:28:53.694Z)"
         }
       ]
     },

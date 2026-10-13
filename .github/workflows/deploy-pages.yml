@@ -165,20 +165,37 @@ jobs:
           test -f "$RUNNER_TEMP/out/${{ matrix.dir }}/index.html" || { echo "✖ build não produziu ${{ matrix.dir }}/index.html"; exit 1; }
           echo "✓ ${{ matrix.env }} · base=${{ matrix.base }} · ref=${{ steps.src.outputs.ref }}"
 
+      # O placeholder precisa cumprir o MESMO contrato do artefato verificado em
+      # scripts/verify-pages-artifact.sh (index.html + kernel em cada ambiente).
+      # Sem isso, um repositório novo — onde dev/staging ainda não existem — derrubava
+      # o deploy inteiro, produção incluída (visto no primeiro deploy pós-merge).
+      - name: Checkout (placeholder needs the kernel)
+        if: steps.src.outputs.ref == ''
+        uses: actions/checkout@v4
+
       - name: Placeholder for ${{ matrix.env }}
         if: steps.src.outputs.ref == ''
         run: |
-          mkdir -p "$RUNNER_TEMP/out/${{ matrix.dir }}"
-          cat > "$RUNNER_TEMP/out/${{ matrix.dir }}/index.html" <<HTML
-          <!doctype html><meta charset="utf-8"><title>LLMcalc · ${{ matrix.env }}</title>
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run --silent build:wasm:kernel
+          DIR="$RUNNER_TEMP/out/${{ matrix.dir }}"
+          mkdir -p "$DIR/wasm"
+          cp public/wasm/llmcalc-kernel.wasm "$DIR/wasm/llmcalc-kernel.wasm"
+          cat > "$DIR/index.html" <<HTML
+          <!doctype html><meta charset="utf-8">
+          <meta name="llmcalc-placeholder" content="${{ matrix.env }}">
+          <title>LLMcalc · ${{ matrix.env }} — not deployed yet</title>
           <style>body{font:15px/1.6 ui-sans-serif,system-ui;background:#0b0f19;color:#e6edf7;display:grid;place-items:center;height:100vh;margin:0}
           div{max-width:600px;text-align:center}code{background:#121a2b;border:1px solid #223050;padding:2px 6px;border-radius:6px}</style>
           <div><h1>${{ matrix.env }} not deployed yet</h1>
           <p>The <code>${{ matrix.branch }}</code> branch does not exist yet. Run
           <code>Actions → Bootstrap repository → Run workflow</code> once — it creates the
-          branches and dispatches this deploy.</p></div>
+          branches and dispatches this deploy.</p>
+          <p>The kernel is already here: <code>${{ matrix.base }}wasm/llmcalc-kernel.wasm</code></p></div>
           HTML
-          touch "$RUNNER_TEMP/out/${{ matrix.dir }}/.nojekyll"
+          touch "$DIR/.nojekyll"
+          echo "placeholder de ${{ matrix.env }} (kernel incluído, marcador declarado)"
 
       - name: Upload ${{ matrix.env }}
         uses: actions/upload-artifact@v4
