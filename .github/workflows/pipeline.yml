@@ -153,15 +153,35 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set +e
           TESTS="${{ github.event.inputs.tests }}"; TESTS="${TESTS:-run}"
-          npm run pipeline -- health --tests="$TESTS" --emit --record --summary --text \
+          set +e
+          npm run --silent pipeline -- health --tests="$TESTS" --emit --record --summary --text \
             --branch "${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}" > health.json
           code=$?
           set -e
+
+          # Ler o contrato é um passo do gate: se o JSON não vier, o gate NÃO passa
+          # (um verdict vazio pularia os dois gateways em silêncio — foi o que aconteceu
+          # quando o banner do npm entrou no arquivo e o erro ficou mascarado no $(...)).
+          verdict=$(node -e "process.stdout.write(String(require('./health.json').status))" 2>/dev/null || true)
+          next=$(node -e "process.stdout.write(String(require('./health.json').nextIssue?.id ?? ''))" 2>/dev/null || true)
+          case "$verdict" in
+            success|continuity|error) ;;
+            *) echo "✖ health.json ausente ou fora do contrato (verdict='$verdict') — o gate não passa"; exit 1 ;;
+          esac
+
           echo "exit=$code" >> "$GITHUB_OUTPUT"
-          echo "verdict=$(node -e "console.log(require('./health.json').status)")" >> "$GITHUB_OUTPUT"
-          echo "next=$(node -e "console.log(require('./health.json').nextIssue?.id ?? '')")" >> "$GITHUB_OUTPUT"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Resposta do gate (contrato JSON)"
+            echo
+            echo "- verdict: \`$verdict\` · exit: \`$code\` · próxima issue: \`${next:-(nenhuma)}\`"
+            echo
+            echo '```json'
+            cat health.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "── resposta do pipeline (contrato JSON) ──"
           cat health.json
 
@@ -207,7 +227,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
-          npm run pipeline -- next --emit --summary --text
+          npm run --silent pipeline -- next --emit --summary --text
           echo "exit=$?" >> "$GITHUB_STEP_SUMMARY"
           set -e
 
@@ -297,10 +317,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
-          npm run pipeline -- complete "${{ needs.route.outputs.task }}" --emit --summary --text > complete.json
+          npm run --silent pipeline -- complete "${{ needs.route.outputs.task }}" --emit --summary --text > complete.json
           code=$?
           set -e
+          status=$(node -e "process.stdout.write(String(require('./complete.json').status))" 2>/dev/null || true)
+          case "$status" in success|continuity|error) ;; *) echo "✖ complete.json ausente ou fora do contrato (status='$status')"; exit 1 ;; esac
           echo "exit=$code" >> "$GITHUB_OUTPUT"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
           cat complete.json
           if [ "$code" = "2" ]; then echo "✖ erro tipo 2 (estrutural)"; exit 1; fi
           if [ "$code" = "1" ]; then

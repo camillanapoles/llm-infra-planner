@@ -1,0 +1,88 @@
+{
+  "id": "health@2026-10-13T18:17:41.781Z",
+  "action": "health",
+  "status": "continuity",
+  "message": "não positivo — continuação: 14 item(ns) aberto(s) em roadmap: T-308, T-401, T-403 …",
+  "attachments": [
+    {
+      "path": ".kiro/state/pipeline/health.json",
+      "filename": "health.json",
+      "kind": "json",
+      "bytes": 2552
+    },
+    {
+      "path": ".kiro/state/pipeline/next-T-308.md",
+      "filename": "next-T-308.md",
+      "kind": "md",
+      "bytes": 1195
+    }
+  ],
+  "nextIssue": {
+    "id": "T-308",
+    "index": 16,
+    "queuePosition": 1,
+    "queueTotal": 14,
+    "title": "Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
+    "phase": "P3",
+    "phaseName": "WebAssembly e entrega multi-ambiente",
+    "spec": "13-deploy-github-pages",
+    "verify": "gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml",
+    "paths": [
+      ".github/workflows/deploy-pages.yml",
+      ".kiro/state/**"
+    ],
+    "acceptance": "`gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml` retorna 0",
+    "instruction": "T-308 — Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)\nFase: P3 · WebAssembly e entrega multi-ambiente · fila 1/14 · índice 16\nTeste de aceite: `gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml` retorna 0\nEscopo permitido: .github/workflows/deploy-pages.yml, .kiro/state/**\nSpec: .kiro/specs/13-deploy-github-pages.md\nBloqueios: nenhum — pode começar\nFechar com: npm run pipeline -- complete T-308 --json",
+    "blockedBy": [],
+    "actionable": true,
+    "reason": "next"
+  },
+  "exitCode": 1,
+  "at": "2026-10-13T18:17:41.781Z",
+  "actor": "user",
+  "details": {
+    "branch": "arena/fe62ce6d-llm-infra-planner",
+    "headSha": "01be80f6676db754537ca93f5232d83051506190",
+    "checks": {
+      "openWork": 14,
+      "ciFailures": 0,
+      "testsOk": true,
+      "tasksWithoutTest": []
+    },
+    "sources": {
+      "issues": {
+        "source": "roadmap",
+        "available": true,
+        "open": 14,
+        "reason": "GitHub Issues desabilitado — usando o roadmap (issues indexadas do projeto)"
+      },
+      "ci": {
+        "available": true,
+        "failures": [],
+        "inProgress": 0,
+        "checked": 10
+      },
+      "tests": {
+        "available": true,
+        "files": 25,
+        "passed": 383,
+        "failed": 0,
+        "ok": true
+      }
+    },
+    "continuity": {
+      "available": true,
+      "source": "snapshot",
+      "resume": "Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).",
+      "blockers": [
+        "T-308 depende do merge do PR #1 (workflows precisam existir na branch default)"
+      ],
+      "lastSync": {
+        "commit": "bc33bdb",
+        "at": "2026-10-13T14:42:10.779Z",
+        "percent": 64
+      },
+      "snapshot": true
+    }
+  }
+}
