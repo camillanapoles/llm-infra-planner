@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-13T19:38:47.193Z",
+  "generatedAt": "2026-10-13T19:43:40.400Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+  "headSha": "41babe03978418d6000e703309ef85779ed640b3",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -31,10 +31,11 @@
       "name": "WebAssembly e entrega multi-ambiente",
       "status": "in_progress",
       "done": 11,
-      "total": 12,
-      "percent": 92,
+      "total": 13,
+      "percent": 85,
       "open": [
-        "T-308"
+        "T-308",
+        "T-412"
       ]
     },
     {
@@ -92,8 +93,8 @@
   ],
   "overall": {
     "done": 25,
-    "total": 38,
-    "percent": 66
+    "total": 39,
+    "percent": 64
   },
   "nextTasks": [
     {
@@ -104,7 +105,16 @@
       "spec": "13-deploy-github-pages",
       "verify": "gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml",
       "blockedBy": [],
-      "notes": "Depende do merge do PR #1 na main (os workflows precisam existir na branch default)."
+      "notes": "BLOQUEIO EXTERNO: publicar exige habilitar Pages uma vez em Settings → Pages → Source: \"GitHub Actions\". O token do workflow e a identidade desta sessão recebem \"Resource not accessible by integration\" (403) ao tentar criar o site pela API. Com Pages habilitado, o deploy (run do push em main) publica os três ambientes; dev/staging já existem e os três builds passam."
+    },
+    {
+      "id": "T-412",
+      "title": "Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push)",
+      "phase": "P3",
+      "phaseName": "WebAssembly e entrega multi-ambiente",
+      "verify": "gh run list --workflow=docker.yml --limit 1 --json conclusion -q \".[0].conclusion\"",
+      "blockedBy": [],
+      "notes": "No evento push o modo é push=true/load=false: as imagens vão para o GHCR e o smoke test as executa por `docker run ghcr.io/...:<tag>`. O passo falha (run 38456757553, \"Image production :: Smoke test the images :: failure\"). Sem docker no sandbox e com o host de logs fora do allowlist, o próximo passo é ler o log do passo no run (ele imprime `docker logs wasi-test` antes de sair) ou rodar o smoke test localmente com as imagens carregadas (load=true)."
     },
     {
       "id": "T-401",
@@ -132,72 +142,39 @@
       "verify": "npm test",
       "blockedBy": [],
       "notes": "Store (recompute/URL/share) e páginas sem testes; Runtime.tsx já tem cobertura de render."
-    },
-    {
-      "id": "T-405",
-      "title": "Auditoria de acessibilidade (foco, ARIA das abas, contraste)",
-      "phase": "P4",
-      "phaseName": "Qualidade contínua",
-      "verify": "npm run test:e2e",
-      "blockedBy": []
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-13T19:38:12.700Z",
-    "stale": false,
+    "generatedAt": "2026-10-13T19:43:40.115Z",
+    "stale": true,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "testsPassed": 389,
-    "testFiles": 26,
-    "buildOk": true,
-    "bundleKb": 701.89,
-    "lintProblems": 0,
-    "lintErrors": 0,
-    "lintWarnings": 0,
-    "commit": "32699c8728e118e249bb37b577afb099c64d7ad8"
+    "commit": "41babe03978418d6000e703309ef85779ed640b3"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-13T19:38:12.700Z"
+      "ranAt": "2026-10-13T19:43:40.115Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-13T19:38:12.700Z"
-    },
-    {
-      "id": "tests",
-      "ok": true,
-      "detail": "389 testes / 26 arquivos",
-      "ranAt": "2026-10-13T19:38:12.700Z"
-    },
-    {
-      "id": "build",
-      "ok": true,
-      "detail": "bundle principal 701.89 kB",
-      "ranAt": "2026-10-13T19:38:12.700Z"
-    },
-    {
-      "id": "lint",
-      "ok": true,
-      "detail": "0 erros / 0 avisos",
-      "ranAt": "2026-10-13T19:38:12.700Z"
+      "ranAt": "2026-10-13T19:43:40.115Z"
     }
   ],
   "resume": {
-    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (66% do roadmap concluído)",
+    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (64% do roadmap concluído)",
     "next": [
       "T-308 Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
+      "T-412 Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push)",
       "T-401 Suíte e2e Playwright (rotas, share URL, paridade wasm visível)",
       "T-403 Code-splitting do bundle (chunk principal ~700 kB)",
-      "T-404 Cobertura de testes do store e das rotas",
-      "T-405 Auditoria de acessibilidade (foco, ARIA das abas, contraste)"
+      "T-404 Cobertura de testes do store e das rotas"
     ],
     "commands": [
       "npm ci",

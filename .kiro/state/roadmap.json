@@ -282,7 +282,7 @@
             ".kiro/state/**"
           ],
           "verify": "gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml",
-          "notes": "Depende do merge do PR #1 na main (os workflows precisam existir na branch default)."
+          "notes": "BLOQUEIO EXTERNO: publicar exige habilitar Pages uma vez em Settings → Pages → Source: \"GitHub Actions\". O token do workflow e a identidade desta sessão recebem \"Resource not accessible by integration\" (403) ao tentar criar o site pela API. Com Pages habilitado, o deploy (run do push em main) publica os três ambientes; dev/staging já existem e os três builds passam."
         },
         {
           "id": "T-309",
@@ -347,6 +347,18 @@
           "verify": "npm test && npm run --silent verify:all",
           "notes": "Achados do primeiro deploy real: (1) inputs null em push → todos os passos acionáveis pulados com job verde; (2) placeholder sem kernel/base path → assemble recusa o artefato e produção não publica.",
           "evidence": "9bb7629: npm test && npm run --silent verify:all → 0 (pipeline 2026-10-13T19:28:53.694Z)"
+        },
+        {
+          "id": "T-412",
+          "title": "Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push)",
+          "status": "todo",
+          "paths": [
+            ".github/workflows/docker.yml",
+            "docker/**",
+            "Dockerfile"
+          ],
+          "verify": "gh run list --workflow=docker.yml --limit 1 --json conclusion -q \".[0].conclusion\"",
+          "notes": "No evento push o modo é push=true/load=false: as imagens vão para o GHCR e o smoke test as executa por `docker run ghcr.io/...:<tag>`. O passo falha (run 38456757553, \"Image production :: Smoke test the images :: failure\"). Sem docker no sandbox e com o host de logs fora do allowlist, o próximo passo é ler o log do passo no run (ele imprime `docker logs wasi-test` antes de sair) ou rodar o smoke test localmente com as imagens carregadas (load=true)."
         }
       ]
     },
