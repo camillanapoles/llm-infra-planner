@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "kind": "continuity-store-snapshot",
-  "generatedAt": "2026-10-13T19:31:51.344Z",
+  "generatedAt": "2026-10-13T19:38:47.193Z",
   "driver": "sqlite",
   "counts": {
     "sessions": 2,
     "kv": 5,
-    "events": 69,
+    "events": 72,
     "gates": 100,
     "tasks": 38,
     "handoffs": 1,
@@ -20,7 +20,7 @@
         "agent": "unknown",
         "goal": "Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).",
         "started_at": "2026-10-13T13:48:04.913Z",
-        "heartbeat_at": "2026-10-13T19:31:51.979Z",
+        "heartbeat_at": "2026-10-13T19:38:47.913Z",
         "ended_at": null,
         "resume_point": "Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).",
         "blockers": [
@@ -99,14 +99,14 @@
       {
         "key": "last_sync",
         "value": {
-          "at": "2026-10-13T19:31:51.344Z",
-          "commit": "9bb76291c06c2a695d8da5e3d0c7fbc5455bea2a",
+          "at": "2026-10-13T19:38:47.193Z",
+          "commit": "32699c8728e118e249bb37b577afb099c64d7ad8",
           "branch": "arena/fe62ce6d-llm-infra-planner",
           "phase": "P3",
           "percent": 66,
           "tests": 389
         },
-        "updated_at": "2026-10-13T19:31:51.981Z",
+        "updated_at": "2026-10-13T19:38:47.915Z",
         "updated_by": "continuity:sync"
       },
       {
@@ -146,6 +146,83 @@
       }
     ],
     "events": [
+      {
+        "id": "sync_2026-10-13T19:38:47.916Z_gdqh",
+        "at": "2026-10-13T19:38:47.916Z",
+        "type": "sync",
+        "branch": "arena/fe62ce6d-llm-infra-planner",
+        "summary": "estado consolidado em 32699c8 (25/38 tarefas)",
+        "data": {
+          "gates": [
+            {
+              "id": "wasm-verify",
+              "ok": true
+            },
+            {
+              "id": "docker-static",
+              "ok": true
+            },
+            {
+              "id": "tests",
+              "ok": true
+            },
+            {
+              "id": "build",
+              "ok": true
+            },
+            {
+              "id": "lint",
+              "ok": true
+            }
+          ]
+        }
+      },
+      {
+        "id": "sync_2026-10-13T19:38:10.733Z_77jg",
+        "at": "2026-10-13T19:38:10.733Z",
+        "type": "sync",
+        "branch": "arena/fe62ce6d-llm-infra-planner",
+        "summary": "estado consolidado em 32699c8 (25/38 tarefas)",
+        "data": {
+          "gates": [
+            {
+              "id": "wasm-verify",
+              "ok": true
+            },
+            {
+              "id": "docker-static",
+              "ok": true
+            },
+            {
+              "id": "tests",
+              "ok": true
+            },
+            {
+              "id": "build",
+              "ok": true
+            },
+            {
+              "id": "lint",
+              "ok": true
+            },
+            {
+              "id": "pages-artifact",
+              "ok": true
+            }
+          ]
+        }
+      },
+      {
+        "id": "check_2026-10-13T19:36:51.365Z_6x20",
+        "at": "2026-10-13T19:36:51.365Z",
+        "type": "check",
+        "branch": "arena/fe62ce6d-llm-infra-planner",
+        "summary": "continuidade ok (97 arquivo(s))",
+        "data": {
+          "base": "main",
+          "files": 97
+        }
+      },
       {
         "id": "sync_2026-10-13T19:31:51.983Z_s8g2",
         "at": "2026-10-13T19:31:51.983Z",
@@ -1558,6 +1635,102 @@
     ],
     "gates": [
       {
+        "id": "wasm-verify@2026-10-13T19:38:12.700Z",
+        "ran_at": "2026-10-13T19:38:12.700Z",
+        "ok": true,
+        "detail": "16 verificações ok",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "docker-static@2026-10-13T19:38:12.700Z",
+        "ran_at": "2026-10-13T19:38:12.700Z",
+        "ok": true,
+        "detail": "16 validações estáticas",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "tests@2026-10-13T19:38:12.700Z",
+        "ran_at": "2026-10-13T19:38:12.700Z",
+        "ok": true,
+        "detail": "389 testes / 26 arquivos",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "build@2026-10-13T19:38:12.700Z",
+        "ran_at": "2026-10-13T19:38:12.700Z",
+        "ok": true,
+        "detail": "bundle principal 701.89 kB",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "lint@2026-10-13T19:38:12.700Z",
+        "ran_at": "2026-10-13T19:38:12.700Z",
+        "ok": true,
+        "detail": "0 erros / 0 avisos",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "wasm-verify@2026-10-13T19:37:14.223Z",
+        "ran_at": "2026-10-13T19:37:14.223Z",
+        "ok": true,
+        "detail": "16 verificações ok",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "docker-static@2026-10-13T19:37:14.223Z",
+        "ran_at": "2026-10-13T19:37:14.223Z",
+        "ok": true,
+        "detail": "16 validações estáticas",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "tests@2026-10-13T19:37:14.223Z",
+        "ran_at": "2026-10-13T19:37:14.223Z",
+        "ok": true,
+        "detail": "389 testes / 26 arquivos",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "build@2026-10-13T19:37:14.223Z",
+        "ran_at": "2026-10-13T19:37:14.223Z",
+        "ok": true,
+        "detail": "bundle principal 701.89 kB",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "lint@2026-10-13T19:37:14.223Z",
+        "ran_at": "2026-10-13T19:37:14.223Z",
+        "ok": true,
+        "detail": "0 erros / 0 avisos",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "pages-artifact@2026-10-13T19:37:14.223Z",
+        "ran_at": "2026-10-13T19:37:14.223Z",
+        "ok": true,
+        "detail": "3/3 ambientes",
+        "commit_sha": "32699c8728e118e249bb37b577afb099c64d7ad8",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
+        "id": "continuity-check@2026-10-13T19:36:51.360Z",
+        "ran_at": "2026-10-13T19:36:51.360Z",
+        "ok": true,
+        "detail": "0 erro(s), 0 aviso(s)",
+        "commit_sha": "",
+        "branch": "arena/fe62ce6d-llm-infra-planner"
+      },
+      {
         "id": "wasm-verify@2026-10-13T19:31:18.057Z",
         "ran_at": "2026-10-13T19:31:18.057Z",
         "ok": true,
@@ -2260,102 +2433,6 @@
         "detail": "16 validações estáticas",
         "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
         "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "wasm-verify@2026-10-13T13:51:23.261Z",
-        "ran_at": "2026-10-13T13:51:23.261Z",
-        "ok": true,
-        "detail": "16 verificações ok",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "docker-static@2026-10-13T13:51:23.261Z",
-        "ran_at": "2026-10-13T13:51:23.261Z",
-        "ok": true,
-        "detail": "16 validações estáticas",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "tests@2026-10-13T13:51:23.261Z",
-        "ran_at": "2026-10-13T13:51:23.261Z",
-        "ok": true,
-        "detail": "363 testes / 24 arquivos",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "build@2026-10-13T13:51:23.261Z",
-        "ran_at": "2026-10-13T13:51:23.261Z",
-        "ok": true,
-        "detail": "bundle principal 701.89 kB",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "lint@2026-10-13T13:51:23.261Z",
-        "ran_at": "2026-10-13T13:51:23.261Z",
-        "ok": true,
-        "detail": "0 erros / 0 avisos",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "pages-artifact@2026-10-13T13:51:23.261Z",
-        "ran_at": "2026-10-13T13:51:23.261Z",
-        "ok": true,
-        "detail": "3/3 ambientes",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "continuity-check@2026-10-13T13:49:49.515Z",
-        "ran_at": "2026-10-13T13:49:49.515Z",
-        "ok": true,
-        "detail": "0 erro(s), 0 aviso(s)",
-        "commit_sha": "",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "wasm-verify@2026-10-13T13:47:09.690Z",
-        "ran_at": "2026-10-13T13:47:09.690Z",
-        "ok": true,
-        "detail": "16 verificações ok",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "docker-static@2026-10-13T13:47:09.690Z",
-        "ran_at": "2026-10-13T13:47:09.690Z",
-        "ok": true,
-        "detail": "16 validações estáticas",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "tests@2026-10-13T13:47:09.690Z",
-        "ran_at": "2026-10-13T13:47:09.690Z",
-        "ok": true,
-        "detail": "361 testes / 24 arquivos",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "build@2026-10-13T13:47:09.690Z",
-        "ran_at": "2026-10-13T13:47:09.690Z",
-        "ok": true,
-        "detail": "bundle principal 701.89 kB",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
-      },
-      {
-        "id": "lint@2026-10-13T13:47:09.690Z",
-        "ran_at": "2026-10-13T13:47:09.690Z",
-        "ok": true,
-        "detail": "0 erros / 0 avisos",
-        "commit_sha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
-        "branch": "arena/fe62ce6d-llm-infra-planner"
       }
     ],
     "tasks": [
@@ -2366,7 +2443,7 @@
         "status": "done",
         "spec": "10-concurrent-user-capacity",
         "evidence": "src/lib/formulas/* — 19 arquivos de teste, 243 testes no baseline",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-102",
@@ -2375,7 +2452,7 @@
         "status": "done",
         "spec": "",
         "evidence": "src/data/*.json + scripts/ingest-models.ts",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-103",
@@ -2384,7 +2461,7 @@
         "status": "done",
         "spec": "",
         "evidence": "fast-check em vram/kv-cache/parallelism/quantization/aggregate",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-104",
@@ -2393,7 +2470,7 @@
         "status": "done",
         "spec": "",
         "evidence": "round-trip só para modos canônicos + cobertura explícita dos aliases legados (13 testes)",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-201",
@@ -2402,7 +2479,7 @@
         "status": "done",
         "spec": "",
         "evidence": "src/pages/Home.tsx + 50+ componentes em src/components/calculator",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-202",
@@ -2411,7 +2488,7 @@
         "status": "done",
         "spec": "",
         "evidence": "src/pages/{Compare,Reverse,Models,Hardware,Guides}.tsx",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-203",
@@ -2420,7 +2497,7 @@
         "status": "done",
         "spec": "",
         "evidence": "src/lib/url-serializer.ts + 13 testes",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-204",
@@ -2429,7 +2506,7 @@
         "status": "done",
         "spec": "",
         "evidence": "use-theme + ShortcutsModal + skip-link",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-301",
@@ -2438,7 +2515,7 @@
         "status": "done",
         "spec": "11-wasm-kernel",
         "evidence": "public/wasm/llmcalc-kernel.wasm (~2 KB, zero imports) + 10 testes de paridade",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-302",
@@ -2447,7 +2524,7 @@
         "status": "done",
         "spec": "12-wasi-runtime",
         "evidence": "wasi/dist/llmcalc-wasi.wasm + /api/plan executando dentro do módulo",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-303",
@@ -2456,7 +2533,7 @@
         "status": "done",
         "spec": "13-deploy-github-pages",
         "evidence": "_site/{,staging/,dev/} com base paths corretos e 404.html por ambiente",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-304",
@@ -2465,7 +2542,7 @@
         "status": "done",
         "spec": "14-deploy-docker",
         "evidence": "Dockerfile multi-stage (runner/wasi) + 16 validações estáticas",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-305",
@@ -2474,7 +2551,7 @@
         "status": "done",
         "spec": "15-deploy-local",
         "evidence": "npm run stack (vite :5173 + wasi :8787) e serve-static com proxy /api",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-306",
@@ -2483,7 +2560,7 @@
         "status": "done",
         "spec": "16-branch-environments-bootstrap",
         "evidence": "cria dev/staging, environments e habilita Pages via API",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-307",
@@ -2492,7 +2569,7 @@
         "status": "done",
         "spec": "17-continuity-gate",
         "evidence": ".kiro/state/{roadmap,policy,project-state}.json + STATE.md/RESUME.md; scripts/continuity.ts + continuity-core.ts com 25 testes; workflows continuity-gate/continuity-sync; gate verde na branch",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-308",
@@ -2501,7 +2578,7 @@
         "status": "todo",
         "spec": "13-deploy-github-pages",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-309",
@@ -2510,7 +2587,7 @@
         "status": "done",
         "spec": "17-continuity-gate",
         "evidence": "gerado pelo continuity:sync e servido pelo runtime WASI em /api/access; validador com 7 testes negativos (token vazado, senha, comando/script/workflow inexistente, tarefa fora do roadmap, URL de outro site) todos detectados",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-310",
@@ -2519,7 +2596,7 @@
         "status": "done",
         "spec": "17-continuity-gate",
         "evidence": "7 coleções (sessions, kv, events, gates, tasks, handoffs, artifacts) em dois drivers (node:sqlite + json); mesma suíte de 40 testes nos dois; meta-classe valida palavras reservadas e tipos; query com guarda de injeção; sync registra gates/sessão/espelhos e exporta snapshot; /api/store servido pelo runtime WASI (somente leitura)",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-311",
@@ -2528,7 +2605,7 @@
         "status": "done",
         "spec": "17-continuity-gate",
         "evidence": "agent.yml (workflow_dispatch com 7 ações) + CLI npm run agent; identidade = GITHUB_TOKEN efêmero, com GitHub App opcional via secrets APP_ID/APP_PRIVATE_KEY; 11 testes das partes puras; --dry-run imprime os comandos/API sem executar; ações registradas no summary da run e no ledger",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-401",
@@ -2537,7 +2614,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-402",
@@ -2546,7 +2623,7 @@
         "status": "done",
         "spec": "",
         "evidence": "ea0c752: npm run lint → 0 problemas (0 erros / 0 avisos), lint:changed verde; 202 arquivos cobertos",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-403",
@@ -2555,7 +2632,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-404",
@@ -2564,7 +2641,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-405",
@@ -2573,7 +2650,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-406",
@@ -2582,7 +2659,7 @@
         "status": "done",
         "spec": "",
         "evidence": "ea0c752: validate 513 modelos / 147 GPUs / 61 instâncias sem erro; agent audit verde — veredito pela última execução de cada gate (failedRuns mantém o histórico); 358 testes",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-407",
@@ -2591,7 +2668,7 @@
         "status": "done",
         "spec": "",
         "evidence": "70ddcfd: npm run verify:all → 18/18 exit 0; ENTREGA.md (relatório completo: timeline, stack, CI/CD gate-driven, auditoria, pendências) + lint completo do CI promovido a bloqueante",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-408",
@@ -2600,7 +2677,7 @@
         "status": "done",
         "spec": "",
         "evidence": "reconcileFromSnapshot + tablesBehind com 2 testes; prova: banco apagado → \"ledger restaurado do snapshot: gates+100\", snapshot cresceu (antes encolhia de 92 para 7)",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-409",
@@ -2609,7 +2686,7 @@
         "status": "done",
         "spec": "",
         "evidence": "c4fea86: npm test && npm run lint → 0 (pipeline 2026-10-13T14:33:19.959Z)",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-410",
@@ -2618,7 +2695,7 @@
         "status": "done",
         "spec": "",
         "evidence": "2612a73: npm run validate:workflows && npm run verify:all → 0 (pipeline 2026-10-13T18:33:07.290Z)",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-411",
@@ -2627,7 +2704,7 @@
         "status": "done",
         "spec": "",
         "evidence": "9bb7629: npm test && npm run --silent verify:all → 0 (pipeline 2026-10-13T19:28:53.694Z)",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-501",
@@ -2636,7 +2713,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-502",
@@ -2645,7 +2722,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-503",
@@ -2654,7 +2731,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-601",
@@ -2663,7 +2740,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-602",
@@ -2672,7 +2749,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-603",
@@ -2681,7 +2758,7 @@
         "status": "todo",
         "spec": "12-wasi-runtime",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-701",
@@ -2690,7 +2767,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       },
       {
         "id": "T-702",
@@ -2699,7 +2776,7 @@
         "status": "todo",
         "spec": "",
         "evidence": "",
-        "updated_at": "2026-10-13T19:31:51.344Z"
+        "updated_at": "2026-10-13T19:38:47.193Z"
       }
     ],
     "handoffs": [
@@ -2734,7 +2811,7 @@
         ],
         "paths": 80,
         "resume_point": "Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).",
-        "updated_at": "2026-10-13T19:26:38.595Z"
+        "updated_at": "2026-10-13T19:38:12.332Z"
       }
     ],
     "artifacts": []

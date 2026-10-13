@@ -197,11 +197,17 @@ jobs:
           touch "$DIR/.nojekyll"
           echo "placeholder de ${{ matrix.env }} (kernel incluído, marcador declarado)"
 
+      # ATENÇÃO ao caminho: `upload-artifact` envia o CONTEÚDO do diretório informado
+      # (o próprio diretório não vai junto). Enviar `out/${{ matrix.dir }}` achatava cada
+      # ambiente — `dev/index.html` chegava como `index.html` e o `merge-multiple` do
+      # download sobrescrevia a produção (o `assemble` recusava o artefato: "base path
+      # mismatch in root"). Enviando o diretório PAI, os subdiretórios são preservados e
+      # o merge reconstrói exatamente o layout que `verify-pages-artifact.sh` exige.
       - name: Upload ${{ matrix.env }}
         uses: actions/upload-artifact@v4
         with:
           name: pages-${{ matrix.env }}
-          path: ${{ runner.temp }}/out/${{ matrix.dir }}
+          path: ${{ runner.temp }}/out
           retention-days: 1
           include-hidden-files: true
 
