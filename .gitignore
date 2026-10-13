@@ -38,3 +38,5 @@ _site
 .kiro/state/*.db-wal
 .kiro/state/continuity.json
 .verify-fail/
+test-results/
+playwright-report/
