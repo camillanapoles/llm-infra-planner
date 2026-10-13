@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-13T13:54:32.129Z",
+  "generatedAt": "2026-10-13T13:56:34.689Z",
   "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4",
+  "headSha": "3b20e12b4fc47dea8fd3d3a603712b349e12a187",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -143,26 +143,62 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-13T13:54:31.832Z",
-    "stale": true,
+    "generatedAt": "2026-10-13T13:55:43.991Z",
+    "stale": false,
     "wasmKernelBytes": 2057,
     "wasiBytes": 5728,
     "wasmChecks": 16,
     "dockerChecks": 16,
-    "commit": "70ddcfdd5b3806b40ac4fd6d559cdb4e311bd5c4"
+    "testsPassed": 363,
+    "testFiles": 24,
+    "buildOk": true,
+    "bundleKb": 701.89,
+    "lintProblems": 0,
+    "lintErrors": 0,
+    "lintWarnings": 0,
+    "pagesEnvs": [
+      "production",
+      "staging",
+      "dev"
+    ],
+    "commit": "3b20e12b4fc47dea8fd3d3a603712b349e12a187"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "16 verificações ok",
-      "ranAt": "2026-10-13T13:54:31.832Z"
+      "ranAt": "2026-10-13T13:55:43.991Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "16 validações estáticas",
-      "ranAt": "2026-10-13T13:54:31.832Z"
+      "ranAt": "2026-10-13T13:55:43.991Z"
+    },
+    {
+      "id": "tests",
+      "ok": true,
+      "detail": "363 testes / 24 arquivos",
+      "ranAt": "2026-10-13T13:55:43.991Z"
+    },
+    {
+      "id": "build",
+      "ok": true,
+      "detail": "bundle principal 701.89 kB",
+      "ranAt": "2026-10-13T13:55:43.991Z"
+    },
+    {
+      "id": "lint",
+      "ok": true,
+      "detail": "0 erros / 0 avisos",
+      "ranAt": "2026-10-13T13:55:43.991Z"
+    },
+    {
+      "id": "pages-artifact",
+      "ok": true,
+      "detail": "3/3 ambientes",
+      "ranAt": "2026-10-13T13:55:43.991Z"
     }
   ],
   "resume": {
