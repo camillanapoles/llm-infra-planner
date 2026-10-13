@@ -1,6 +1,6 @@
 # Estado do projeto — LLMcalc
 
-> Gerado automaticamente por `npm run continuity:sync` em 2026-10-13T14:41:19.888Z (branch `arena/fe62ce6d-llm-infra-planner` @ `c4fea86`).
+> Gerado automaticamente por `npm run continuity:sync` em 2026-10-13T14:42:10.779Z (branch `arena/fe62ce6d-llm-infra-planner` @ `bc33bdb`).
 > Não edite à mão: a fonte são `.kiro/state/roadmap.json`, `policy.json` e os handoffs em `.kiro/state/branches/`.
 
 **Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 23/36 tarefas (64%)
@@ -46,5 +46,4 @@
 | `tests` | ✓ | 383 testes / 25 arquivos |
 | `build` | ✓ | bundle principal 701.89 kB |
 | `lint` | ✓ | 0 erros / 0 avisos |
-| `pages-artifact` | ✓ | 3/3 ambientes |
 
