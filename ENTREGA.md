@@ -2,7 +2,7 @@
 
 > **Branch:** `arena/fe62ce6d-llm-infra-planner` · **PR:** [#1](https://github.com/camillanapoles/llm-infra-planner/pull/1)
 > **HEAD:** `70ddcfd` · **base:** `main` (`cdfee43`) · **21 commits** · **280 arquivos versionados**
-> **Verificação:** `npm run verify:all` → **18/18 exit 0** · **CI:** 5/5 checks verdes no HEAD
+> **Verificação:** `npm run verify:all` → **19/19 exit 0** · **CI:** 5/5 checks verdes no HEAD
 > Gerado em 2026-10-13. Todos os números abaixo foram medidos, não estimados.
 
 ---
@@ -25,7 +25,8 @@ O que está **pronto para uso agora**, sem depender de mais nada:
 | **Kernel WASM** | compilado no build, com fallback TS parity-testado (paridade testada em CI) |
 | **Runtime WASI** | `npm run wasi:serve` ou o binário `wasi/dist/llmcalc-wasi.wasm` em qualquer host WASI |
 | **Ledger + gate de continuidade** | `npm run continuity:check`, `npm run store`, `npm run agent -- audit` |
-| **Bateria de verificação** | `npm run verify:all` (18 checks; é o mesmo conjunto que o CI distribui em jobs) |
+| **Pipeline gate-driven** | `npm run pipeline -- health` (gatilho) e `complete T-xxx` (testa e entrega com a próxima issue) — JSON com exit 0/1/2; ver **[PIPELINE.md](PIPELINE.md)** |
+| **Bateria de verificação** | `npm run verify:all` (19 checks; é o mesmo conjunto que o CI distribui em jobs) |
 
 O único item **bloqueado por dependência de plataforma** é o deploy automático em GitHub Pages e o
 dispatch do agente: ambos exigem que os workflows existam na branch default — ou seja, **depois do merge
@@ -60,6 +61,8 @@ Os specs vivem em `.kiro/specs/` (11–17 são desta entrega): `11-wasm-kernel`,
 |---|---|---|
 | 07/10 | `44cdf0a` `70a3363` `6f631e6` `064c48b` `24a41d1` `9b9024f` `b6a3128` `7cccbf6` | Handoff auto-inferido por branch (inclui o ponto de retomada), auto-cura de handoff vazio, correção do artefato Pages, wasm antes do artefato, lint:changed, validação de workflows, **gate de continuidade por estado**, **kernel WASM + runtime WASI + deploy multi-ambiente** |
 | 11/10 | `0c5dfdd` `8612932` `260eaca` `4c1a5bf` `a1af5b3` `f3c622d` `5c2fa4b` | Descriptor de acesso servido pelo runtime WASI, caminho único de build do Pages, **ledger SQLite com CRUD/query/gates como dado**, Node 22 no CI, render de listas por identificador, nota de sessão em `kv`, **agente GitOps por API sem credencial pessoal** |
+| 12–13/10 | `3b20e12` `c4fea86` … | reconciliação do ledger (sync nunca encolhe), documento de entrega e bateria versionada |
+| 13/10 | *(este commit)* | **pipeline gate-driven**: gatilho de saúde (issues · CI · testes), ciclo issue→teste→próxima indexada, contrato JSON único com exit 0/1/2, workflow `pipeline.yml` + spec 18 + `PIPELINE.md` |
 | 11–12/10 | `ea0c752` `8679f28` `66c32b8` `bc3ef18` `c953780` `70ddcfd` | **Zero lint** (19 erros + 5 avisos → 0) com tipos reais, validador de dados alinhado ao catálogo, escopo declarado no roadmap/handoff, **gate de lint que não pode ficar verde por acidente**, veredito da auditoria por última execução de cada gate |
 
 ---
@@ -72,7 +75,7 @@ Os specs vivem em `.kiro/specs/` (11–17 são desta entrega): `11-wasm-kernel`,
 | Estilo | Tailwind CSS | tema e componentes primitivos |
 | Kernel | **AssemblyScript → WebAssembly** (`wasm32-unknown-unknown`, `-O3s`) | métricas de cabeçalho (VRAM, throughput, custo) |
 | Runtime | **WASI preview1** (`node:wasi`) | executar o mesmo kernel fora do browser, via HTTP |
-| Testes | Vitest (**363 testes / 24 arquivos**) | unidade + paridade wasm↔TS |
+| Testes | Vitest (**383 testes / 25 arquivos**) | unidade + paridade wasm↔TS |
 | Dados | JSON versionado: **513 modelos · 147 GPUs · 61 instâncias de nuvem** | catálogo validado por script |
 | Deploy estático | GitHub Pages (3 sub-paths) + nginx | dev / staging / produção |
 | Deploy container | Docker multi-stage + Compose (4 serviços) | `app`, `app-staging`, `app-dev`, `wasi` |
@@ -153,14 +156,14 @@ e `npm run verify:all` confirma os **3/3 ambientes**.
 ✅ workflows ✅ wasm:build ✅ wasm:verify ✅ validate:data ✅ typecheck ✅ tests
 ✅ lint ✅ lint:changed ✅ build:app ✅ validate:access ✅ validate:store
 ✅ continuity:check ✅ deploy:docker ✅ build:pages ✅ pages:3-envs
-✅ continuity:sync ✅ agent:status ✅ agent:audit      → 18 OK · 0 FALHA
+✅ continuity:sync ✅ pipeline:cli ✅ agent:status ✅ agent:audit   → 19 OK · 0 FALHA
 ```
 
 ### 6.2 Números medidos (gravados em `.kiro/state/project-state.json`)
 
 | invariante | valor |
 |---|---|
-| testes | **363** em 24 arquivos (inclui paridade wasm↔TS) |
+| testes | **383** em 25 arquivos (inclui paridade wasm↔TS) |
 | kernel wasm | 2.057 bytes · 16 verificações |
 | módulo WASI | 5.728 bytes |
 | bundle | build ok, chunk principal 701,89 kB |
@@ -173,7 +176,7 @@ e `npm run verify:all` confirma os **3/3 ambientes**.
 
 | check | resultado |
 |---|---|
-| Build & test (lint, wasm, 363 testes, bundle) | ✅ 42s |
+| Build & test (lint, wasm, 383 testes, bundle) | ✅ 42s |
 | Pages artifact (all environments) | ✅ 34s |
 | WASI runtime smoke test | ✅ 24s |
 | State & scope (gate de continuidade no PR) | ✅ 25s |
@@ -282,6 +285,37 @@ Progresso do roadmap: **20/33 tarefas (61%)** — P1 e P2 completas, P3 a uma ta
 - **Bateria e ledger dependem do Node local** para os números; no CI as mesmas verificações rodam em jobs.
 
 ---
+
+## 9bis. Incremento — pipeline gate-driven (BPMN via gates do Actions)
+
+Pedido: (1) **gatilho** que verifica a não-existência de issues abertas, CI com erro e
+testes ausentes — enquanto não positivo, isso **significa continuidade**; (2) **cada
+issue concluída é testada e entregue com a instrução da seguinte**, construída e
+**indexada**; sucesso constrói a próxima, erro devolve erro **com as informações de
+continuidade**; e **toda ação responde um objeto JSON** (id, mensagem, anexos, status,
+próxima issue, exit 0/1/2).
+
+| Entregue | Onde |
+|---|---|
+| Gatilho de saúde (issues · CI · testes · instrução de teste por tarefa) | `scripts/pipeline.ts health` + `scripts/lib/pipeline-core.ts` |
+| Ciclo `complete` (testa → entrega → próxima indexada / retry na mesma) | `scripts/pipeline.ts complete` |
+| Contrato JSON único e exit codes 0/1/2 derivados do status | `scripts/lib/result.ts` (usado pelas ações do pipeline **e** pelo `agent --json`) |
+| Blueprint BPMN como workflow | `.github/workflows/pipeline.yml` (jobs `gate` → `instruction` \| `ready`; `complete` dispatchável) |
+| Gatilhos automáticos | `workflow_run` (fim de CI/Continuity gate) · `schedule` diário · `workflow_dispatch` |
+| Spec e documentação | `.kiro/specs/18-gate-driven-pipeline.md` + `PIPELINE.md` (com o mermaid do fluxo) |
+| 20 testes do contrato e do núcleo | `scripts/pipeline.test.ts` |
+
+**Provado na prática nesta sessão** (saídas reais em `PIPELINE.md`): o gate respondeu
+`continuity` com 13 pendências e a próxima issue indexada (`T-308`, fila 1/13); a T-409
+**reprovou** na primeira submissão por 3 erros de lint meus — a resposta foi erro tipo 1
+com o log anexado e **retry da mesma issue** (o pipeline pegou o defeito antes de mim);
+depois de corrigida, `complete T-409` → `success`, `done` marcado, gate `task:T-409` no
+ledger e próxima issue `T-308`; `complete T-999` → erro tipo 2 (exit 2); re-completar a
+T-409 → idempotente.
+
+O que este incremento **não** é: um substituto do CI (o CI julga o commit; o gate julga
+a fila do projeto) e nem um orquestrador externo — a decisão é o exit code, o contrato é
+o JSON, exatamente como um gateway BPMN.
 
 ## 10. Notas de robustez (o que esta sessão provou na prática)
 

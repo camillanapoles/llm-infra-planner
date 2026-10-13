@@ -1,0 +1,235 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline gate-driven — o blueprint (BPMN) como workflow.
+#
+#   evento de início ──▶ [GATE: health]  ──▶ gateway
+#                                            ├─ "não positivo"  ──▶ [instruction: constrói a próxima issue]
+#                                            ├─ "positivo"      ──▶ [ready: pronto para release]
+#                                            └─ "erro tipo 2"   ──▶ ✖ job vermelho (o fluxo PARA e pede conserto)
+#
+#   dispatch stage=complete ──▶ [TESTA + ENTREGA] ──▶ sucesso: marca done e devolve a próxima indexada
+#                                                     falha:   erro tipo 1, log anexado, MESMA issue volta
+#
+# Toda tarefa responde o MESMO objeto JSON (id, mensagem, anexos, status, próxima
+# issue, exitCode 0/1/2) — ver scripts/lib/result.ts e PIPELINE.md.
+#
+# Gatilhos: manual (dispatch) · diário (schedule) · conclusão de CI/Continuity gate
+# (workflow_run — é o "gatilho que verifica" rodando sozinho depois de cada CI).
+# ─────────────────────────────────────────────────────────────────────────────
+name: Pipeline (gate-driven)
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'Tarefa do blueprint'
+        type: choice
+        default: health
+        options: [health, next, complete]
+      task:
+        description: 'Issue (T-xxx) — usado só por stage=complete'
+        required: false
+        default: ''
+        type: string
+      tests:
+        description: 'Modo da verificação de testes no gate de saúde'
+        type: choice
+        default: run
+        options: [run, skip]
+  schedule:
+    - cron: '23 7 * * *' # diário: o gatilho confere as pendências sem ninguém pedir
+  workflow_run:
+    workflows: [CI, Continuity gate]
+    types: [completed]
+
+permissions:
+  contents: write # commitar artefatos/estado
+  actions: read # ler as execuções de CI (o "CI com erro?" do gatilho)
+  issues: read # ler issues abertas quando habilitadas
+  pull-requests: write # publicar a instrução como comentário no PR
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ── NÓ 1 — GATE: o gatilho de saúde ────────────────────────────────────────
+  gate:
+    name: 'Gate: issues · CI · testes'
+    runs-on: ubuntu-latest
+    outputs:
+      verdict: ${{ steps.health.outputs.verdict }}
+      exit: ${{ steps.health.outputs.exit }}
+      next: ${{ steps.health.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # O exit code do pipeline É o veredito: 0 positivo · 1 continuidade (tipo 1) · 2 estrutural (tipo 2).
+      # Aqui capturamos sem derrubar o job — quem decide o desfecho são os gates abaixo.
+      - name: Run health gate
+        id: health
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          npm run pipeline -- health --tests=${{ github.event.inputs.tests || 'run' }} --emit --record --summary --branch "${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}" > health.json
+          code=$?
+          set -e
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          echo "verdict=$(node -e "console.log(require('./health.json').status)")" >> "$GITHUB_OUTPUT"
+          echo "next=$(node -e "console.log(require('./health.json').nextIssue?.id ?? '')")" >> "$GITHUB_OUTPUT"
+          echo "── resposta do pipeline (contrato JSON) ──"
+          cat health.json
+
+      - name: Publish artifact (JSON + anexos)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-health-${{ github.run_id }}
+          path: |
+            health.json
+            .kiro/state/pipeline/**
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Erro tipo 2 = estrutural: o fluxo PARA e pede conserto (job vermelho).
+      - name: Stop on structural error (type 2)
+        if: steps.health.outputs.exit == '2'
+        run: |
+          echo "✖ erro tipo 2 — o pipeline não tem como executar (ver health.json)"
+          exit 1
+
+  # ── NÓ 2a — GATEWAY "não positivo": constrói a próxima issue indexada ──────
+  instruction:
+    name: 'Continuidade: instrução da próxima issue'
+    needs: gate
+    if: needs.gate.outputs.verdict == 'continuity'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the next issue (indexed)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          npm run pipeline -- next --emit --summary --text
+          echo "exit=$?" >> "$GITHUB_STEP_SUMMARY"
+          set -e
+
+      - name: Publish artifact (instrução)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-next-issue-${{ github.run_id }}
+          path: .kiro/state/pipeline/next-*.md
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Comment the instruction on the open PR
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          PR=$(gh pr list --head "$BRANCH" --state open --json number -q '.[0].number')
+          if [ -z "$PR" ]; then echo "sem PR aberto para $BRANCH — nada a comentar"; exit 0; fi
+          NEXT="${{ needs.gate.outputs.next }}"
+          FILE=".kiro/state/pipeline/next-${NEXT}.md"
+          [ -f "$FILE" ] || { echo "sem arquivo de instrução"; exit 0; }
+          {
+            echo "🧭 **Continuidade** — gate não positivo (não há como declarar pronto com pendências)."
+            echo
+            cat "$FILE"
+          } > comment.md
+          gh pr comment "$PR" --body-file comment.md
+
+  # ── NÓ 2b — GATEWAY "positivo": nada pendente, pronto para release ─────────
+  ready:
+    name: 'Positivo: pronto para release'
+    needs: gate
+    if: needs.gate.outputs.verdict == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Declare ready
+        run: |
+          {
+            echo "## ✅ Gate positivo"
+            echo
+            echo "- nenhuma issue aberta"
+            echo "- nenhuma execução de CI com erro"
+            echo "- testes existem e passam · toda tarefa aberta tem instrução de teste"
+            echo
+            echo "O pipeline não tem próxima issue a construir: a fila está vazia e verificada."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ── NÓ 3 — TESTA + ENTREGA (dispatch stage=complete) ───────────────────────
+  complete:
+    name: 'Testa e entrega a issue'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.stage == 'complete'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Complete (test → deliver → next issue)
+        id: complete
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          npm run pipeline -- complete "${{ github.event.inputs.task }}" --emit --summary --text > complete.json
+          code=$?
+          set -e
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          cat complete.json
+          if [ "$code" = "2" ]; then echo "✖ erro tipo 2 (estrutural)"; exit 1; fi
+          if [ "$code" = "1" ]; then
+            echo "::warning::erro tipo 1 — a issue NÃO foi entregue; log e continuidade estão no JSON"
+          fi
+
+      - name: Publish artifact (log + próxima issue)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-complete-${{ github.run_id }}
+          path: |
+            complete.json
+            .kiro/state/pipeline/**
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Commit state and artifacts on main
+        if: github.ref == 'refs/heads/main' && steps.complete.outputs.exit == '0'
+        run: |
+          git config user.name  "pipeline[bot]"
+          git config user.email "pipeline@users.noreply.github.com"
+          git add .kiro/state
+          if git diff --cached --quiet; then echo "estado já em dia"; exit 0; fi
+          git commit -m "chore(pipeline): entrega verificada [skip ci]"
+          git push origin HEAD:main

@@ -23,6 +23,9 @@
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { loadRoadmap } from './lib/continuity-core.js';
+import { buildNextIssueInstruction } from './lib/pipeline-core.js';
+import { makeResult, type ActionResult, type NextIssue, type ResultStatus } from './lib/result.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SNAPSHOT_FILE, type Snapshot } from './lib/store-core.js';
@@ -220,9 +223,19 @@ function headSha(): string {
   return result.ok ? result.output : '';
 }
 
+/**
+ * Payload `--json` da ação corrente. Com `--json` a saída crua é adiada: quem imprime
+ * é o envelope único (`scripts/lib/result.ts`), já com status, próxima issue e exitCode
+ * — assim TODA ação do agente responde o mesmo objeto que as ações do pipeline.
+ */
+let pendingJson: { payload: unknown; message: string } | null = null;
+
 function emit(text: string, args: AgentArgs, payload?: unknown): void {
-  if (args.json && payload !== undefined) process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
-  else process.stdout.write(text.endsWith('\n') ? text : `${text}\n`);
+  if (args.json && payload !== undefined) {
+    pendingJson = { payload, message: text.trim().split('\n')[0] ?? '' };
+    return;
+  }
+  process.stdout.write(text.endsWith('\n') ? text : `${text}\n`);
   if (args.summary && process.env.GITHUB_STEP_SUMMARY) {
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text.startsWith('#') ? `${text}\n` : `\`\`\`\n${text}\n\`\`\`\n`);
   }
@@ -331,10 +344,40 @@ export function runAgent(argv: string[]): number {
     return 2;
   }
   try {
-    return ACTIONS[args.action](args);
+    const code = ACTIONS[args.action](args);
+    if (args.json) process.stdout.write(`${JSON.stringify(buildEnvelope(args.action, code, pendingJson), null, 2)}\n`);
+    return code;
   } catch (error) {
     process.stderr.write(`${C.red}✗${C.reset} ${(error as Error).message}\n`);
+    if (args.json) process.stdout.write(`${JSON.stringify(buildEnvelope(args.action, 1, { payload: null, message: (error as Error).message }), null, 2)}\n`);
     return 1;
+  }
+}
+
+/** Envelope padrão: mesma forma para todas as ações do agente (id, status, próxima issue, exitCode). */
+function buildEnvelope(action: string, code: number, pending: { payload: unknown; message: string } | null): ActionResult {
+  const status: ResultStatus = code === 0 ? 'success' : 'continuity';
+  const nextIssue = nextOpenIssue();
+  return makeResult({
+    action: `agent ${action}`,
+    status,
+    message: (pending?.message ?? `${action}: exit ${code}`).replace(/^#+\s*/, '').trim() || `${action}: exit ${code}`,
+    attachments: [], // o agente anexa via payload; anexo declarado só quando existe de fato
+    ...(nextIssue ? { nextIssue } : {}),
+    details: { payload: pending?.payload ?? null, exit: code, nextIssueId: nextIssue?.id ?? null },
+  });
+}
+
+/** Cabeça da fila do roadmap — o que o envelope informa como próxima issue. */
+function nextOpenIssue(): NextIssue | null {
+  try {
+    const roadmap = loadRoadmap(root);
+    const tasks = roadmap.phases.flatMap(phase =>
+      phase.tasks.map(task => ({ ...task, phase: phase.id, phaseName: phase.name })),
+    );
+    return buildNextIssueInstruction(tasks);
+  } catch {
+    return null; // sem roadmap não há fila a anunciar — o envelope segue válido
   }
 }
 

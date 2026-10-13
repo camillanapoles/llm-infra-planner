@@ -457,6 +457,28 @@
           ],
           "verify": "npm run validate:store && npm test",
           "evidence": "reconcileFromSnapshot + tablesBehind com 2 testes; prova: banco apagado → \"ledger restaurado do snapshot: gates+100\", snapshot cresceu (antes encolhia de 92 para 7)"
+        },
+        {
+          "id": "T-409",
+          "title": "Pipeline gate-driven: gatilho de saúde e ciclo issue→teste→próxima issue (JSON/exit 0-1-2)",
+          "status": "done",
+          "crossPhase": true,
+          "paths": [
+            "scripts/pipeline.ts",
+            "scripts/pipeline.test.ts",
+            "scripts/lib/pipeline-core.ts",
+            "scripts/lib/result.ts",
+            ".github/workflows/pipeline.yml",
+            ".kiro/state/**",
+            "PIPELINE.md",
+            ".kiro/specs/18-gate-driven-pipeline.md",
+            "package.json",
+            "README.md",
+            "ENTREGA.md"
+          ],
+          "verify": "npm test && npm run lint",
+          "notes": "Gatilho verifica issues abertas + CI com erro + testes; enquanto não positivo o veredito é continuidade (exit 1). Toda ação responde o mesmo JSON (id, mensagem, anexos, status, próxima issue, exitCode).",
+          "evidence": "c4fea86: npm test && npm run lint → 0 (pipeline 2026-10-13T14:33:19.959Z)"
         }
       ]
     },

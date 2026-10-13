@@ -59,6 +59,9 @@ check lint             npm run --silent lint
 check lint:changed     npm run --silent lint:changed
 check build:app        npm run --silent build:app
 
+# ── pipeline gate-driven (contrato JSON + núcleo testado no `tests` acima) ───
+check pipeline:cli     npm run --silent pipeline -- tasks
+
 # ── continuidade e ledger ────────────────────────────────────────────────────
 check validate:access  npm run --silent validate:access
 check validate:store   npm run --silent validate:store

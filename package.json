@@ -38,7 +38,10 @@
     "store": "tsx scripts/store.ts",
     "validate:store": "tsx scripts/store.ts check",
     "store:export": "tsx scripts/store.ts export",
-    "agent": "tsx scripts/agent.ts"
+    "agent": "tsx scripts/agent.ts",
+    "pipeline": "tsx scripts/pipeline.ts",
+    "pipeline:health": "tsx scripts/pipeline.ts health --text --emit",
+    "pipeline:next": "tsx scripts/pipeline.ts next --text"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",

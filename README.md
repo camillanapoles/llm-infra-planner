@@ -8,7 +8,10 @@ Built for ML engineers, infrastructure architects, and developers who need accur
 > branches dev/staging e continuidade automatizada por gate: ver **[ENTREGA.md](ENTREGA.md)** (o que entrou, o que foi
 > testado, o que falta).
 >
-> ✅ Verificação local em uma linha: `npm run verify:all` (18 checks, exit 0 = tudo verde).
+> ✅ Verificação local em uma linha: `npm run verify:all` (19 checks, exit 0 = tudo verde).
+>
+> 🔁 O trabalho é um **pipeline gate-driven** (issues · CI · testes → próxima issue indexada, com contrato JSON e exit 0/1/2):
+> ver **[PIPELINE.md](PIPELINE.md)**. Gatilho: `npm run pipeline -- health`.
 
 ---
 
