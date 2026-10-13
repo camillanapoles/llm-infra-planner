@@ -61,13 +61,11 @@ on:
       task:
         type: string
         default: ''
+  # Sem `paths-ignore` de propósito: um commit VAZIO não tem paths, e o filtro
+  # engoliria justamente a diretiva `[pipeline] …` usada como dispatch pré-merge
+  # (visto na prática: o push não gerou run nenhum). O laço é evitado por outro
+  # caminho — os commits de estado carregam `[skip ci]`.
   push:
-    # o estado é regenerado a cada sync ([skip ci]): não vale re-rodar por ele
-    paths-ignore:
-      - '.kiro/state/**'
-      - 'public/state.json'
-      - 'public/store.json'
-      - 'public/access.json'
   pull_request:
   schedule:
     - cron: '23 7 * * *' # diário (default branch): o gatilho confere sem ninguém pedir

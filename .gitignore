@@ -40,3 +40,9 @@ _site
 .verify-fail/
 test-results/
 playwright-report/
+
+# Artefatos de saída do pipeline/CI (respostas do contrato JSON)
+/health.json
+/complete.json
+/gate-report.json
+/comment.md
