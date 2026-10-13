@@ -1,12 +1,12 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-13T14:42:10.779Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-13T18:35:41.480Z.
 
 ## Onde estamos
 
-- Fase **P3 — WebAssembly e entrega multi-ambiente**, 64% do roadmap (23/36 tarefas).
-- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `bc33bdb`.
-- Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104, T-402, T-406, T-407, T-408, T-409; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
+- Fase **P3 — WebAssembly e entrega multi-ambiente**, 65% do roadmap (24/37 tarefas).
+- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `2612a73`.
+- Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104, T-402, T-406, T-407, T-408, T-409, T-410; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
 - Resumo do handoff: Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).
 - Próximos passos já registrados nesta branch:
   - T-307: rodar `npm run continuity:check` e `npm run continuity:sync` (gate verde)
@@ -27,11 +27,11 @@
 ## Últimos commits
 
 ```
-bc33bdb chore: keep generated test artifacts out of the repository
-8c61954 feat(pipeline): health trigger, and every completed issue carries the next one
-c4fea86 chore(state): ledger after the reconcile fix (state regenerated post-commit)
-3b20e12 fix(store): a sync may never shrink the ledger
-70ddcfd fix(agent): the audit verdict is about gates, not about snapshot lag
+2612a73 [pipeline] complete T-410
+91cd164 docs: a commit message that mentions the skip marker skips every workflow
+6862f67 fix(pipeline): a committed test artifact, and a filter that ate the directive
+e0c04e3 [pipeline] complete T-410
+ddfb326 fix(pipeline): the CI gate must read the contract, not decorate a green job
 ```
 
 ## Guardrails (não negociáveis)

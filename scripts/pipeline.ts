@@ -236,6 +236,35 @@ function continuityInfo(): Record<string, unknown> {
   };
 }
 
+/**
+ * Registra a execução do gate de saúde no ledger.
+ *
+ * Semântica: o GATE diz "o pipeline conseguiu avaliar" — o VEREDITO
+ * (positivo/continuidade) é estado do projeto e vai no detalhe + evento. Registrar o
+ * veredito como `ok` do gate deixaria a auditoria vermelha para sempre enquanto
+ * houvesse trabalho em voo (foi exatamente o que aconteceu: `pipeline-health` vermelho
+ * em toda run do CI, e o `agent audit` reprovando por causa disso).
+ */
+function recordHealth(report: { verdict: string; blockers: string[] }, branch: string): void {
+  const ledger = openLedger();
+  if (!ledger.repos) return;
+  const structural = report.verdict === 'error';
+  recordGate(ledger.repos, {
+    id: 'pipeline-health',
+    ok: !structural,
+    detail: structural
+      ? `estrutural: ${report.blockers.join('; ')}`
+      : `verdict=${report.verdict} · ${report.blockers.length} pendência(s)`,
+    branch,
+  });
+  recordEvent(ledger.repos, {
+    type: 'pipeline',
+    summary: `health ${report.verdict} — ${report.blockers.length} bloqueio(s)`,
+    branch,
+    data: { verdict: report.verdict, blockers: report.blockers },
+  });
+}
+
 function writeArtifact(relative: string, content: string): Attachment {
   const full = path.join(root, relative);
   fs.mkdirSync(path.dirname(full), { recursive: true });
@@ -252,6 +281,7 @@ function cmdHealth(): number {
   try {
     roadmap = loadRoadmap(root);
   } catch (error) {
+    if (has('--record')) recordHealth({ verdict: 'error', blockers: [`roadmap indisponível: ${(error as Error).message}`] }, branch);
     return emitResult(makeResult({
       action: 'health',
       status: 'error',
@@ -278,13 +308,7 @@ function cmdHealth(): number {
     }
   }
 
-  if (has('--record')) {
-    const ledger = openLedger();
-    if (ledger.repos) {
-      recordGate(ledger.repos, { id: 'pipeline-health', ok: report.positive, detail: report.positive ? 'positivo (0 issues, 0 CI, testes ok)' : `${report.blockers.length} bloqueio(s)`, branch });
-      recordEvent(ledger.repos, { type: 'pipeline', summary: `health ${report.verdict} — ${report.blockers.length} bloqueio(s)`, branch, data: { verdict: report.verdict, blockers: report.blockers } });
-    }
-  }
+  if (has('--record')) recordHealth(report, branch);
 
   const message = report.positive
     ? 'positivo: nenhuma issue aberta, nenhuma execução de CI com erro, testes existem e passam'

@@ -242,6 +242,18 @@ tarefa só entra no formato `T-123`. Assim um exemplo citado no corpo do commit
 (“…use a diretiva…” ) **não** vira rota, e `[pipeline] complete 123` falha com erro
 tipo 2 em vez de adivinhar.
 
+Duas armadilhas do Actions ficaram registradas (cada uma custou um run para aparecer,
+e as duas foram corrigidas no próprio workflow):
+
+- **filtro de paths**: `paths-ignore` no gatilho `push` engole o commit **vazio** — que
+  não tem path nenhum para casar. O filtro saiu de cena; o laço continua evitado pelo
+  caminho certo, o marcador de skip nos commits de estado.
+- **marcador de skip no texto**: o GitHub varre a mensagem **inteira** (assunto *e* corpo)
+  atrás do token que pula workflows. **Citar** o token numa frase explicativa pula
+  **todos** os workflows daquele push — foi o que aconteceu num commit desta sessão: o
+  commit estava no remoto e nenhum run foi criado. A regra prática: o token de skip só
+  aparece em commit onde pular é a intenção.
+
 ### 7.2 O laço: quem reinicia o ciclo
 
 ```

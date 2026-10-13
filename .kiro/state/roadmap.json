@@ -483,7 +483,7 @@
         {
           "id": "T-410",
           "title": "Continuidade por gatilhos: push/PR como dispatch pré-merge e identidade de bot (GitHub App)",
-          "status": "in_progress",
+          "status": "done",
           "crossPhase": true,
           "paths": [
             ".github/workflows/pipeline.yml",
@@ -494,7 +494,8 @@
             "README.md"
           ],
           "verify": "npm run validate:workflows && npm run verify:all",
-          "notes": "Matriz de gatilhos pré/pós-merge (push, pull_request, workflow_call rodam sem merge; dispatch/schedule/workflow_run exigem a default) + diretiva [pipeline]<tarefa> no commit + análise App×OAuth e passos de habilitação."
+          "notes": "Matriz de gatilhos pré/pós-merge (push, pull_request, workflow_call rodam sem merge; dispatch/schedule/workflow_run exigem a default) + diretiva [pipeline]<tarefa> no commit + análise App×OAuth e passos de habilitação.",
+          "evidence": "2612a73: npm run validate:workflows && npm run verify:all → 0 (pipeline 2026-10-13T18:33:07.290Z)"
         }
       ]
     },

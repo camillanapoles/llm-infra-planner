@@ -1,6 +1,6 @@
 # Próxima issue — T-308
 
-> Gerado pelo pipeline gate-driven em 2026-10-13T18:17:41.781Z · branch `arena/fe62ce6d-llm-infra-planner` @ `01be80f` · veredito `continuity`
+> Gerado pelo pipeline gate-driven em 2026-10-13T18:33:07.290Z · branch `arena/fe62ce6d-llm-infra-planner` @ `2612a73` · veredito `task-complete`
 
 ## Instrução
 
@@ -18,10 +18,6 @@ Fechar com: npm run pipeline -- complete T-308 --json
 
 - Primeira tarefa aberta na ordem do roadmap (fila 1/14, índice 16).
 - Sem bloqueios: acionável imediatamente.
-
-## Pendências do gate de saúde
-
-- 14 item(ns) aberto(s) em roadmap: T-308, T-401, T-403 …
 
 ## Ciclo
 
