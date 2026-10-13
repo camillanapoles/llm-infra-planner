@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-13T19:49:08.769Z",
-  "branch": "arena/fe62ce6d-llm-infra-planner",
-  "headSha": "830cffb83dc8c857da3535547c9359d8a5dcea29",
+  "generatedAt": "2026-10-13T19:54:52.153Z",
+  "branch": "",
+  "headSha": "dceb7971b080d053bdd32adacf2d0708e7a7a12b",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -145,26 +145,46 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-13T19:49:08.484Z",
-    "stale": true,
-    "wasmKernelBytes": 2057,
-    "wasiBytes": 5728,
-    "wasmChecks": 16,
-    "dockerChecks": 16,
-    "commit": "830cffb83dc8c857da3535547c9359d8a5dcea29"
+    "generatedAt": "2026-10-13T19:52:28.778Z",
+    "stale": false,
+    "wasmChecks": 20,
+    "dockerChecks": 21,
+    "buildOk": true,
+    "lintProblems": 0,
+    "lintErrors": 0,
+    "lintWarnings": 0,
+    "commit": "dceb7971b080d053bdd32adacf2d0708e7a7a12b"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
-      "detail": "16 verificações ok",
-      "ranAt": "2026-10-13T19:49:08.484Z"
+      "detail": "20 verificações ok",
+      "ranAt": "2026-10-13T19:52:28.778Z"
     },
     {
       "id": "docker-static",
       "ok": true,
-      "detail": "16 validações estáticas",
-      "ranAt": "2026-10-13T19:49:08.484Z"
+      "detail": "21 validações estáticas",
+      "ranAt": "2026-10-13T19:52:28.778Z"
+    },
+    {
+      "id": "tests",
+      "ok": true,
+      "detail": "? testes / ? arquivos",
+      "ranAt": "2026-10-13T19:52:28.778Z"
+    },
+    {
+      "id": "build",
+      "ok": true,
+      "detail": "bundle principal ? kB",
+      "ranAt": "2026-10-13T19:52:28.778Z"
+    },
+    {
+      "id": "lint",
+      "ok": true,
+      "detail": "0 erros / 0 avisos",
+      "ranAt": "2026-10-13T19:52:28.778Z"
     }
   ],
   "resume": {
