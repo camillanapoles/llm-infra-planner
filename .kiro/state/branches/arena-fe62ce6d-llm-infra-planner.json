@@ -3,7 +3,7 @@
   "branch": "arena/fe62ce6d-llm-infra-planner",
   "base": "main",
   "createdAt": "2026-10-07T17:44:39.281Z",
-  "updatedAt": "2026-10-11T23:58:29.178Z",
+  "updatedAt": "2026-10-13T13:54:31.405Z",
   "status": "in_progress",
   "scope": {
     "specs": [
@@ -25,7 +25,9 @@
       "T-307",
       "T-104",
       "T-402",
-      "T-406"
+      "T-406",
+      "T-407",
+      "T-408"
     ],
     "paths": [
       "wasm/kernel.ts",
@@ -89,7 +91,14 @@
       "scripts/agent.ts",
       "scripts/agent.test.ts",
       "scripts/lib/**",
-      "src/lib/formulas/**"
+      "src/lib/formulas/**",
+      "ENTREGA.md",
+      "README.md",
+      "scripts/verify-all.sh",
+      "package.json",
+      ".gitignore",
+      "scripts/lib/store-core.ts",
+      "scripts/store.test.ts"
     ]
   },
   "resumePoint": {
@@ -123,6 +132,16 @@
       "at": "2026-10-11T23:58:29.178Z",
       "event": "scope-updated",
       "note": "tasks=[T-402,T-406] specs=[]"
+    },
+    {
+      "at": "2026-10-13T13:50:01.583Z",
+      "event": "scope-updated",
+      "note": "tasks=[T-407] specs=[]"
+    },
+    {
+      "at": "2026-10-13T13:54:31.405Z",
+      "event": "scope-updated",
+      "note": "tasks=[T-407,T-408] specs=[]"
     }
   ]
 }

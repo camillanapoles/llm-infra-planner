@@ -426,6 +426,37 @@
           ],
           "verify": "npm run validate && npm run agent -- audit",
           "evidence": "ea0c752: validate 513 modelos / 147 GPUs / 61 instâncias sem erro; agent audit verde — veredito pela última execução de cada gate (failedRuns mantém o histórico); 358 testes"
+        },
+        {
+          "id": "T-407",
+          "title": "Documento de entrega e bateria única de verificação",
+          "status": "done",
+          "crossPhase": true,
+          "paths": [
+            "ENTREGA.md",
+            "README.md",
+            "scripts/verify-all.sh",
+            "package.json",
+            ".gitignore",
+            ".github/workflows/ci.yml",
+            "CONTRIBUTING.md"
+          ],
+          "verify": "npm run verify:all",
+          "evidence": "70ddcfd: npm run verify:all → 18/18 exit 0; ENTREGA.md (relatório completo: timeline, stack, CI/CD gate-driven, auditoria, pendências) + lint completo do CI promovido a bloqueante"
+        },
+        {
+          "id": "T-408",
+          "title": "Ledger imune a reset: sync reconcilia somando, nunca sobrescreve",
+          "status": "done",
+          "crossPhase": true,
+          "paths": [
+            "scripts/lib/store-core.ts",
+            "scripts/continuity.ts",
+            "scripts/store.test.ts",
+            "scripts/lib/continuity-core.ts"
+          ],
+          "verify": "npm run validate:store && npm test",
+          "evidence": "reconcileFromSnapshot + tablesBehind com 2 testes; prova: banco apagado → \"ledger restaurado do snapshot: gates+100\", snapshot cresceu (antes encolhia de 92 para 7)"
         }
       ]
     },

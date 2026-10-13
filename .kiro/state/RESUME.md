@@ -1,12 +1,12 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-12T00:14:08.074Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-13T13:54:32.129Z.
 
 ## Onde estamos
 
-- Fase **P3 — WebAssembly e entrega multi-ambiente**, 61% do roadmap (20/33 tarefas).
-- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `c953780`.
-- Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104, T-402, T-406; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
+- Fase **P3 — WebAssembly e entrega multi-ambiente**, 63% do roadmap (22/35 tarefas).
+- Estado consolidado a partir de `arena/fe62ce6d-llm-infra-planner` @ `70ddcfd`.
+- Esta branch (`arena/fe62ce6d-llm-infra-planner`) tem escopo declarado: tarefas T-301, T-302, T-303, T-304, T-305, T-306, T-307, T-104, T-402, T-406, T-407, T-408; specs 11-wasm-kernel, 12-wasi-runtime, 13-deploy-github-pages, 14-deploy-docker, 15-deploy-local, 16-branch-environments-bootstrap, 17-continuity-gate.
 - Resumo do handoff: Entrega do kernel WebAssembly + runtime WASI + deploy em 3 ambientes (T-301..T-306) e implantação do gate de continuidade por estado (T-307).
 - Próximos passos já registrados nesta branch:
   - T-307: rodar `npm run continuity:check` e `npm run continuity:sync` (gate verde)
@@ -27,11 +27,11 @@
 ## Últimos commits
 
 ```
+70ddcfd fix(agent): the audit verdict is about gates, not about snapshot lag
 c953780 chore(state): ledger after the lint-gate fix (53 gates, 26 events)
 bc3ef18 fix(gate): lint gate can no longer go green by accident
 66c32b8 chore(state): ledger and gates after the quality pass
 8679f28 chore(continuity): declare the quality scope in the roadmap and handoff
-ea0c752 fix(quality): zero lint findings, and a validator that matches the catalog
 ```
 
 ## Guardrails (não negociáveis)

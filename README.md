@@ -4,6 +4,12 @@
 
 Built for ML engineers, infrastructure architects, and developers who need accurate hardware estimates — not ballpark guesses.
 
+> 📦 **Entrega desta iteração** — kernel WebAssembly, runtime WASI, deploy em 3 ambientes (Pages · Docker · local),
+> branches dev/staging e continuidade automatizada por gate: ver **[ENTREGA.md](ENTREGA.md)** (o que entrou, o que foi
+> testado, o que falta).
+>
+> ✅ Verificação local em uma linha: `npm run verify:all` (18 checks, exit 0 = tudo verde).
+
 ---
 
 ## What it does

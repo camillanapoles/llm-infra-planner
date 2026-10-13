@@ -25,6 +25,7 @@ import {
   exportSnapshot,
   gatesSummary,
   importSnapshot,
+  reconcileFromSnapshot,
   kvGet,
   kvSet,
   latestSession,
@@ -278,6 +279,48 @@ describe('snapshot round-trip', () => {
     expect(target.tasks.get('T-1')?.status).toBe('done');
     expect(target.gates.list({ where: { ok: true } })).toHaveLength(1);
     expect(latestSession(target)?.branch).toBe('feat/x');
+  });
+
+  it('reconciles a fresh store by adding only — never overwriting what is local', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reconcile-'));
+    tmp.push(dir);
+
+    // snapshot consolidado: histórico largo + nota de sessão antiga
+    const source = repositories(createStore({ file: path.join(dir, 'a.db'), driver: 'sqlite', silent: true }));
+    for (const id of ['wasm@1', 'lint@1', 'lint@2']) recordGate(source, { id, ok: true, detail: 'ok' });
+    kvSet(source, 'session_note', 'nota antiga do snapshot');
+    kvSet(source, 'objetivo', 'consolidado');
+    const snapshot = exportSnapshot(source, '2026-01-01T00:00:00.000Z');
+
+    // banco local: um único gate, e a nota da sessão ATUAL (mais nova que o snapshot)
+    const target = repositories(createStore({ file: path.join(dir, 'b.db'), driver: 'json', silent: true }));
+    recordGate(target, { id: 'pages@9', ok: true, detail: '3/3' });
+    kvSet(target, 'session_note', 'nota atual desta sessão');
+
+    const { restored, tables } = reconcileFromSnapshot(target, snapshot);
+
+    // somou o que faltava…
+    expect(tables).toContain('gates');
+    expect(restored.gates).toBe(3);
+    expect(target.gates.list()).toHaveLength(4); // o gate local continua lá
+    // …sem tocar no que já existia: a nota local venceu a do snapshot
+    expect(kvGet(target, 'session_note')).toBe('nota atual desta sessão');
+    expect(kvGet(target, 'objetivo')).toBe('consolidado'); // chave ausente: reposta
+  });
+
+  it('is a no-op when the local store is already as complete as the snapshot', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reconcile-noop-'));
+    tmp.push(dir);
+    const source = repositories(createStore({ file: path.join(dir, 'a.db'), driver: 'sqlite', silent: true }));
+    recordGate(source, { id: 'wasm@1', ok: true, detail: 'ok' });
+    const snapshot = exportSnapshot(source, '2026-01-01T00:00:00.000Z');
+    const target = repositories(createStore({ file: path.join(dir, 'b.db'), driver: 'json', silent: true }));
+    importSnapshot(target, snapshot);
+
+    const { tables, restored } = reconcileFromSnapshot(target, snapshot);
+    expect(tables).toEqual([]);
+    expect(Object.values(restored).reduce((sum, n) => sum + n, 0)).toBe(0);
+    expect(target.gates.list()).toHaveLength(1);
   });
 
   it('ignores collections a newer schema may have added', () => {

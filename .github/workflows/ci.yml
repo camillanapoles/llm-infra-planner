@@ -85,8 +85,10 @@ jobs:
           npx tsx scripts/continuity.ts check --base "origin/$BASE" || true
           npx tsx scripts/continuity.ts status
 
-      - name: Lint full repo (reports legacy debt, non blocking)
-        continue-on-error: true
+      # O repositório está em 0 problemas desde ea0c752 (T-402): este passo deixou de ser
+      # relatório de dívida legada e passou a bloquear. Se um dia voltar a ter achados,
+      # a decisão é consertá-los — não afrouxar o gate de novo.
+      - name: Lint full repo (blocking)
         run: npm run lint
 
       - name: Upload build output

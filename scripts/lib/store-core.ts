@@ -794,6 +794,53 @@ export function importSnapshot(repos: Repositories, snapshot: Snapshot): { impor
   return { imported, skipped };
 }
 
+/** Tabelas em que o snapshot versionado tem mais linhas que o banco local. */
+export function tablesBehind(local: Record<string, number>, snapshot: Snapshot): string[] {
+  return Object.entries(snapshot.counts ?? {})
+    .filter(([table, count]) => count > (local[table] ?? 0))
+    .map(([table]) => table);
+}
+
+/**
+ * Reconcilia o banco local com o snapshot versionado — **somente somando**.
+ *
+ * Diferente de `importSnapshot` (import bruto), aqui nenhuma linha existente é
+ * tocada: entram apenas as chaves ausentes. É o que torna seguro rodar a cada
+ * `sync` num banco recém-criado por um reset de sandbox, sem que um banco pobre
+ * sobrescreva o histórico que existe para guardar (visto na prática: 92 gates
+ * no snapshot virando 7 depois de um `sync`).
+ *
+ * Motivo de ser por chave, e não por tabela: `kv` guarda a nota da sessão, que é
+ * mais nova localmente que no snapshot — repor por cima perderia a atual.
+ */
+export function reconcileFromSnapshot(repos: Repositories, snapshot: Snapshot): { restored: Record<string, number>; tables: string[] } {
+  const local = exportSnapshot(repos);
+  const tables = tablesBehind(local.counts, snapshot);
+  const restored: Record<string, number> = {};
+  for (const table of tables) {
+    let meta: EntityMeta;
+    try {
+      meta = entityByTable(table);
+    } catch {
+      continue; // tabela de um schema mais novo: ignora o que não conhecemos
+    }
+    const repository = new Repository(meta, repos.driver);
+    let added = 0;
+    for (const row of snapshot.tables[table] ?? []) {
+      const key = (row as Row)[meta.pk.name] as string | number;
+      if (repository.get(key)) continue; // já existe localmente: local vence
+      try {
+        repository.upsert(row as Row);
+        added += 1;
+      } catch {
+        // linha incompatível com o schema atual: descartada, nunca coagida em silêncio
+      }
+    }
+    restored[table] = added;
+  }
+  return { restored, tables };
+}
+
 // ─── Integrity: `store check` ────────────────────────────────────────────────
 
 export interface StoreFinding {

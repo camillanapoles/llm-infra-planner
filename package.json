@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest --run",
+    "verify:all": "bash scripts/verify-all.sh",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "validate": "tsx scripts/validate-data.ts",
