@@ -27,7 +27,8 @@
       ".github/workflows/pitch-pages.yml",
       ".github/workflows/presentation.yml",
       "README.md",
-      "scripts/verify-all.sh"
+      "scripts/verify-all.sh",
+      "scripts/pages-artifact.test.ts"
     ]
   },
   "resumePoint": {

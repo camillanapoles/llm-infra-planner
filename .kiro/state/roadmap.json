@@ -658,7 +658,8 @@
             "scripts/build-pages-artifact.mjs",
             "scripts/verify-pages-artifact.sh",
             "scripts/verify-all.sh",
-            ".github/workflows/deploy-pages.yml"
+            ".github/workflows/deploy-pages.yml",
+            "scripts/pages-artifact.test.ts"
           ],
           "verify": "gh run list --workflow=pitch-pages.yml",
           "evidence": "pitch/index.html + docs/modelo-cobranca-llm-br.md (PR #5)"
