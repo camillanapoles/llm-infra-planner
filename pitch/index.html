@@ -32,7 +32,7 @@ ul{padding-left:20px}.small{font-size:13px;color:#7f8cb3}footer{border-top:1px s
 </style>
 </head>
 <body>
-<header><div class="wrap"><nav><div class="logo">LLM<span>calc</span> Ventures</div><div class="links"><a href="#mercado">Mercado BR</a><a href="#precos">Preços</a><a href="#calculadora">Calculadora</a><a href="#planos">Planos + RAG</a><a href="#receita">Receita p/ fazer</a><a href="../apresentacao/modelo-de-negocio.html">Apresentação base</a></div></nav></div></header>
+<header><div class="wrap"><nav><div class="logo">LLM<span>calc</span> Ventures</div><div class="links"><a href="#mercado">Mercado BR</a><a href="#precos">Preços</a><a href="#calculadora">Calculadora</a><a href="#planos">Planos + RAG</a><a href="#receita">Receita p/ fazer</a><a href="#financeiro">Financeiro</a><a href="#gtm">GTM & Riscos</a><a href="../apresentacao/modelo-de-negocio.html">Apresentação base</a></div></nav></div></header>
 
 <div class="wrap">
 <div class="hero">
@@ -43,7 +43,7 @@ ul{padding-left:20px}.small{font-size:13px;color:#7f8cb3}footer{border-top:1px s
 <div class="grid" style="text-align:left;margin-top:34px">
 <div class="card"><div class="big">R$ 0,89</div><p><strong>custo/1M tokens</strong> — modelo 8B em 1× L4 a 50% de utilização (fórmula do repo).</p></div>
 <div class="card"><div class="big">R$ 5,30</div><p><strong>custo/1M tokens</strong> — 70B FP16 em 1× H100 a 50% de utilização.</p></div>
-<div class="card"><div class="big">~68</div><p><strong>usuários Pro pagantes</strong> pagam o pool fixo mensal de uma GPU de entrada.</p></div>
+<div class="card"><div class="big">~67</div><p><strong>usuários Pro pagantes</strong> pagam o pool fixo mensal de uma GPU de entrada (já com taxa de pagamento e suporte variável).</p></div>
 <div class="card"><div class="big">513 · 147 · 37</div><p>modelos · GPUs · instâncias já catalogados e validados pelo LLMcalc.</p></div>
 </div>
 </div>
@@ -97,7 +97,7 @@ ul{padding-left:20px}.small{font-size:13px;color:#7f8cb3}footer{border-top:1px s
 <div class="card"><div class="small">Margem bruta</div><div class="v" id="margin">—</div></div>
 <div class="card"><div class="small">Break-even (usuários)</div><div class="v" id="be">—</div></div>
 </div>
-<p class="small">Taxa de pagamento (~5%) não incluída — baixe a margem em ≈5 p.p. ao precificar. Modelo: lucro = usuários × (preço − tokens × custo/1M) − fixo.</p>
+<p class="small">Modelo honesto: lucro = receita − tokens − <strong>taxa de pagamento (5%)</strong> − suporte variável (R$ 3/usuário) − custo fixo do pool. Com os valores padrão (120 usuários Pro no Eco), o break-even cai em ~67 usuários — confira mexendo nos controles.</p>
 </div></section>
 
 <section id="planos"><div class="kicker">Planos · assinatura de LLM privado</div><h2>Três escadas: pessoa, time e empresa</h2>
@@ -118,8 +118,42 @@ ul{padding-left:20px}.small{font-size:13px;color:#7f8cb3}footer{border-top:1px s
 <div class="card"><h3>6 · Vender a dor</h3><p>Começar onde API pública é proibida: jurídico, saúde, financeiro e governo. Piloto pago de 30 dias com a base documental do cliente.</p></div>
 </div></section>
 
+
+<section id="tamanho"><div class="kicker">Tamanho de mercado · Brasil (estimativa de planejamento)</div><h2>TAM → SAM → SOM: onde a gente joga primeiro</h2>
+<table><tr><th>Camada</th><th>Definição prática</th><th>Estimativa*</th></tr>
+<tr><td><strong>TAM</strong></td><td>Empresas BR que pagarão por IA generativa (software + API) nos próximos anos</td><td>R$ bilhões/ano (mercado em formação — validar com IDC/ABES na data room)</td></tr>
+<tr><td><strong>SAM</strong></td><td>PMEs e médias/grandes que precisam de LLM <strong>privado</strong> (jurídico, saúde, financeiro, indústria, governo)</td><td>Dezenas de milhares de empresas com dor de LGPD/dados</td></tr>
+<tr><td><strong>SOM (ano 1)</strong></td><td>Meta alcançável: pilotos pagos → assinaturas</td><td><strong>300–1.000 usuários Pro/Team + 5–15 contratos Enterprise</strong></td></tr></table>
+<p class="small">*Estimativas internas de planejamento para dimensionar esforço de vendas — não são dados auditados. A calculadora acima transforma qualquer premissa de usuários/preço em receita e margem.</p></section>
+
+<section id="financeiro"><div class="kicker">Financeiro · cenários de 12 meses</div><h2>Três cenários, mesma fórmula — muda só usuário × preço × uso</h2>
+<table><tr><th>Cenário</th><th>Usuários pagantes (mês 12)</th><th>Ticket médio</th><th>MRR estimado</th><th>Leitura</th></tr>
+<tr><td>Conservador</td><td>80 (Pro/Team)</td><td>R$ 149</td><td>≈ R$ 12 mil</td><td>Cobre o pool de 1 GPU (≈ R$ 9 mil) — operação enxuta validada</td></tr>
+<tr><td><strong>Base</strong></td><td>300 + 3 Enterprise (R$ 7 mil)</td><td>misto</td><td><strong>≈ R$ 60 mil</strong></td><td>2–3 GPUs, time de suporte/vendas part-time → margem para reinvestir</td></tr>
+<tr><td>Agressivo</td><td>1.000 + 10 Enterprise (R$ 10 mil)</td><td>misto</td><td>≈ R$ 230 mil</td><td>Exige H100 dedicada, SLA formal e canal/parcerias</td></tr></table>
+<div class="grid">
+<div class="card"><h3>LTV (Pro)</h3><p>Ticket R$ 149 × margem de contribuição ~90% (após tokens/taxa/suporte, antes do fixo) × vida útil 18 meses (churn ~5,5%/mês) ≈ <strong>R$ 2.400</strong> de margem de contribuição por cliente.</p></div>
+<div class="card"><h3>CAC-alvo</h3><p>Conteúdo/calculadora gratuita (LLMcalc) + piloto pago: CAC-alvo <strong>≤ R$ 600</strong> ⇒ payback &lt; 5 meses. Regra: <strong>LTV/CAC ≥ 3</strong>.</p></div>
+<div class="card"><h3>Churn é o vilão</h3><p>Assinatura sem uso morre. Defesa: RAG plugado no documento real do cliente, relatório mensal de tokens/economia e cota que expira (uso ou perde).</p></div>
+</div>
+<p class="small">Premissas explícitas (margem após tokens/taxa/suporte, antes de salários de fundadores, impostos e CAC). Brasileiro paga imposto sobre receita (Simples/presumido muda a margem líquida) — precificar com a carga do regime escolhido.</p></section>
+
+<section id="gtm"><div class="kicker">Go-to-market · riscos</div><h2>Como os primeiros 100 clientes chegam — e o que pode dar errado</h2>
+<div class="grid">
+<div class="card"><h3>🎯 Canal 1 — o próprio LLMcalc</h3><p>A calculadora gratuita já atrai quem dimensiona GPU. CTA natural: “quer pronto e privado?” — lead qualificado a CAC quase zero.</p></div>
+<div class="card"><h3>🤝 Canal 2 — piloto pago setorial</h3><p>Jurídico/saúde/financeiro: piloto de 30 dias com a base documental do cliente, preço fechado, relatório de economia vs. API em dólar.</p></div>
+<div class="card"><h3>🔌 Canal 3 — parceiros</h3><p>Software houses, consultorias de dados e revendas de nuvem BR que já têm a conta e não têm o LLM.</p></div>
+</div>
+<table><tr><th>Risco</th><th>Impacto</th><th>Mitigação</th></tr>
+<tr><td>GPU ociosa (utilização &lt; 30%)</td><td>Custo/1M quase dobra</td><td>Assinatura com cota, batch noturno −50%, autoscaling e pool compartilhado no início</td></tr>
+<tr><td>Queda de preço das APIs gringas</td><td>Pressão no pay-as-you-go</td><td>Não competir só em token: vender privacidade, RAG, NF/Pix e suporte BR</td></tr>
+<tr><td>Incidente/vazamento de dados</td><td>Morte da confiança</td><td>Isolamento por tenant, DPA/LGPD, logs mínimos, pentest antes do Enterprise</td></tr>
+<tr><td>Dependência de 1 modelo aberto</td><td>Qualidade percebida</td><td>Catálogo multi-modelo (o LLMcalc já lista 513): trocar de modelo vira feature, não crise</td></tr>
+<tr><td>Câmbio (GPU cobrada em US$)</td><td>Margem oscila</td><td>Preço em R$ com reajuste contratual e colchão de margem no Pro/Enterprise</td></tr></table>
+<p><strong>Roadmap de 90 dias:</strong> semanas 1–2 benchmark real no vLLM (validar tok/s) → 3–4 gateway + metering + RAG mínimo → 5–8 três pilotos pagos → 9–12 billing Pix/cartão, DPA e primeira GPU dedicada Enterprise.</p></section>
+
 <section id="ask"><div class="kicker">O pedido</div><h2>Primeiro marco: 70 clientes Pro pagam a operação</h2>
-<p>Com pool fixo de ≈ R$ 9 mil/mês e contribuição de ≈ R$ 133 por usuário Pro (após custo de tokens), <strong>~68 usuários</strong> zeram a operação de uma GPU — cada usuário acima disso é margem para escalar para o 70B dedicado e para vendas. O LLMcalc, hoje gratuito, é o topo de funil: quem calcula a própria infraestrutura é exatamente quem comprará a infraestrutura pronta.</p>
+<p>Com pool fixo de ≈ R$ 9 mil/mês e contribuição de ≈ R$ 135 por usuário Pro (após tokens, taxa de 5% e suporte), <strong>~67 usuários</strong> zeram a operação de uma GPU — cada usuário acima disso é margem para escalar para o 70B dedicado e para vendas. O LLMcalc, hoje gratuito, é o topo de funil: quem calcula a própria infraestrutura é exatamente quem comprará a infraestrutura pronta.</p>
 <p><a class="btn" href="#calculadora">Testar minha premissa na calculadora</a></p>
 </section>
 
@@ -129,7 +163,7 @@ ul{padding-left:20px}.small{font-size:13px;color:#7f8cb3}footer{border-top:1px s
 const COST={eco:.89,pro:5.30,pro30:8.83},$=id=>document.getElementById(id),fmt=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
 function calc(){const u=+$('users').value,p=+$('price').value,t=+$('tokens').value,f=+$('fixed').value,c=COST[$('cfg').value];
 $('uV').textContent=u;$('pV').textContent=p;$('tV').textContent=t;$('fV').textContent=f.toLocaleString('pt-BR');
-const rev=u*p,varc=u*t*c,prof=rev-varc-f,marg=rev?prof/rev*100:0,contrib=p-t*c,be=contrib>0?Math.ceil(f/contrib):Infinity;
+const rev=u*p,varc=u*(t*c+3)+rev*0.05,prof=rev-varc-f,marg=rev?prof/rev*100:0,contrib=p*0.95-3-t*c,be=contrib>0?Math.ceil(f/contrib):Infinity;
 $('rev').textContent=fmt(rev);$('varc').textContent=fmt(varc);$('profit').textContent=fmt(prof);$('profit').className='v '+(prof>=0?'good':'warn');
 $('margin').textContent=marg.toFixed(0)+'%';$('be').textContent=isFinite(be)?be:'— (preço ≤ custo)';}
 document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',calc));calc();

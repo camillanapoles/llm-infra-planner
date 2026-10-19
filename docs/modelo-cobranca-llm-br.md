@@ -37,7 +37,7 @@ pricing corporativo, faixas públicas RunPod/Lambda para GPU. Links completos no
 - **Enterprise Private R$ 249/assento/mês** (mín. 10, setup R$ 15–50 mil) ou flat dedicado
   R$ 4.900–19.900/mês por GPU: VPC/on-prem, SSO, DPA/LGPD, fine-tune LoRA, SLA.
 
-Break-even de referência: pool fixo ≈ R$ 9 mil/mês ÷ contribuição ≈ R$ 133/usuário Pro ≈ **68 usuários**.
+Break-even de referência: pool fixo ≈ R$ 9 mil/mês ÷ contribuição ≈ R$ 135/usuário Pro (após tokens, taxa de pagamento 5% e suporte de R$ 3/usuário) ≈ **67 usuários**.
 
 ## 4. Receita de como fazer (resumo)
 
@@ -48,7 +48,11 @@ Break-even de referência: pool fixo ≈ R$ 9 mil/mês ÷ contribuição ≈ R$ 
 5. **Proteger**: multi-tenant isolado, criptografia, DPA/LGPD, opção de região Brasil.
 6. **Vender**: setores onde API pública é vetada (jurídico, saúde, financeiro, governo), piloto pago de 30 dias.
 
-## 5. Publicação
+## 5. Mercado, financeiro e GTM (no pitch)
+
+TAM/SAM/SOM de planejamento, cenários de 12 meses (conservador ≈ R$ 12 mil MRR, base ≈ R$ 60 mil, agressivo ≈ R$ 230 mil), LTV/CAC (LTV ≈ R$ 2.280, CAC-alvo ≤ R$ 600, LTV/CAC ≥ 3), canais (LLMcalc gratuito, piloto pago setorial, parceiros) e matriz de riscos (utilização, queda de preço gringo, LGPD, câmbio) estão nas seções `#tamanho`, `#financeiro` e `#gtm` do pitch.
+
+## 6. Publicação
 
 - Pitch: `pitch/index.html` → GitHub Pages pelo workflow `pitch-pages.yml`
   (Action: https://github.com/camillanapoles/llm-infra-planner/actions/workflows/pitch-pages.yml;
