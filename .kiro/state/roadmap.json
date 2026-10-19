@@ -643,6 +643,21 @@
             "CONTINUITY.md"
           ],
           "verify": "npm run continuity:check"
+        },
+        {
+          "id": "T-703",
+          "title": "Pitch empreendedor e modelo de cobrança de LLMs abertos no Brasil publicados via GitHub Pages",
+          "status": "todo",
+          "paths": [
+            "pitch/**",
+            "apresentacao/**",
+            "docs/**",
+            ".github/workflows/pitch-pages.yml",
+            ".github/workflows/presentation.yml",
+            "README.md"
+          ],
+          "verify": "gh run list --workflow=pitch-pages.yml",
+          "evidence": "pitch/index.html + docs/modelo-cobranca-llm-br.md (PR #5)"
         }
       ]
     }

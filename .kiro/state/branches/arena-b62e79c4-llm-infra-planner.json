@@ -3,14 +3,15 @@
   "branch": "arena/b62e79c4-llm-infra-planner",
   "base": "main",
   "createdAt": "2026-10-19T19:07:01.463Z",
-  "updatedAt": "2026-10-19T19:07:01.463Z",
+  "updatedAt": "2026-10-19T20:20:00.000Z",
   "status": "in_progress",
   "scope": {
     "specs": [
       "13-deploy-github-pages"
     ],
     "tasks": [
-      "T-308"
+      "T-308",
+      "T-703"
     ],
     "paths": [
       ".github/workflows/deploy-pages.yml",
@@ -19,7 +20,13 @@
       "scripts/build-pages-artifact.mjs",
       "scripts/serve-static.mjs",
       "src/lib/env.ts",
-      "scripts/verify-pages-artifact.sh"
+      "scripts/verify-pages-artifact.sh",
+      "pitch/**",
+      "apresentacao/**",
+      "docs/**",
+      ".github/workflows/pitch-pages.yml",
+      ".github/workflows/presentation.yml",
+      "README.md"
     ]
   },
   "resumePoint": {
@@ -34,6 +41,11 @@
       "at": "2026-10-19T19:07:01.463Z",
       "event": "created",
       "note": "handoff criado automaticamente — nada no nome da branch; escopo herdado do ponto de retomada: T-308 — Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)"
+    },
+    {
+      "at": "2026-10-19T20:20:00.000Z",
+      "event": "scope-declared",
+      "note": "PR #5: pitch empreendedor + modelo de cobrança LLM BR (T-703) — corrige falha 'State & scope' do continuity gate (run 39316544666), que apontou arquivos fora do escopo herdado da T-308"
     }
   ]
 }
