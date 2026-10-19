@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "branch": "arena/b62e79c4-llm-infra-planner",
+  "base": "main",
+  "createdAt": "2026-10-19T19:07:01.463Z",
+  "updatedAt": "2026-10-19T19:07:01.463Z",
+  "status": "in_progress",
+  "scope": {
+    "specs": [
+      "13-deploy-github-pages"
+    ],
+    "tasks": [
+      "T-308"
+    ],
+    "paths": [
+      ".github/workflows/deploy-pages.yml",
+      ".kiro/state/**",
+      ".github/workflows/ci.yml",
+      "scripts/build-pages-artifact.mjs",
+      "scripts/serve-static.mjs",
+      "src/lib/env.ts",
+      "scripts/verify-pages-artifact.sh"
+    ]
+  },
+  "resumePoint": {
+    "summary": "Continuação automática — trabalho em T-308 (Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs))",
+    "next": [
+      "T-308: rodar `gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml` e registrar evidência"
+    ],
+    "blockedBy": []
+  },
+  "history": [
+    {
+      "at": "2026-10-19T19:07:01.463Z",
+      "event": "created",
+      "note": "handoff criado automaticamente — nada no nome da branch; escopo herdado do ponto de retomada: T-308 — Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)"
+    }
+  ]
+}
