@@ -1,9 +1,9 @@
 # Estado do projeto — LLMcalc
 
-> Gerado automaticamente por `npm run continuity:sync` em 2026-10-19T13:30:18.868Z (branch `` @ `2376b63`).
+> Gerado automaticamente por `npm run continuity:sync` em 2026-10-19T20:25:10.693Z (branch `` @ `a031e86`).
 > Não edite à mão: a fonte são `.kiro/state/roadmap.json`, `policy.json` e os handoffs em `.kiro/state/branches/`.
 
-**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 25/39 tarefas (64%)
+**Fase atual:** `P3` — WebAssembly e entrega multi-ambiente · **progresso:** 25/40 tarefas (63%)
 
 | fase | nome | status | tarefas | aberto |
 |---|---|---|---|---|
@@ -13,7 +13,7 @@
 | · P4 | Qualidade contínua | todo | 6/10 (60%) | T-401, T-403, T-404, T-405 |
 | · P5 | Dados vivos | todo | 0/3 (0%) | T-501, T-502, T-503 |
 | · P6 | Runtime WASM avançado | todo | 0/3 (0%) | T-601, T-602, T-603 |
-| · P7 | Publicação e comunidade | todo | 0/2 (0%) | T-701, T-702 |
+| · P7 | Publicação e comunidade | todo | 0/3 (0%) | T-701, T-702, T-703 |
 
 ## Próximas tarefas
 

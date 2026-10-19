@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "project": "LLMcalc — LLM Infrastructure Calculator",
-  "generatedAt": "2026-10-19T13:30:18.868Z",
+  "generatedAt": "2026-10-19T20:25:10.693Z",
   "branch": "",
-  "headSha": "2376b639b8150390566cb90b3ee34cb576bafba2",
+  "headSha": "a031e865e1d6c26ecc0b2e9e5821b9fb8abb32b7",
   "baseBranch": "main",
   "currentPhase": "P3",
   "currentPhaseName": "WebAssembly e entrega multi-ambiente",
@@ -83,18 +83,19 @@
       "name": "Publicação e comunidade",
       "status": "todo",
       "done": 0,
-      "total": 2,
+      "total": 3,
       "percent": 0,
       "open": [
         "T-701",
-        "T-702"
+        "T-702",
+        "T-703"
       ]
     }
   ],
   "overall": {
     "done": 25,
-    "total": 39,
-    "percent": 64
+    "total": 40,
+    "percent": 63
   },
   "nextTasks": [
     {
@@ -145,7 +146,7 @@
     }
   ],
   "invariants": {
-    "generatedAt": "2026-10-19T13:28:00.056Z",
+    "generatedAt": "2026-10-19T20:23:19.696Z",
     "stale": false,
     "wasmChecks": 20,
     "dockerChecks": 21,
@@ -153,42 +154,42 @@
     "lintProblems": 0,
     "lintErrors": 0,
     "lintWarnings": 0,
-    "commit": "2376b639b8150390566cb90b3ee34cb576bafba2"
+    "commit": "a031e865e1d6c26ecc0b2e9e5821b9fb8abb32b7"
   },
   "gates": [
     {
       "id": "wasm-verify",
       "ok": true,
       "detail": "20 verificações ok",
-      "ranAt": "2026-10-19T13:28:00.056Z"
+      "ranAt": "2026-10-19T20:23:19.696Z"
     },
     {
       "id": "docker-static",
       "ok": true,
       "detail": "21 validações estáticas",
-      "ranAt": "2026-10-19T13:28:00.056Z"
+      "ranAt": "2026-10-19T20:23:19.696Z"
     },
     {
       "id": "tests",
       "ok": true,
       "detail": "? testes / ? arquivos",
-      "ranAt": "2026-10-19T13:28:00.056Z"
+      "ranAt": "2026-10-19T20:23:19.696Z"
     },
     {
       "id": "build",
       "ok": true,
       "detail": "bundle principal ? kB",
-      "ranAt": "2026-10-19T13:28:00.056Z"
+      "ranAt": "2026-10-19T20:23:19.696Z"
     },
     {
       "id": "lint",
       "ok": true,
       "detail": "0 erros / 0 avisos",
-      "ranAt": "2026-10-19T13:28:00.056Z"
+      "ranAt": "2026-10-19T20:23:19.696Z"
     }
   ],
   "resume": {
-    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (64% do roadmap concluído)",
+    "summary": "Fase P3 — WebAssembly e entrega multi-ambiente (63% do roadmap concluído)",
     "next": [
       "T-308 Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)",
       "T-412 Smoke test das imagens Docker no push (imagem puxada do GHCR falha após o push)",

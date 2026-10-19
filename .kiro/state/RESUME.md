@@ -1,11 +1,11 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-19T13:30:18.868Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-19T20:25:10.693Z.
 
 ## Onde estamos
 
-- Fase **P3 — WebAssembly e entrega multi-ambiente**, 64% do roadmap (25/39 tarefas).
-- Estado consolidado a partir de `` @ `2376b63`.
+- Fase **P3 — WebAssembly e entrega multi-ambiente**, 63% do roadmap (25/40 tarefas).
+- Estado consolidado a partir de `` @ `a031e86`.
 - Sem handoff para a branch atual — rode `npm run continuity:start` para criar um.
 
 ## Próximas tarefas (ordem do roadmap)
@@ -21,11 +21,11 @@
 ## Últimos commits
 
 ```
-2376b63 chore(continuity): sync project state [skip ci]
-dceb797 Merge pull request #4 from camillanapoles/arena/fe62ce6d-llm-infra-planner
-a0ff238 fix(ci): pare de mentir no smoke test e na publicação do estado
-830cffb chore(state): post-merge findings — Pages enablement is the last manual step; docker smoke test tracked
-c8589e1 Merge pull request #3 from camillanapoles/arena/fe62ce6d-llm-infra-planner
+a031e86 Merge pull request #5 from camillanapoles/arena/b62e79c4-llm-infra-planner
+e1c5a67 fix(pages): ordem do contrato do artefato + pitch pinado em teste
+e9faff5 feat(pages): pitch executivo em /executivo/ com zero conflito com o app
+1d4ba1e fix(gate): declara escopo T-703 no handoff e no roadmap
+1edba03 fix(pitch): valida e completa o business model — break-even consistente e pitch integral
 ```
 
 ## Guardrails (não negociáveis)
