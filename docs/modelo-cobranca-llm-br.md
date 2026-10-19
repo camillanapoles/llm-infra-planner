@@ -54,8 +54,12 @@ TAM/SAM/SOM de planejamento, cenários de 12 meses (conservador ≈ R$ 12 mil MR
 
 ## 6. Publicação
 
-- Pitch: `pitch/index.html` → GitHub Pages pelo workflow `pitch-pages.yml`
-  (Action: https://github.com/camillanapoles/llm-infra-planner/actions/workflows/pitch-pages.yml;
-  URL pública após habilitar Settings → Pages → Source: **GitHub Actions** e rodar o workflow:
-  https://camillanapoles.github.io/llm-infra-planner/).
+- Pitch: `pitch/index.html` → **URL própria https://camillanapoles.github.io/llm-infra-planner/executivo/**
+  dentro do mesmo site/artefato do app (que continua em `/`), montado por
+  `scripts/build-pages-artifact.mjs` e exigido pelo contrato `scripts/verify-pages-artifact.sh`.
+  Gatilho próprio: workflow `pitch-pages.yml` (Actions:
+  https://github.com/camillanapoles/llm-infra-planner/actions/workflows/pitch-pages.yml),
+  **sem `pages: write`** — ele só valida e despacha o publicador oficial `deploy-pages.yml`,
+  que reconstrói production/staging/dev + `/executivo/` atomicamente.
+  **Zero conflito: nenhum dos dois lados consegue sobrescrever o outro.**
 - Apresentação anterior (modelo de negócio do LLMcalc) permanece em `apresentacao/` + `presentation.yml`.

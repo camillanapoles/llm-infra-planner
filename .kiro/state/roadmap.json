@@ -654,7 +654,11 @@
             "docs/**",
             ".github/workflows/pitch-pages.yml",
             ".github/workflows/presentation.yml",
-            "README.md"
+            "README.md",
+            "scripts/build-pages-artifact.mjs",
+            "scripts/verify-pages-artifact.sh",
+            "scripts/verify-all.sh",
+            ".github/workflows/deploy-pages.yml"
           ],
           "verify": "gh run list --workflow=pitch-pages.yml",
           "evidence": "pitch/index.html + docs/modelo-cobranca-llm-br.md (PR #5)"

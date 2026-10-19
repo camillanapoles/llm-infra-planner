@@ -26,10 +26,14 @@ done
 [ -f "$DIR/wasm/llmcalc-kernel.wasm" ] || { echo "✗ wasm kernel missing from the artifact"; exit 1; }
 [ -f "$DIR/404.html" ] || { echo "✗ 404.html missing (SPA deep links would break)"; exit 1; }
 
+# Pitch executivo: subcaminho próprio no mesmo artefato (nunca um site à parte).
+[ -f "$DIR/executivo/index.html" ] || { echo "✗ executivo/index.html missing (pitch would not be published)"; exit 1; }
+grep -q "Pitch empreendedor" "$DIR/executivo/index.html" || { echo "✗ executivo/index.html is not the pitch"; exit 1; }
+
 # each environment must ship its own kernel (the bundle fetches <base>/wasm/…)
 for env in "" "staging/" "dev/"; do
   [ -f "$DIR/${env}wasm/llmcalc-kernel.wasm" ] || { echo "✗ ${env:-root} has no wasm kernel"; exit 1; }
 done
 
 du -sh "$DIR" | sed 's/^/· size: /'
-echo "✓ three environments, correct base paths, wasm kernel included in each"
+echo "✓ three environments + /executivo/, correct base paths, wasm kernel included in each"
