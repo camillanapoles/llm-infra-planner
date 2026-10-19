@@ -1,11 +1,11 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-13T19:54:52.153Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-10-19T13:30:18.868Z.
 
 ## Onde estamos
 
 - Fase **P3 — WebAssembly e entrega multi-ambiente**, 64% do roadmap (25/39 tarefas).
-- Estado consolidado a partir de `` @ `dceb797`.
+- Estado consolidado a partir de `` @ `2376b63`.
 - Sem handoff para a branch atual — rode `npm run continuity:start` para criar um.
 
 ## Próximas tarefas (ordem do roadmap)
@@ -21,11 +21,11 @@
 ## Últimos commits
 
 ```
+2376b63 chore(continuity): sync project state [skip ci]
 dceb797 Merge pull request #4 from camillanapoles/arena/fe62ce6d-llm-infra-planner
 a0ff238 fix(ci): pare de mentir no smoke test e na publicação do estado
 830cffb chore(state): post-merge findings — Pages enablement is the last manual step; docker smoke test tracked
 c8589e1 Merge pull request #3 from camillanapoles/arena/fe62ce6d-llm-infra-planner
-41babe0 fix(pages): upload the parent directory, or one environment overwrites the others
 ```
 
 ## Guardrails (não negociáveis)
