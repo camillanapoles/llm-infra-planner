@@ -58,6 +58,7 @@ const completeArtifact = (): Files => ({
   'dev/wasm/llmcalc-kernel.wasm': kernel,
   'staging/index.html': realPage(`${BASE}staging/`),
   'staging/wasm/llmcalc-kernel.wasm': kernel,
+  'executivo/index.html': '<!doctype html><title>Pitch empreendedor — LLM privado BR</title>',
 });
 
 describe('pages artifact contract', () => {
@@ -100,6 +101,14 @@ describe('pages artifact contract', () => {
     const result = verify(artifact(files));
     expect(result.ok).toBe(false);
     expect(result.output).toContain('404.html missing');
+  });
+
+  it('rejects an artifact without the executive pitch (/executivo/ must ride along, never replace the app)', () => {
+    const files = completeArtifact();
+    delete files['executivo/index.html'];
+    const result = verify(artifact(files));
+    expect(result.ok).toBe(false);
+    expect(result.output).toContain('executivo/index.html missing');
   });
 
   it('rejects an artifact missing an environment entirely', () => {

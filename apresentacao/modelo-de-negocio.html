@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLMcalc — Modelo de Negócio: como funciona</title>
+<style>
+:root{--bg:#0b1020;--card:#141b33;--ink:#f4f7ff;--muted:#aab6d3;--accent:#7c5cff;--accent2:#00d4a6;--line:#2a3560}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(1200px 600px at 20% -10%,#2a1b6e55,transparent),var(--bg);color:var(--ink)}
+header{position:sticky;top:0;backdrop-filter:blur(10px);background:#0b1020cc;border-bottom:1px solid var(--line);padding:14px 22px;display:flex;justify-content:space-between;align-items:center;z-index:10}
+header b{font-size:18px}header a{color:#fff;background:var(--accent);padding:9px 14px;border-radius:999px;text-decoration:none;font-weight:700}
+main{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
+.slide{display:none;background:linear-gradient(180deg,#161f3d,#111830);border:1px solid var(--line);border-radius:24px;padding:42px;min-height:560px;box-shadow:0 20px 60px #0006}
+.slide.active{display:block}
+.kicker{color:var(--accent2);font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:12px}
+h1{font-size:52px;line-height:1.02;margin:14px 0}h2{font-size:40px;line-height:1.1;margin:12px 0 18px}p,li{font-size:20px;line-height:1.55;color:var(--muted)}strong{color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:24px}
+.card{background:#0e1530;border:1px solid var(--line);border-radius:18px;padding:20px}.card h3{margin:0 0 8px;font-size:20px}.card p{font-size:16px;margin:0}
+.flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:26px 0}.step{background:#0e1530;border:1px solid var(--accent);border-radius:999px;padding:12px 16px;font-weight:700}.arrow{color:var(--accent2);font-size:22px}
+table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid var(--line);padding:13px;text-align:left;font-size:17px}th{background:#0e1530;color:#fff}td{color:var(--muted)}
+.badge{display:inline-block;background:#00d4a622;color:#5ff0cd;border:1px solid #00d4a655;border-radius:999px;padding:5px 10px;font-weight:700}
+.warn{background:#3a2b00;border-color:#8a6d00}.warn p{color:#ffe1a8}
+nav{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0e1530ee;border:1px solid var(--line);border-radius:999px;padding:8px;display:flex;gap:8px;align-items:center}
+button{background:var(--accent);color:white;border:0;border-radius:999px;padding:10px 16px;font-weight:800;cursor:pointer}button.secondary{background:#222c52}
+#counter{color:var(--muted);padding:0 8px;font-weight:700}
+@media(max-width:700px){.slide{padding:26px;min-height:620px}h1{font-size:36px}h2{font-size:30px}p,li{font-size:17px}}
+@media print{.slide{display:block;page-break-after:always;margin-bottom:20px}header,nav{display:none}}
+</style>
+</head>
+<body>
+<header><b>LLMcalc · Apresentação</b><a href="https://github.com/camillanapoles/llm-infra-planner/actions/workflows/presentation.yml" target="_blank" rel="noreferrer">Abrir a Action ↗</a></header>
+<main>
+<section class="slide active"><div class="kicker">Modelo de negócio · Como funciona</div><h1>LLMcalc</h1><p><strong>A calculadora de infraestrutura para LLMs.</strong></p><p>Antes de comprar GPU, assinar nuvem ou treinar um modelo, o cliente descobre: <strong>quanto de VRAM precisa, qual GPU serve, quanto custa e quantos usuários suporta</strong> — em segundos, no navegador.</p><div class="flow"><span class="step">Modelo</span><span class="arrow">→</span><span class="step">Cálculo</span><span class="arrow">→</span><span class="step">GPU ideal</span><span class="arrow">→</span><span class="step">Custo</span><span class="arrow">→</span><span class="step">Decisão</span></div></section>
+
+<section class="slide"><div class="kicker">1 · O problema</div><h2>Decidir infraestrutura de IA hoje é caro e incerto</h2><div class="grid"><div class="card"><h3>💸 Erro custa caro</h3><p>GPU errada = dinheiro parado ou modelo que não cabe na memória.</p></div><div class="card"><h3>🧮 Conta é complexa</h3><p>Pesos + KV cache + ativações + otimizador + contexto + batch.</p></div><div class="card"><h3>☁️ Nuvem é confusa</h3><p>8 provedores, dezenas de instâncias, preço/hora vs. custo por token.</p></div><div class="card"><h3>⏱️ Tempo de engenharia</h3><p>Planilhas manuais viram dias de pesquisa antes do primeiro teste.</p></div></div></section>
+
+<section class="slide"><div class="kicker">2 · A solução</div><h2>Uma resposta numérica, não um “achismo”</h2><p>O usuário escolhe <strong>modelo, precisão, contexto, batch e modo</strong> (inferência, fine-tune, treino ou reverso). O LLMcalc devolve:</p><div class="grid"><div class="card"><h3>VRAM total</h3><p>Quebrada por pesos, KV cache, ativações, gradientes e otimizador.</p></div><div class="card"><h3>GPU recomendada</h3><p>Ranking Budget / Balanced / Performance com utilização.</p></div><div class="card"><h3>Custo real</h3><p>Por hora, por requisição e <strong>por 1 milhão de tokens</strong>.</p></div><div class="card"><h3>Capacidade</h3><p>Tokens/s, latência e quantos usuários simultâneos cabem.</p></div></div></section>
+
+<section class="slide"><div class="kicker">3 · Como funciona</div><h2>Do clique à decisão em 5 passos</h2><div class="flow"><span class="step">1. Escolhe o modelo</span><span class="arrow">→</span><span class="step">2. Ajusta cenário</span><span class="arrow">→</span><span class="step">3. Kernel calcula</span><span class="arrow">→</span><span class="step">4. Compara GPUs/nuvens</span><span class="arrow">→</span><span class="step">5. Compartilha a URL</span></div><p>Tudo <strong>client-side</strong>: sem backend, sem conta, sem telemetria. O estado inteiro vai na URL — quem recebe o link vê exatamente o mesmo cenário.</p><p><span class="badge">513 modelos</span> <span class="badge">147 GPUs · 12 vendors</span> <span class="badge">37 instâncias · 8 nuvens</span></p></section>
+
+<section class="slide"><div class="kicker">4 · Quem paga a conta do cliente</div><h2>Para quem o LLMcalc cria valor</h2><table><tr><th>Cliente</th><th>Dor</th><th>Valor entregue</th></tr><tr><td>Engenheiro de ML / Infra</td><td>Dimensionar serving e treino</td><td>VRAM, throughput e paralelismo certos</td></tr><tr><td>CTO / Arquiteto</td><td>On-prem vs. nuvem</td><td>TCO e ponto de equilíbrio (breakeven)</td></tr><tr><td>Fundador / Produto</td><td>Custo por usuário/token</td><td>Preço e margem antes de lançar</td></tr><tr><td>Time de compras</td><td>Comparar fornecedores</td><td>Custo/1M tokens comparável entre 8 nuvens</td></tr></table></section>
+
+<section class="slide"><div class="kicker">5 · Proposta de valor</div><h2>Precisão primeiro</h2><ul><li><strong>Preciso:</strong> fórmulas puras testadas (não estimativa de planilha).</li><li><strong>Rápido:</strong> kernel WebAssembly (~2 KB) com fallback TypeScript idêntico.</li><li><strong>Transparente:</strong> cada número mostra a fórmula que o gerou.</li><li><strong>Privado:</strong> nada sai do navegador.</li><li><strong>Compartilhável:</strong> cenário inteiro em um link.</li></ul></section>
+
+<section class="slide"><div class="kicker">6 · Modelo de negócio</div><h2>Como o negócio se sustenta</h2><p>Hoje o produto é <strong>gratuito e aberto</strong> — a fase atual é de adoção e autoridade técnica. As alavancas de receita (hipóteses a validar, ainda não implementadas) são:</p><div class="grid"><div class="card"><h3>Pro / Times</h3><p>Cenários salvos, colaboração, relatórios e histórico.</p></div><div class="card"><h3>API / WASI hospedado</h3><p>O mesmo kernel como serviço para pipelines e produtos de terceiros.</p></div><div class="card"><h3>White-label / Embed</h3><p>Calculadora dentro de marketplaces de GPU/nuvem.</p></div><div class="card"><h3>Dados e patrocínio</h3><p>Catálogo vivo de preços/hardware com parceiros destacados.</p></div></div></section>
+
+<section class="slide"><div class="kicker">7 · Por que é defensável</div><h2>O fosso (moat) é o catálogo + a confiança</h2><ul><li><strong>Base de dados:</strong> 513 modelos × 147 GPUs × 37 instâncias, validada por schema.</li><li><strong>Confiança numérica:</strong> paridade WASM↔TypeScript provada por testes property-based.</li><li><strong>Distribuição:</strong> link compartilhável carrega o produto para dentro do time.</li><li><strong>Governança:</strong> roadmap, gates de CI e continuidade versionados no repositório.</li></ul></section>
+
+<section class="slide"><div class="kicker">8 · Como medimos sucesso</div><h2>Métricas que importam</h2><div class="grid"><div class="card"><h3>Adoção</h3><p>Cenários criados e URLs compartilhadas.</p></div><div class="card"><h3>Decisão</h3><p>Comparações GPU/nuvem por sessão (intenção de compra).</p></div><div class="card"><h3>Confiança</h3><p>Testes verdes, paridade do kernel, dados atualizados.</p></div><div class="card"><h3>Receita (futuro)</h3><p>Conversão Pro/API quando as alavancas forem ligadas.</p></div></div></section>
+
+<section class="slide warn"><div class="kicker">9 · Honestidade de estágio</div><h2>O que ainda falta</h2><p>Roadmap: <strong>25/39 tarefas (64%)</strong>. Faltam: publicar os 3 ambientes, e2e Playwright, code-splitting (~700 kB), acessibilidade, dados vivos (preços), i18n PT-BR/EN e release v1.0.</p><p>Ou seja: <strong>o motor e o produto estão prontos; a fase agora é distribuição, qualidade contínua e monetização.</strong></p></section>
+
+<section class="slide"><div class="kicker">Fechamento</div><h1>LLMcalc transforma uma decisão de milhares de dólares em uma conta de 10 segundos.</h1><p>Escolher → calcular → comparar → decidir → compartilhar.</p><p><a style="color:#8ab4ff" href="https://github.com/camillanapoles/llm-infra-planner/actions/workflows/presentation.yml">▶ Executar / baixar esta apresentação na GitHub Action</a></p></section>
+</main>
+<nav><button class="secondary" onclick="move(-1)">← Anterior</button><span id="counter"></span><button onclick="move(1)">Próximo →</button></nav>
+<script>
+let i=0;const s=[...document.querySelectorAll('.slide')];
+function show(n){i=Math.max(0,Math.min(s.length-1,n));s.forEach((e,k)=>e.classList.toggle('active',k===i));document.getElementById('counter').textContent=(i+1)+' / '+s.length}
+function move(d){show(i+d)}
+addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')move(1);if(e.key==='ArrowLeft')move(-1)});
+show(0);
+</script>
+</body>
+</html>

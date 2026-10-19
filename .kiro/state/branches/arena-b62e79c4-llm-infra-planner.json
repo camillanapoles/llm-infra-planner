@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "branch": "arena/b62e79c4-llm-infra-planner",
+  "base": "main",
+  "createdAt": "2026-10-19T19:07:01.463Z",
+  "updatedAt": "2026-10-19T20:35:00.000Z",
+  "status": "in_progress",
+  "scope": {
+    "specs": [
+      "13-deploy-github-pages"
+    ],
+    "tasks": [
+      "T-308",
+      "T-703"
+    ],
+    "paths": [
+      ".github/workflows/deploy-pages.yml",
+      ".kiro/state/**",
+      ".github/workflows/ci.yml",
+      "scripts/build-pages-artifact.mjs",
+      "scripts/serve-static.mjs",
+      "src/lib/env.ts",
+      "scripts/verify-pages-artifact.sh",
+      "pitch/**",
+      "apresentacao/**",
+      "docs/**",
+      ".github/workflows/pitch-pages.yml",
+      ".github/workflows/presentation.yml",
+      "README.md",
+      "scripts/verify-all.sh",
+      "scripts/pages-artifact.test.ts"
+    ]
+  },
+  "resumePoint": {
+    "summary": "Continuação automática — trabalho em T-308 (Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs))",
+    "next": [
+      "T-308: rodar `gh workflow run bootstrap-repo.yml && gh run list --workflow=deploy-pages.yml` e registrar evidência"
+    ],
+    "blockedBy": []
+  },
+  "history": [
+    {
+      "at": "2026-10-19T19:07:01.463Z",
+      "event": "created",
+      "note": "handoff criado automaticamente — nada no nome da branch; escopo herdado do ponto de retomada: T-308 — Publicar os três ambientes após o merge (rodar o bootstrap e validar URLs)"
+    },
+    {
+      "at": "2026-10-19T20:20:00.000Z",
+      "event": "scope-declared",
+      "note": "PR #5: pitch empreendedor + modelo de cobrança LLM BR (T-703) — corrige falha 'State & scope' do continuity gate (run 39316544666), que apontou arquivos fora do escopo herdado da T-308"
+    },
+    {
+      "at": "2026-10-19T20:35:00.000Z",
+      "event": "scope-declared",
+      "note": "Zero-conflito do pitch: /executivo/ no artefato único via build-pages-artifact + contrato no verify; pitch-pages.yml vira gatilho sem pages:write que despacha o deploy-pages"
+    }
+  ]
+}

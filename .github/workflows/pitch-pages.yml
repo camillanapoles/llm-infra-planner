@@ -1,0 +1,75 @@
+name: Pitch Executivo · Gatilho de publicação
+
+# GATILHO PRÓPRIO do pitch executivo — e, de propósito, SEM permissão de Pages.
+#
+# Por quê: o GitHub Pages serve UM site por repositório e cada deploy substitui
+# o artefato inteiro. Se este workflow publicasse sozinho, apagaria o app
+# (deploy-pages.yml), e vice-versa. Zero conflito por desenho:
+#
+#   1. Este workflow apenas VALIDA o pitch e DESPACHA o publicador oficial
+#      (deploy-pages.yml) — ele não tem `pages: write`, logo é incapaz de
+#      sobrescrever o site.
+#   2. O deploy-pages.yml reconstrói TODOS os ambientes atomicamente
+#      (production + staging + dev) e o artefato inclui o pitch como
+#      subcaminho próprio, montado por scripts/build-pages-artifact.mjs.
+#
+# URLs resultantes (mesmo site, páginas independentes):
+#   App (original, intocado): https://camillanapoles.github.io/llm-infra-planner/
+#   Pitch executivo (novo):   https://camillanapoles.github.io/llm-infra-planner/executivo/
+#
+# Link desta Action:
+# https://github.com/camillanapoles/llm-infra-planner/actions/workflows/pitch-pages.yml
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'pitch/**'
+      - 'scripts/build-pages-artifact.mjs'
+      - '.github/workflows/pitch-pages.yml'
+
+# Sem `pages: write` e sem `id-token: write` — garantia estrutural de que este
+# gatilho nunca publica nem sobrescreve o site por conta própria.
+permissions:
+  contents: read
+  actions: write # apenas para despachar o deploy-pages.yml (publicador oficial)
+
+concurrency:
+  group: pitch-executivo-trigger
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    name: Validar pitch e despachar o publicador oficial
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar o pitch executivo
+        run: |
+          test -f pitch/index.html
+          grep -q "Calculadora estratégica" pitch/index.html
+          grep -q "R\$ 0,89" pitch/index.html
+          grep -q "Pitch empreendedor" pitch/index.html
+          echo "OK: pitch ($(wc -c < pitch/index.html) bytes) → será publicado em /executivo/"
+
+      - name: Despachar o publicador oficial (deploy-pages)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # O deploy-pages reconstrói production+staging+dev e inclui o
+          # /executivo/ no mesmo artefato — publicar o pitch nunca apaga o app.
+          gh workflow run deploy-pages.yml --ref main
+          echo "✓ deploy-pages.yml despachado na main"
+
+      - name: Resumo
+        run: |
+          {
+            echo "## Pitch executivo — gatilho disparado"
+            echo ""
+            echo "- Pitch validado e **publicador oficial despachado** (este workflow não publica direto: sem \`pages: write\`, zero risco de sobrescrever o app)."
+            echo "- App original preservado: https://camillanapoles.github.io/llm-infra-planner/"
+            echo "- **Pitch executivo (URL própria): https://camillanapoles.github.io/llm-infra-planner/executivo/**"
+            echo "- Acompanhe o deploy em: Actions → \"Deploy · GitHub Pages\""
+          } >> "$GITHUB_STEP_SUMMARY"

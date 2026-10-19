@@ -10,8 +10,11 @@
  *   ├── assets/…, wasm/…
  *   ├── staging/                   ← staging     (/llm-infra-planner/staging/)
  *   │   ├── index.html, 404.html, assets/…
- *   └── dev/                       ← dev         (/llm-infra-planner/dev/)
- *       ├── index.html, 404.html, assets/…
+ *   ├── dev/                       ← dev         (/llm-infra-planner/dev/)
+ *   │   ├── index.html, 404.html, assets/…
+ *   └── executivo/                 ← pitch empreendedor (/llm-infra-planner/executivo/)
+ *       └── index.html             (cópia de pitch/index.html — página à parte,
+ *                                   mesmo artefato, nenhum ambiente é sobrescrito)
  *
  * Because GitHub Pages serves a single site per repository, all three
  * environments live under sub-paths and each deploys in its own CI job
@@ -121,6 +124,23 @@ function gitHead() {
 fs.mkdirSync(outDir, { recursive: true });
 ensureWasmArtifacts();
 for (const target of targets) buildOne(target);
+
+// ── Pitch executivo: URL própria (/executivo/) dentro do MESMO artefato ─────
+// O GitHub Pages serve um único site por repositório e o deploy substitui o
+// artefato inteiro. Por isso o pitch NÃO tem deploy próprio: ele viaja como
+// subcaminho do artefato que o deploy-pages.yml monta atomicamente com os
+// três ambientes — publicar o pitch jamais apaga o app, e vice-versa.
+if (targets.includes('production')) {
+  const pitchSource = path.join(root, 'pitch', 'index.html');
+  if (!fs.existsSync(pitchSource)) {
+    console.error('✖ pitch/index.html não encontrado — o artefato sairia sem /executivo/');
+    process.exit(1);
+  }
+  const pitchDestination = path.join(outDir, 'executivo');
+  fs.mkdirSync(pitchDestination, { recursive: true });
+  fs.copyFileSync(pitchSource, path.join(pitchDestination, 'index.html'));
+  console.log('  ✓ executivo built — pitch/index.html → executivo/index.html (/executivo/)');
+}
 
 // A landing helper so /llm-infra-planner/ cannot be confused with the envs
 if (targets.length > 1) {
