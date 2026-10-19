@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLMcalc Ventures — Pitch | LLM privado brasileiro, cobrado do jeito certo</title>
+<meta name="description" content="Pitch empreendedor: modelo de cobrança de LLMs abertos no Brasil — custo vs infra vs usuários, preço por token e assinatura privada com RAG.">
+<style>
+:root{--bg:#070b16;--card:#101830;--card2:#0c1226;--ink:#f5f7ff;--mut:#a7b2d1;--a:#7c5cff;--b:#00d4a6;--gold:#ffcf5c;--line:#26315e;--red:#ff6b81}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(1000px 500px at 15% -5%,#33207a66,transparent),radial-gradient(900px 500px at 90% 0%,#00d4a622,transparent),var(--bg);color:var(--ink)}
+a{color:#9db4ff}.wrap{max-width:1120px;margin:auto;padding:0 20px}
+header{position:sticky;top:0;z-index:20;background:#070b16d9;backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav{display:flex;justify-content:space-between;align-items:center;padding:14px 0}nav .links{display:flex;gap:16px;flex-wrap:wrap}nav a{color:var(--mut);text-decoration:none;font-weight:600;font-size:14px}nav a:hover{color:#fff}
+.logo{font-weight:900;font-size:19px}.logo span{color:var(--b)}
+.btn{display:inline-block;background:linear-gradient(90deg,var(--a),#4f8cff);color:#fff!important;padding:13px 20px;border-radius:999px;text-decoration:none;font-weight:800;border:0;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid var(--line)}
+.hero{padding:84px 0 56px;text-align:center}.kicker{color:var(--b);font-weight:900;letter-spacing:.16em;text-transform:uppercase;font-size:12px}
+h1{font-size:clamp(38px,6vw,68px);line-height:.98;margin:18px 0;letter-spacing:-.02em}h1 em{font-style:normal;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-size:clamp(28px,4vw,42px);letter-spacing:-.02em;margin:10px 0 14px}h3{margin:0 0 8px}
+p,li{color:var(--mut);font-size:17px;line-height:1.6}strong{color:var(--ink)}
+section{padding:52px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:20px;padding:22px}
+.card p{font-size:15px;margin:6px 0}.big{font-size:36px;font-weight:900;color:#fff}.price{font-size:34px;font-weight:900;color:#fff}.price small{font-size:14px;color:var(--mut)}
+.tag{display:inline-block;padding:5px 10px;border-radius:999px;border:1px solid #00d4a655;color:#5ff0cd;background:#00d4a614;font-weight:700;font-size:12px}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px}th,td{border:1px solid var(--line);padding:11px;text-align:left}th{background:#0d1430;color:#fff}td{color:var(--mut)}
+.flow{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:20px 0}.step{background:#0d1430;border:1px solid var(--a);padding:11px 14px;border-radius:999px;font-weight:700;font-size:14px}.arr{color:var(--b)}
+.calc{background:linear-gradient(180deg,#131c3f,#0b1128);border:1px solid var(--a);border-radius:24px;padding:26px}
+label{display:block;font-weight:700;margin:14px 0 6px;font-size:14px}input[type=range]{width:100%}select,input[type=number]{width:100%;background:#0b1128;color:#fff;border:1px solid var(--line);border-radius:10px;padding:11px}
+.out{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:20px}.out .card{padding:16px}.out .v{font-size:26px;font-weight:900;color:#fff}.good{color:var(--b)!important}.warn{color:var(--gold)!important}
+ul{padding-left:20px}.small{font-size:13px;color:#7f8cb3}footer{border-top:1px solid var(--line);padding:34px 0 60px}
+.pop{border-color:var(--b);position:relative}.pop:before{content:"MAIS VENDÁVEL";position:absolute;top:-11px;right:16px;background:var(--b);color:#04241c;font-size:11px;font-weight:900;padding:4px 9px;border-radius:999px}
+@media print{header .links,.btn{display:none}section{padding:22px 0}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><nav><div class="logo">LLM<span>calc</span> Ventures</div><div class="links"><a href="#mercado">Mercado BR</a><a href="#precos">Preços</a><a href="#calculadora">Calculadora</a><a href="#planos">Planos + RAG</a><a href="#receita">Receita p/ fazer</a><a href="../apresentacao/modelo-de-negocio.html">Apresentação base</a></div></nav></div></header>
+
+<div class="wrap">
+<div class="hero">
+<div class="kicker">Pitch empreendedor · Brasil · LLMs abertos</div>
+<h1>LLM privado em português,<br><em>com a conta fechando.</em></h1>
+<p style="max-width:820px;margin:18px auto">Nós vendemos o que toda empresa brasileira quer e quase nenhuma consegue operar: <strong>modelo aberto rodando na própria nuvem, com RAG nos documentos da empresa, cobrado em reais</strong> — por token ou por assinatura. O motor de decisão é o <strong>LLMcalc</strong>: ele diz, antes de gastar R$ 1, quanto custa cada milhão de tokens, quantos usuários uma GPU aguenta e onde está o ponto de equilíbrio.</p>
+<p><a class="btn" href="#calculadora">Simular custo × preço × usuários</a> <a class="btn ghost" href="#planos">Ver planos</a></p>
+<div class="grid" style="text-align:left;margin-top:34px">
+<div class="card"><div class="big">R$ 0,89</div><p><strong>custo/1M tokens</strong> — modelo 8B em 1× L4 a 50% de utilização (fórmula do repo).</p></div>
+<div class="card"><div class="big">R$ 5,30</div><p><strong>custo/1M tokens</strong> — 70B FP16 em 1× H100 a 50% de utilização.</p></div>
+<div class="card"><div class="big">~68</div><p><strong>usuários Pro pagantes</strong> pagam o pool fixo mensal de uma GPU de entrada.</p></div>
+<div class="card"><div class="big">513 · 147 · 37</div><p>modelos · GPUs · instâncias já catalogados e validados pelo LLMcalc.</p></div>
+</div>
+</div>
+
+<section id="problema"><div class="kicker">Problema</div><h2>A empresa brasileira está presa entre dois extremos</h2>
+<div class="grid">
+<div class="card"><h3>🇺🇸 API gringa cara e em dólar</h3><p>GPT-4o: US$ 2,50/US$ 10 por 1M (entrada/saída). Claude Sonnet: US$ 3/US$ 15. Cotação, IOF, fatura internacional — e o dado sai do país.</p></div>
+<div class="card"><h3>🧑‍💻 “Vamos hospedar nós mesmos”</h3><p>vLLM sobe num fim de semana. Depois vêm fila, KV cache, quantização, RAG, medição de token, cobrança, LGPD e uptime. Vira um segundo produto.</p></div>
+<div class="card"><h3>🔒 Privacidade trava o projeto</h3><p>Jurídico, saúde e financeiro não podem mandar contrato e prontuário para API pública. Sem LLM privado, a IA não sai do piloto.</p></div>
+</div></section>
+
+<section id="mercado"><div class="kicker">Mercado · Concorrência · Quanto é cobrado</div><h2>O preço de mercado já existe. Nós entramos por baixo — com privacidade.</h2>
+<table><tr><th>Referência (out/2026)</th><th>Quanto cobra</th><th>Em R$*</th><th>Nosso posicionamento</th></tr>
+<tr><td>Maritaca Sabiazinho-4 (BR) — API</td><td>R$ 1,00 in / R$ 4,00 out por 1M</td><td>R$ 1 / R$ 4</td><td>Empatamos no Eco — <strong>mas privado, na nuvem do cliente</strong></td></tr>
+<tr><td>Maritaca Sabiá-4 (BR) — API</td><td>R$ 5,00 in / R$ 20,00 out por 1M</td><td>R$ 5 / R$ 20</td><td>Nosso Pro 70B: mesmo teto, <strong>com RAG incluso</strong></td></tr>
+<tr><td>OpenAI GPT-4o-mini — API</td><td>US$ 0,15 / US$ 0,60 por 1M</td><td>≈ R$ 0,74 / R$ 2,98</td><td>Imbatível em preço público; perdemos nele, ganhamos em <strong>LGPD/dados</strong></td></tr>
+<tr><td>OpenAI GPT-4o / Claude Sonnet — API</td><td>US$ 2,50–3,00 / US$ 10–15 por 1M</td><td>≈ R$ 12–15 / R$ 50–74</td><td>Nosso Pro custa <strong>40–60% menos</strong> para PT-BR</td></tr>
+<tr><td>MariTalk Premium (consumidor BR)</td><td>R$ 59,90/mês</td><td>R$ 59,90</td><td>Nosso Starter pessoa física: <strong>R$ 49</strong></td></tr>
+<tr><td>ChatGPT Business / Copilot / Gemini Ent.</td><td>US$ 20–30 por usuário/mês</td><td>≈ R$ 99–149</td><td>Nosso Team: R$ 249/assento <strong>privado + RAG + suporte BR</strong> (premium justificável) e Starter de time a R$ 99</td></tr>
+</table>
+<p class="small">*Câmbio do repo: US$ 1 = R$ 4,9639 (<code>src/data/exchange-rates.json</code>). Fontes no rodapé. Preços de concorrentes são públicos e mudam — revalidar antes de proposta comercial.</p></section>
+
+<section id="solucao"><div class="kicker">Solução</div><h2>Uma fábrica de LLM privado sobre modelos abertos</h2>
+<div class="flow"><span class="step">Llama · Qwen · DeepSeek · Gemma</span><span class="arr">→</span><span class="step">vLLM quantizado</span><span class="arr">→</span><span class="step">RAG nos docs do cliente</span><span class="arr">→</span><span class="step">Gateway + medição de tokens</span><span class="arr">→</span><span class="step">Cobrança Pix/cartão (Asaas/Stripe)</span></div>
+<div class="grid">
+<div class="card"><h3>⚙️ Dimensionado pelo LLMcalc</h3><p>VRAM = pesos + KV cache + ativações. Throughput pelo modelo roofline. Nada de GPU “no chute”: o cliente vê a conta.</p></div>
+<div class="card"><h3>📚 RAG de verdade</h3><p>Ingestão (PDF/Drive/Notion) → chunking → embeddings → pgvector/Qdrant → resposta com citação da fonte.</p></div>
+<div class="card"><h3>🇧🇷 Brasil primeiro</h3><p>Nota fiscal, Pix, suporte em PT-BR, opção de inferência 100% no Brasil e contrato LGPD/DPA.</p></div>
+</div></section>
+
+<section id="precos"><div class="kicker">Unit economics · a fórmula do repo</div><h2>Custo vs infra vs usuários: a conta que manda no preço</h2>
+<div class="card"><p style="font-size:18px"><strong>Custo/1M tokens = custo-hora da GPU ÷ (tokens/s × 3.600) × 1.000.000 ÷ utilização</strong> — é literalmente <code>computeCostMetrics()</code> de <code>src/lib/formulas/cost-metrics.ts</code>, com a correção que todo pitch esconde: <strong>utilização</strong>. GPU ociosa à noite dobra o custo real.</p></div>
+<table><tr><th>Config (auto-hospedado)</th><th>GPU/hora</th><th>Throughput*</th><th>Custo/1M a 50% uso</th><th>GPU/mês</th><th>Preço de venda sugerido</th></tr>
+<tr><td><strong>Eco</strong> — 8B FP8/INT4</td><td>US$ 0,805 (L4, AWS g6)</td><td>~2.500 tok/s</td><td><strong>R$ 0,89</strong></td><td>R$ 2.917</td><td>R$ 1,50 in / R$ 6,00 out</td></tr>
+<tr><td><strong>Pro</strong> — 70B INT4</td><td>US$ 1,39 (A100 80GB)</td><td>~600 tok/s</td><td><strong>R$ 6,39</strong></td><td>R$ 5.037</td><td rowspan="2">R$ 5,00 in / R$ 20,00 out<br>(teto = Sabiá-4)</td></tr>
+<tr><td><strong>Pro</strong> — 70B FP16</td><td>US\$ 2,69 (H100)</td><td>~1.400 tok/s</td><td><strong>R$ 5,30</strong></td><td>R$ 9.748</td></tr>
+</table>
+<p class="small">*Throughput de planejamento com batching contínuo (vLLM); validar com benchmark no workload real. A 30% de utilização o H100 sobe para R$ 8,83/1M — por isso vendemos assinatura com cota (receita fixa) + excedente por token.</p></section>
+
+<section id="calculadora"><div class="kicker">Interativo</div><h2>Calculadora estratégica: mexa e ache seu preço</h2>
+<div class="calc">
+<label>Configuração</label><select id="cfg"><option value="eco">Eco 8B · L4 · custo R$ 0,89/1M (50% uso)</option><option value="pro">Pro 70B · H100 · custo R$ 5,30/1M (50% uso)</option><option value="pro30">Pro 70B · H100 ocioso · custo R$ 8,83/1M (30% uso)</option></select>
+<label>Usuários pagantes: <b id="uV">120</b></label><input type="range" id="users" min="5" max="2000" value="120">
+<label>Preço do plano (R$/usuário/mês): <b id="pV">149</b></label><input type="range" id="price" min="29" max="999" value="149">
+<label>Tokens por usuário/mês (milhões): <b id="tV">4</b></label><input type="range" id="tokens" min="0.5" max="50" step="0.5" value="4">
+<label>Custo fixo mensal do pool (GPU+ops+suporte) R$: <b id="fV">9000</b></label><input type="range" id="fixed" min="2000" max="60000" step="500" value="9000">
+<div class="out">
+<div class="card"><div class="small">Receita mensal</div><div class="v" id="rev">—</div></div>
+<div class="card"><div class="small">Custo variável (tokens)</div><div class="v" id="varc">—</div></div>
+<div class="card"><div class="small">Lucro bruto mensal</div><div class="v" id="profit">—</div></div>
+<div class="card"><div class="small">Margem bruta</div><div class="v" id="margin">—</div></div>
+<div class="card"><div class="small">Break-even (usuários)</div><div class="v" id="be">—</div></div>
+</div>
+<p class="small">Taxa de pagamento (~5%) não incluída — baixe a margem em ≈5 p.p. ao precificar. Modelo: lucro = usuários × (preço − tokens × custo/1M) − fixo.</p>
+</div></section>
+
+<section id="planos"><div class="kicker">Planos · assinatura de LLM privado</div><h2>Três escadas: pessoa, time e empresa</h2>
+<div class="grid">
+<div class="card"><h3>Starter — pessoa/PME</h3><div class="price">R$ 49<small>/mês</small></div><ul><li>Modelo Eco 8B privado (tenant isolado)</li><li>3M tokens/mês (excedente R$ 2,50/1M)</li><li>RAG: 1 base, 500 documentos</li><li>Chat web + API compatível OpenAI</li></ul><p class="small">Âncora: abaixo do MariTalk Premium (R$ 59,90).</p></div>
+<div class="card pop"><h3>Pro — profissional/time</h3><div class="price">R$ 149<small>/mês</small></div><ul><li>Eco + Pro 70B sob demanda</li><li>12M tokens/mês (excedente por tabela API)</li><li>RAG: 5 bases, 10 mil docs, citações</li><li>Conectores Drive/Notion/Slack, usuários ilimitados na base</li></ul><p class="small">Âncora: faixa ChatGPT Business/Copilot por assento, com privacidade BR.</p></div>
+<div class="card"><h3>Enterprise Private — empresa</h3><div class="price">R$ 249<small>/assento/mês*</small></div><ul><li>VPC/on-prem do cliente, modelo dedicado</li><li>RAG corporativo + SSO/SAML, auditoria, DPA/LGPD</li><li>SLA, GPU dedicada opcional, fine-tune LoRA</li><li>Setup R$ 15–50 mil · mínimo 10 assentos</li></ul><p class="small">*Ou dedicated flat: R$ 4.900–19.900/mês conforme GPU (L4→H100).</p></div>
+</div>
+<p><strong>API pura (sem assinatura):</strong> Eco R$ 1,50/R$ 6,00 · Pro R$ 5,00/R$ 20,00 por 1M (in/out), noturno/batch −50% (prática que a Maritaca já valida no mercado).</p></section>
+
+<section id="receita"><div class="kicker">Receita · como fazer (o passo a passo)</div><h2>Do zero ao primeiro cliente pagante em 6 movimentos</h2>
+<div class="grid">
+<div class="card"><h3>1 · Dimensionar</h3><p>Rodar o LLMcalc: escolher 8B na L4 (começo barato) e provar VRAM/throughput/custo antes de alugar qualquer GPU.</p></div>
+<div class="card"><h3>2 · Servir</h3><p>vLLM (ou TGI/SGLang) com quantização FP8/AWQ, batching contínuo, cache de prefixo e autoscaling por fila.</p></div>
+<div class="card"><h3>3 · RAG</h3><p>Pipeline de ingestão com embeddings multilíngues, pgvector/Qdrant, chunking por documento e resposta sempre com fonte citada.</p></div>
+<div class="card"><h3>4 · Medir e cobrar</h3><p>Gateway próprio: autenticação, rate-limit, <strong>contagem de tokens in/out por tenant</strong>, fatura via Asaas (Pix/boleto) ou Stripe; webhook de cota.</p></div>
+<div class="card"><h3>5 · Proteger</h3><p>Isolamento por tenant, criptografia, logs sem conteúdo sensível, DPA/LGPD, opção de região Brasil e delete garantido.</p></div>
+<div class="card"><h3>6 · Vender a dor</h3><p>Começar onde API pública é proibida: jurídico, saúde, financeiro e governo. Piloto pago de 30 dias com a base documental do cliente.</p></div>
+</div></section>
+
+<section id="ask"><div class="kicker">O pedido</div><h2>Primeiro marco: 70 clientes Pro pagam a operação</h2>
+<p>Com pool fixo de ≈ R$ 9 mil/mês e contribuição de ≈ R$ 133 por usuário Pro (após custo de tokens), <strong>~68 usuários</strong> zeram a operação de uma GPU — cada usuário acima disso é margem para escalar para o 70B dedicado e para vendas. O LLMcalc, hoje gratuito, é o topo de funil: quem calcula a própria infraestrutura é exatamente quem comprará a infraestrutura pronta.</p>
+<p><a class="btn" href="#calculadora">Testar minha premissa na calculadora</a></p>
+</section>
+
+<footer><p class="small">Fontes (out/2026, revalidar comercialmente): Maritaca AI pricing/API (maritaca.ai), OpenAI pricing (platform.openai.com), comparativos de assentos corporativos ChatGPT Business/Copilot/Gemini Enterprise, GPU cloud RunPod/Lambda (faixas públicas). Custos de infra calculados com os dados do próprio repo (<code>src/data/cloud.json</code>, <code>exchange-rates.json</code>: US$ 1 = R$ 4,9639) e a fórmula de <code>src/lib/formulas/cost-metrics.ts</code>. Throughputs são premissas de planejamento, não benchmarks. • Pitch publicado via GitHub Pages pelo workflow <code>pitch-pages.yml</code> — somente esta apresentação.</p></footer>
+</div>
+<script>
+const COST={eco:.89,pro:5.30,pro30:8.83},$=id=>document.getElementById(id),fmt=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
+function calc(){const u=+$('users').value,p=+$('price').value,t=+$('tokens').value,f=+$('fixed').value,c=COST[$('cfg').value];
+$('uV').textContent=u;$('pV').textContent=p;$('tV').textContent=t;$('fV').textContent=f.toLocaleString('pt-BR');
+const rev=u*p,varc=u*t*c,prof=rev-varc-f,marg=rev?prof/rev*100:0,contrib=p-t*c,be=contrib>0?Math.ceil(f/contrib):Infinity;
+$('rev').textContent=fmt(rev);$('varc').textContent=fmt(varc);$('profit').textContent=fmt(prof);$('profit').className='v '+(prof>=0?'good':'warn');
+$('margin').textContent=marg.toFixed(0)+'%';$('be').textContent=isFinite(be)?be:'— (preço ≤ custo)';}
+document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',calc));calc();
+</script>
+</body></html>

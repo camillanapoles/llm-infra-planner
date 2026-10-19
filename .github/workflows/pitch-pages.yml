@@ -1,0 +1,60 @@
+name: Pitch · GitHub Pages (apresentação empreendedora)
+
+# Publica SOMENTE o pitch empreendedor (pitch/index.html) no GitHub Pages.
+# Não publica o app, a calculadora nem a apresentação anterior.
+#
+# Link desta Action:
+# https://github.com/camillanapoles/llm-infra-planner/actions/workflows/pitch-pages.yml
+# URL pública após o 1º deploy (exige Settings → Pages → Source: GitHub Actions):
+# https://camillanapoles.github.io/llm-infra-planner/
+#
+# Como usar: Actions → "Pitch · GitHub Pages" → Run workflow.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'pitch/**'
+      - '.github/workflows/pitch-pages.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pitch-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy do pitch no GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar o pitch
+        run: |
+          test -f pitch/index.html
+          grep -q "Calculadora estratégica" pitch/index.html
+          grep -q "R\$ 0,89" pitch/index.html
+          echo "OK: pitch ($(wc -c < pitch/index.html) bytes)"
+
+      - name: Resumo
+        run: |
+          {
+            echo "## Pitch empreendedor — LLM privado BR"
+            echo ""
+            echo "Somente \`pitch/index.html\` foi publicado no GitHub Pages: modelo de cobrança de LLMs abertos (custo × infra × usuários), concorrência BR, planos com RAG e calculadora de unit economics."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: pitch
+      - id: deployment
+        uses: actions/deploy-pages@v4
