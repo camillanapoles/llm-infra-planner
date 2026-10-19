@@ -4,6 +4,10 @@
 
 Built for ML engineers, infrastructure architects, and developers who need accurate hardware estimates — not ballpark guesses.
 
+> 🎯 **Apresentação — Modelo de Negócio (como funciona):** [`apresentacao/modelo-de-negocio.html`](apresentacao/modelo-de-negocio.html) ·
+> ▶️ **Action que gera/baixa a apresentação:** https://github.com/camillanapoles/llm-infra-planner/actions/workflows/presentation.yml ·
+> Auditoria de engenharia com GitNexus: [`docs/gitnexus-auditoria-e-modelo-de-negocio.md`](docs/gitnexus-auditoria-e-modelo-de-negocio.md)
+
 > 📦 **Entrega desta iteração** — kernel WebAssembly, runtime WASI, deploy em 3 ambientes (Pages · Docker · local),
 > branches dev/staging e continuidade automatizada por gate: ver **[ENTREGA.md](ENTREGA.md)** (o que entrou, o que foi
 > testado, o que falta).

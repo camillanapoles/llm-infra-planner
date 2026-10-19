@@ -1,0 +1,58 @@
+name: Apresentação · Modelo de Negócio
+
+# Publica SOMENTE a apresentação do modelo de negócio (como funciona o negócio
+# LLMcalc) como artefato baixável desta Action. Não faz deploy do app.
+#
+# Link desta Action:
+# https://github.com/camillanapoles/llm-infra-planner/actions/workflows/presentation.yml
+# Como usar: Actions → "Apresentação · Modelo de Negócio" → Run workflow →
+# baixar o artefato "apresentacao-modelo-de-negocio" e abrir o HTML no navegador.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apresentacao/**'
+      - '.github/workflows/presentation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: presentation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  presentation:
+    name: Gerar apresentação (modelo de negócio)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar a apresentação
+        run: |
+          test -f apresentacao/modelo-de-negocio.html
+          grep -q "Modelo de Negócio" apresentacao/modelo-de-negocio.html
+          grep -q "LLMcalc" apresentacao/modelo-de-negocio.html
+          echo "OK: apresentação encontrada ($(wc -c < apresentacao/modelo-de-negocio.html) bytes)"
+
+      - name: Resumo
+        run: |
+          {
+            echo "## LLMcalc — Modelo de Negócio: como funciona"
+            echo ""
+            echo "Baixe o artefato **apresentacao-modelo-de-negocio** abaixo e abra \`modelo-de-negocio.html\` no navegador (setas do teclado navegam; Ctrl/Cmd+P imprime/exporta PDF)."
+            echo ""
+            echo "- Produto: calculadora client-side de infraestrutura para LLMs (VRAM, GPU, custo, capacidade)"
+            echo "- Catálogo: 513 modelos · 147 GPUs · 37 instâncias em 8 nuvens"
+            echo "- Estágio: motor pronto; receita (Pro/API/white-label) é hipótese a validar"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar artefato da apresentação
+        uses: actions/upload-artifact@v4
+        with:
+          name: apresentacao-modelo-de-negocio
+          path: apresentacao/modelo-de-negocio.html
+          if-no-files-found: error
+          retention-days: 90
