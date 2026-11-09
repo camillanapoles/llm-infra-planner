@@ -1,11 +1,11 @@
 # Ponto de retomada — LLMcalc
 
-> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-11-02T16:10:11.134Z.
+> Briefing automático para a próxima sessão (humana ou agente). Gerado 2026-11-09T16:33:07.894Z.
 
 ## Onde estamos
 
 - Fase **P3 — WebAssembly e entrega multi-ambiente**, 63% do roadmap (25/40 tarefas).
-- Estado consolidado a partir de `` @ `59e5d4c`.
+- Estado consolidado a partir de `` @ `8d4cf01`.
 - Sem handoff para a branch atual — rode `npm run continuity:start` para criar um.
 
 ## Próximas tarefas (ordem do roadmap)
@@ -21,11 +21,11 @@
 ## Últimos commits
 
 ```
+8d4cf01 chore(continuity): sync project state [skip ci]
 59e5d4c chore(continuity): sync project state [skip ci]
 c3b8f33 chore(continuity): sync project state [skip ci]
 a031e86 Merge pull request #5 from camillanapoles/arena/b62e79c4-llm-infra-planner
 e1c5a67 fix(pages): ordem do contrato do artefato + pitch pinado em teste
-e9faff5 feat(pages): pitch executivo em /executivo/ com zero conflito com o app
 ```
 
 ## Guardrails (não negociáveis)
